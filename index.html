@@ -330,6 +330,23 @@
       .pie-redes a.red svg{ width:21px; height:21px; }
       .pie-redes a.red:hover{ background:var(--amarillo-suave); }
       .pie-redes .red-txt{ font-weight:700; color:var(--tinta); text-decoration:none; }
+    
+      /* Galeria y resenas */
+      .galeria-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; }
+      .galeria-grid a{ border-radius:16px; overflow:hidden; box-shadow:var(--sombra); display:block; }
+      .galeria-grid img{ width:100%; height:220px; object-fit:cover; display:block; transition:transform .3s ease; }
+      .galeria-grid a:hover img{ transform:scale(1.05); }
+      .galeria-nota{ text-align:center; margin-top:18px; color:var(--tinta-suave); }
+      .galeria-nota a{ color:var(--azul); font-weight:700; }
+      .resenas-resumen{ text-align:center; margin-bottom:28px; }
+      .resenas-nota-num{ font-size:3rem; font-weight:900; color:var(--tinta); line-height:1; }
+      .estrellas{ color:var(--amarillo); letter-spacing:3px; font-size:1.35rem; }
+      .resenas-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px; }
+      .resena{ background:var(--fondo); border:1.5px solid var(--borde); border-radius:var(--radio); padding:20px; box-shadow:var(--sombra); }
+      .resena .estrellas{ font-size:1.05rem; }
+      .resena p{ margin:10px 0; }
+      .resena .autor{ font-weight:800; }
+      .resena .cuando{ color:var(--tinta-suave); font-size:.88rem; }
     </style>
   </head>
   <body>
@@ -464,6 +481,26 @@
       </section>
 
       <!-- ============ ADMISIONES ============ -->
+      
+      <!-- ============ GALERIA ============ -->
+      <section class="seccion seccion-alt" id="galeria">
+        <div class="contenedor">
+          <div class="titulo-seccion">
+            <h2>Nuestra vida en el colegio</h2>
+            <p>Momentos reales de nuestros estudiantes, compartidos en nuestro Instagram.</p>
+            <div class="subrayado"></div>
+          </div>
+          <div class="galeria-grid">
+            <a href="https://www.instagram.com/cemiedu/p/DZ1QfT_jtbA/" target="_blank" rel="noopener"><img src="galeria-1.jpg" alt="Inauguración de los Juegos Intercursos CEMI 2026: estudiantes con la camiseta de Colombia" loading="lazy" /></a>
+            <a href="https://www.instagram.com/cemiedu/p/DdcX_6LGKGI/" target="_blank" rel="noopener"><img src="galeria-2.jpg" alt="Estudiante del Centro Educativo Maravillas Infantiles" loading="lazy" /></a>
+            <a href="https://www.instagram.com/cemiedu/p/DdcXvsBmJn5/" target="_blank" rel="noopener"><img src="galeria-3.jpg" alt="Celebración del Día de Amor y Amistad con nuestros príncipes y princesas" loading="lazy" /></a>
+            <a href="https://www.instagram.com/cemiedu/p/DdHUKrDDqYX/" target="_blank" rel="noopener"><img src="galeria-4.jpg" alt="Grandes profesiones: niña disfrazada de bombera" loading="lazy" /></a>
+            <a href="https://www.instagram.com/cemiedu/p/DdHTUypDiJm/" target="_blank" rel="noopener"><img src="galeria-5.jpg" alt="Prejardín: cuando grande, yo quiero ser…" loading="lazy" /></a>
+          </div>
+          <p class="galeria-nota">Más fotos y videos en nuestro Instagram <a href="https://www.instagram.com/cemiedu" target="_blank" rel="noopener">@cemiedu</a></p>
+        </div>
+      </section>
+
       <section class="seccion seccion-alt" id="admisiones">
         <div class="contenedor">
           <div class="titulo-seccion">
@@ -508,6 +545,56 @@
       </section>
 
       <!-- ============ CONTACTO ============ -->
+      
+      <!-- ============ RESENAS ============ -->
+      <section class="seccion" id="resenas">
+        <div class="contenedor">
+          <div class="titulo-seccion">
+            <h2>Lo que dicen nuestras familias</h2>
+            <p>Reseñas reales de nuestro perfil de Google.</p>
+            <div class="subrayado"></div>
+          </div>
+          <div class="resenas-resumen">
+            <div class="resenas-nota-num">5.0</div>
+            <div class="estrellas" aria-label="5 de 5 estrellas">★★★★★</div>
+            <p>Calificación en Google · 7 reseñas</p>
+          </div>
+          <div class="resenas-grid">
+            <article class="resena">
+              <div class="estrellas" aria-label="5 estrellas">★★★★★</div>
+              <p>«Un excelente centro educativo»</p>
+              <div class="autor">Milagros Gomez</div>
+              <div class="cuando">Hace 3 meses · Google</div>
+            </article>
+            <article class="resena">
+              <div class="estrellas" aria-label="5 estrellas">★★★★★</div>
+              <p>«Excelente institución sin duda es el mejor colegio…»</p>
+              <div class="autor">María Fernanda Campo Cano</div>
+              <div class="cuando">Hace 2 años · Google</div>
+            </article>
+            <article class="resena">
+              <div class="estrellas" aria-label="5 estrellas">★★★★★</div>
+              <p>«El mejor colegio»</p>
+              <div class="autor">Mathius Insignares</div>
+              <div class="cuando">Hace 3 años · Google</div>
+            </article>
+            <article class="resena">
+              <div class="estrellas" aria-label="5 estrellas">★★★★★</div>
+              <p>«RECOMENDADO 100%»</p>
+              <div class="autor">Javier Gallo</div>
+              <div class="cuando">Hace 4 años · Google</div>
+            </article>
+            <article class="resena">
+              <div class="estrellas" aria-label="5 estrellas">★★★★★</div>
+              <p>«Excelente institución»</p>
+              <div class="autor">Luis Cantillo</div>
+              <div class="cuando">Hace 6 años · Google</div>
+            </article>
+          </div>
+          <p class="galeria-nota"><a href="https://www.google.com/maps/search/Centro+Educativo+Maravillas+Infantiles+Barranquilla" target="_blank" rel="noopener">Ver todas las reseñas en Google</a></p>
+        </div>
+      </section>
+
       <section class="seccion" id="contacto">
         <div class="contenedor">
           <div class="titulo-seccion">
@@ -605,6 +692,8 @@
             <a href="#nosotros">Nosotros</a>
             <a href="#niveles">Niveles educativos</a>
             <a href="#admisiones">Admisiones</a>
+            <a href="#galeria">Galería</a>
+            <a href="#resenas">Reseñas</a>
             <a href="#contacto">Contacto</a>
           </div>
           <div class="pie-enlaces">
