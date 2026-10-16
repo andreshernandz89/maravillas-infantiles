@@ -309,12 +309,26 @@
       .btn-whatsapp svg{ width:26px; height:26px; flex:none; }
       .btn-whatsapp:hover{ filter:brightness(1.05); }
       @media (max-width:560px){ .btn-whatsapp span{ display:none; } .btn-whatsapp{ padding:14px; } }
+    
+      /* ===== TEMATICA HALLOWEEN (temporal: quitar el 1 de noviembre) ===== */
+      .aviso-matriculas{ background:linear-gradient(90deg,#2e1065,#6a1b9a,#2e1065); color:#ffe9c9; }
+      .aviso-matriculas a{ color:#ffd54f; }
+      .hero{ position:relative; overflow:hidden; }
+      .hero .contenedor{ position:relative; z-index:2; }
+      .hw{ position:absolute; pointer-events:none; user-select:none; line-height:1; z-index:1; animation:hwFlota 5s ease-in-out infinite; }
+      .hw-calabaza{ left:2.5%; bottom:6%; font-size:2.6rem; }
+      .hw-fantasma{ right:3%; top:5%; font-size:2.4rem; animation-delay:1.2s; }
+      .hw-murcielago{ left:4%; top:6%; font-size:1.7rem; opacity:.75; animation-delay:.6s; }
+      .hw-dulce{ right:5%; bottom:9%; font-size:1.9rem; animation-delay:2s; }
+      @keyframes hwFlota{ 0%,100%{ transform:translateY(0) rotate(-4deg); } 50%{ transform:translateY(-12px) rotate(4deg); } }
+      .saludo-hw{ display:inline-block; background:#fff3e0; color:#e65100; border:1.5px dashed #fb8c00; font-weight:800; border-radius:999px; padding:5px 14px; font-size:.92rem; margin-top:10px; }
+      @media (max-width:560px){ .hw-murcielago,.hw-dulce{ display:none; } .hw-calabaza{ font-size:2rem; } .hw-fantasma{ font-size:1.9rem; } }
     </style>
   </head>
   <body>
 
     
-    <div class="aviso-matriculas">¡Matrículas abiertas 2027! Preescolar y Primaria — <a href="#admisiones">Conoce los pasos y documentos</a></div>
+    <div class="aviso-matriculas">🎃 ¡Matrículas abiertas 2027! Preescolar y Primaria — <a href="#admisiones">Conoce los pasos y documentos</a> 👻</div>
     <header>
       <nav class="nav" aria-label="Navegación principal">
         <a class="nav-marca" href="#inicio">
@@ -335,10 +349,11 @@
     <main>
       <!-- ============ HERO ============ -->
       <section class="hero" id="inicio">
+        <span class="hw hw-calabaza" aria-hidden="true">🎃</span><span class="hw hw-fantasma" aria-hidden="true">👻</span><span class="hw hw-murcielago" aria-hidden="true">🦇</span><span class="hw hw-dulce" aria-hidden="true">🍬</span>
         <div class="contenedor">
           <div class="hero-grid">
             <div>
-              <span class="saludo">¡Bienvenidos a nuestra familia!</span>
+              <span class="saludo">¡Bienvenidos a nuestra familia!</span><br><span class="saludo-hw">🎃 Octubre en Maravillas 👻</span>
               <h1>Centro Educativo <span class="c-amarillo">Maravillas</span> <span class="c-azul">Infantiles</span></h1>
               <p>Un lugar donde cada niño descubre el mundo jugando, creando y soñando. Acompañamos a tus hijos desde sus primeros pasos en párvulo hasta culminar la primaria, con amor, valores y una educación de calidad.</p>
               <div class="hero-acciones">
