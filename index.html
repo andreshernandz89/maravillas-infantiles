@@ -12,34 +12,34 @@
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
     <style>
       :root{
-        --amarillo:#f6b81c;
-        --amarillo-suave:#fff3d1;
-        --azul:#1d6fb8;
-        --azul-oscuro:#175a94;
+        --amarillo:#3a68cc;
+        --amarillo-suave:#e2f0fb;
+        --azul:#0f47b8;
+        --azul-oscuro:#0a3385;
         --azul-suave:#e2f0fb;
-        --verde:#3d9e4d;
-        --verde-suave:#e4f5e4;
-        --coral:#f2603e;
-        --coral-suave:#fde8e2;
+        --verde:#0a3385;
+        --verde-suave:#e2f0fb;
+        --coral:#0f47b8;
+        --coral-suave:#e2f0fb;
         --tinta:#22303c;
         --tinta-suave:#51626f;
         --fondo:#ffffff;
-        --fondo-alt:#fffaf0;
-        --borde:#e9e2d2;
+        --fondo-alt:#f4f9fd;
+        --borde:#d9e6f0;
         --sombra:0 10px 30px rgba(34,48,60,.10);
         --radio:20px;
       }
       @media (prefers-color-scheme: dark){
         :root{
-          --amarillo:#ffc93d;
-          --amarillo-suave:#3d3312;
-          --azul:#6db3ec;
-          --azul-oscuro:#9ccbf5;
+          --amarillo:#a9c2f7;
+          --amarillo-suave:#17344d;
+          --azul:#8fb0f5;
+          --azul-oscuro:#b9ccf8;
           --azul-suave:#17344d;
-          --verde:#7cc98a;
-          --verde-suave:#1d3a26;
-          --coral:#ff8a70;
-          --coral-suave:#46231b;
+          --verde:#b9ccf8;
+          --verde-suave:#17344d;
+          --coral:#8fb0f5;
+          --coral-suave:#17344d;
           --tinta:#eef3f6;
           --tinta-suave:#b3c2cc;
           --fondo:#141e27;
@@ -91,9 +91,9 @@
         transition:transform .15s ease, box-shadow .15s ease;
       }
       .btn:hover{transform:translateY(-2px);}
-      .btn-coral{background:var(--coral);color:#fff;box-shadow:0 6px 16px rgba(242,96,62,.35);}
-      @media (prefers-color-scheme: dark){.btn-coral{color:#23120c;}}
-      .btn-azul{background:var(--azul);color:#fff;box-shadow:0 6px 16px rgba(29,111,184,.3);}
+      .btn-coral{background:var(--coral);color:#fff;box-shadow:0 6px 16px rgba(15,71,184,.35);}
+      @media (prefers-color-scheme: dark){.btn-coral{color:#0d2f4d;}}
+      .btn-azul{background:var(--azul);color:#fff;box-shadow:0 6px 16px rgba(15,71,184,.3);}
       .btn-borde{background:transparent;color:var(--azul);border:2px solid var(--azul);box-shadow:none;}
       .nav .btn{padding:9px 20px;font-size:.95rem;}
       .btn-menu{
@@ -179,7 +179,7 @@
       .valor .icono svg{width:26px;height:26px;}
       .valor h3{font-size:1.08rem;margin-bottom:6px;}
       .valor p{font-size:.94rem;color:var(--tinta-suave);margin:0;}
-      .v-amarillo .icono{background:var(--amarillo-suave);color:#a86e00;}
+      .v-amarillo .icono{background:var(--amarillo-suave);color:#0f47b8;}
       .v-azul .icono{background:var(--azul-suave);color:var(--azul);}
       .v-verde .icono{background:var(--verde-suave);color:var(--verde);}
       .v-coral .icono{background:var(--coral-suave);color:var(--coral);}
@@ -231,7 +231,7 @@
         display:flex;align-items:center;justify-content:center;
         font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.3rem;color:#fff;
       }
-      .paso:nth-child(1) .numero{background:var(--amarillo);color:#4a3200;}
+      .paso:nth-child(1) .numero{background:var(--amarillo);color:#ffffff;}
       .paso:nth-child(2) .numero{background:var(--azul);}
       .paso:nth-child(3) .numero{background:var(--verde);}
       .paso:nth-child(4) .numero{background:var(--coral);}
@@ -266,7 +266,7 @@
       .dato p{margin:0;color:var(--tinta-suave);}
       .ejemplo{
         display:inline-block;font-size:.7rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
-        background:var(--amarillo);color:#4a3200;border-radius:999px;padding:2px 9px;margin-left:8px;vertical-align:middle;
+        background:var(--amarillo);color:#ffffff;border-radius:999px;padding:2px 9px;margin-left:8px;vertical-align:middle;
       }
       form{
         background:var(--fondo);border:2px solid var(--borde);border-radius:26px;
@@ -303,8 +303,8 @@
       .pie-final{border-top:1px solid rgba(255,255,255,.16);margin-top:36px;padding-top:20px;font-size:.88rem;color:#93a7b4;text-align:center;}
     
       /* Aviso matriculas + boton flotante WhatsApp */
-      .aviso-matriculas{ background:var(--amarillo); color:#4a3200; text-align:center; font-weight:800; padding:10px 16px; font-size:.98rem; }
-      .aviso-matriculas a{ color:#4a3200; text-decoration:underline; }
+      .aviso-matriculas{ background:var(--amarillo); color:#ffffff; text-align:center; font-weight:800; padding:10px 16px; font-size:.98rem; }
+      .aviso-matriculas a{ color:#ffffff; text-decoration:underline; }
       .btn-whatsapp{ position:fixed; right:18px; bottom:18px; z-index:60; display:flex; align-items:center; gap:10px; background:#25d366; color:#fff; font-weight:800; padding:12px 18px 12px 14px; border-radius:999px; box-shadow:0 12px 28px rgba(18,140,60,.35); text-decoration:none; }
       .btn-whatsapp svg{ width:26px; height:26px; flex:none; }
       .btn-whatsapp:hover{ filter:brightness(1.05); }
@@ -340,7 +340,7 @@
       .galeria-nota a{ color:var(--azul); font-weight:700; }
       .resenas-resumen{ text-align:center; margin-bottom:28px; }
       .resenas-nota-num{ font-size:3rem; font-weight:900; color:var(--tinta); line-height:1; }
-      .estrellas{ color:var(--amarillo); letter-spacing:3px; font-size:1.35rem; }
+      .estrellas{ color:#f6b81c; letter-spacing:3px; font-size:1.35rem; }
       .resenas-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px; }
       .resena{ background:var(--fondo); border:1.5px solid var(--borde); border-radius:var(--radio); padding:20px; box-shadow:var(--sombra); }
       .resena .estrellas{ font-size:1.05rem; }
@@ -649,7 +649,7 @@
                 </div>
               </div>
               <div class="dato">
-                <div class="icono" style="background:var(--amarillo-suave);color:#a86e00;">
+                <div class="icono" style="background:var(--amarillo-suave);color:#0f47b8;">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                 </div>
                 <div>
