@@ -347,6 +347,11 @@
       .resena p{ margin:10px 0; }
       .resena .autor{ font-weight:800; }
       .resena .cuando{ color:var(--tinta-suave); font-size:.88rem; }
+    
+      /* Mapa de ubicacion */
+      .mapa{ max-width:1120px; margin:36px auto 0; padding:0 20px; }
+      .mapa iframe{ width:100%; height:340px; border:0; border-radius:var(--radio); box-shadow:var(--sombra); display:block; }
+      .mapa-accion{ text-align:center; margin-top:16px; }
     </style>
   </head>
   <body>
@@ -672,6 +677,12 @@
             </form>
           </div>
         </div>
+          <div class="mapa">
+            <iframe title="Mapa del Centro Educativo Maravillas Infantiles, Calle 34B #4A-35, Barranquilla" src="https://maps.google.com/maps?q=Calle%2034B%20%234A-35%2C%20Sur%20Orient%2C%20Barranquilla%2C%20Colombia&t=&z=16&ie=UTF8&iwloc=&output=embed" loading="lazy"></iframe>
+            <div class="mapa-accion">
+              <a class="btn btn-coral" href="https://www.google.com/maps/dir/?api=1&destination=Centro+Educativo+Maravillas+Infantiles,+Calle+34B+%234A-35,+Barranquilla,+Colombia" target="_blank" rel="noopener">Cómo llegar</a>
+            </div>
+          </div>
       </section>
     </main>
 
