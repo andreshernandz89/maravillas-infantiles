@@ -2045,12 +2045,18 @@ function restablecerClavePerfil(id){ const p = perfiles().find(x=>x.id===id); if
 async function sincronizarCorreoPerfil(p, nuevo){
   if(!nuevo || nuevo === (p.email || '')) return true;
   if(!FB_AUTH || !FB_AUTH.currentUser) return false;
+  /* Primero se asegura el registro de ingreso (loginMap) y SOLO si quedó guardado se cambia el correo de la cuenta. Al revés, la cuenta quedaría apuntando a un correo que el ingreso no puede encontrar y la persona no podría volver a entrar (pasaba cuando el registro no se podía guardar desde la sesión de quien creaba el perfil). */
+  const usuKey = p.usuario ? normNombre(p.usuario).toLowerCase().replace(/\s+/g,'') : '';
+  if(usuKey){ try{ await FB_DB.ref('loginMap/' + usuKey).set(nuevo); }catch(e){ console.error(e); return false; } }
   try{
     await FB_AUTH.currentUser.updateEmail(nuevo);
     p.email = nuevo;
-    if(p.usuario){ try{ await FB_DB.ref('loginMap/' + normNombre(p.usuario).toLowerCase().replace(/\s+/g,'')).set(nuevo); }catch(e){ console.error(e); } }
     return true;
-  }catch(err){ console.error(err); return false; }
+  }catch(err){
+    console.error(err);
+    if(usuKey && p.email){ try{ await FB_DB.ref('loginMap/' + usuKey).set(p.email); }catch(e){} }
+    return false;
+  }
 }
 async function ownerGuardarClave(pid, valor){
   if((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('En la vista de solo lectura (año archivado o simulación de perfil) no se pueden cambiar contraseñas.'); return; }
