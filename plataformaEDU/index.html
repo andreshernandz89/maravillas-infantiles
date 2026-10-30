@@ -4223,7 +4223,7 @@ async function agregarPerfil(){
   if(perfiles().some(x=>normNombre(x.usuario || '').toLowerCase()===usu)){ alert('Ese usuario ya existe. Elige otro.'); return; }
   const correoIngresado = ($('nuevo-perfil-correo').value || '').trim().toLowerCase();
   if(correoIngresado && !correoIngresado.includes('@')){ alert('Ese correo no se ve válido. Escríbelo bien o déjalo vacío si aún no lo sabes.'); return; }
-  const correo = correoIngresado || correoDeUsuario(usu);
+  const correo = correoDeUsuario(usu); /* La cuenta de ingreso se crea SIEMPRE con el correo interno (usuario@…local): así el ingreso funciona aunque falle un registro auxiliar; el correo real queda en info.correo y se enlaza al ingreso cuando la persona lo completa en «Mi perfil». */
   const nacimientoIngresado = ($('nuevo-perfil-nacimiento').value || '');
   if(!FB_AUTH || !FB_DB){ alert('Sin conexión con la nube. Revisa tu internet e inténtalo de nuevo.'); return; }
   const esDoc = rol==='docente';
