@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Formulario de Matrícula 2027 · Centro Educativo Maravillas Infantiles</title>
+<meta name="description" content="Formulario en línea de matrícula y actualización de datos 2027 del Centro Educativo Maravillas Infantiles, Barranquilla.">
+<link rel="icon" href="/favicon-48.png">
+<style>
+  :root{ --azul:#0f47b8; --azul-osc:#0b2f6e; --celeste:#e8f0fe; --borde:#c9d6f5; --texto:#1d2735; --suave:#5a6a85; }
+  *{ box-sizing:border-box; }
+  html, body{ overflow-x:hidden; }
+  body{ margin:0; font-family:'Segoe UI', system-ui, -apple-system, Arial, sans-serif; background:linear-gradient(180deg,#e6edfb 0%, #f2f5fb 240px, #f2f5fb 100%); color:var(--texto); }
+  header{ background:linear-gradient(135deg, var(--azul-osc), var(--azul)); color:#fff; padding:28px 16px 24px; text-align:center; }
+  header img{ width:84px; height:84px; object-fit:contain; background:#fff; border-radius:16px; padding:6px; box-shadow:0 4px 14px rgba(0,0,0,.25); }
+  header h1{ margin:12px 0 4px; font-size:1.4rem; line-height:1.25; }
+  header p{ margin:2px 0; opacity:.92; font-size:.95rem; }
+  .wrap{ max-width:780px; margin:0 auto; padding:18px 14px 44px; }
+  .card{ background:#fff; border:1px solid #e0e9f9; border-radius:16px; box-shadow:0 3px 14px rgba(11,47,110,.08); padding:20px 18px 10px; margin:0 0 16px; }
+  .card-title{ display:flex; align-items:center; gap:10px; font-size:1.08rem; font-weight:700; color:var(--azul-osc); margin:0 0 14px; }
+  .numbadge{ flex:none; width:28px; height:28px; border-radius:50%; background:var(--azul); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:.95rem; font-weight:700; box-shadow:0 2px 6px rgba(15,71,184,.35); }
+  .subtit{ font-weight:700; color:var(--azul-osc); font-size:.98rem; margin:16px 0 10px; padding-top:12px; border-top:1px dashed var(--borde); }
+  .subtit.primero{ margin-top:2px; padding-top:0; border-top:0; }
+  .grupo-label{ display:block; font-size:.95rem; font-weight:600; margin-bottom:6px; }
+  .fila{ display:grid; grid-template-columns:1fr; gap:0 12px; }
+  .fila > *{ min-width:0; }
+  @media (min-width:720px){ .fila{ grid-template-columns:1fr 1fr; } }
+  @media (min-width:920px){ .fila.tres{ grid-template-columns:1fr 1fr 1fr; } }
+  .campo{ margin-bottom:14px; min-width:0; }
+  .campo.ancho{ grid-column:1 / -1; }
+  label{ display:block; font-size:.92rem; font-weight:600; margin-bottom:6px; white-space:normal; overflow-wrap:break-word; }
+  .req{ color:#c0392b; }
+  input, select, textarea{ width:100%; max-width:100%; padding:13px 14px; border:1.5px solid #b9c6e4; border-radius:12px; font-size:16px; font-family:inherit; background:#fff; color:var(--texto); }
+  input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--azul); box-shadow:0 0 0 3px rgba(15,71,184,.18); }
+  textarea{ min-height:64px; resize:vertical; }
+  .radios{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .radios label{ flex:1 1 170px; display:flex; align-items:center; gap:9px; border:1.5px solid var(--borde); border-radius:12px; padding:13px 12px; font-size:.98rem; font-weight:600; cursor:pointer; background:#fff; margin-bottom:0; transition:border-color .15s, background .15s, box-shadow .15s; }
+  .radios label:has(input:checked){ border-color:var(--azul); background:var(--celeste); box-shadow:0 0 0 3px rgba(15,71,184,.15); }
+  .radios input{ width:auto; accent-color:var(--azul); }
+  .checks{ display:flex; gap:8px 16px; flex-wrap:wrap; margin:2px 0 12px; }
+  .checks label{ display:flex; align-items:center; gap:7px; font-weight:500; margin-bottom:0; }
+  .checks input{ width:auto; accent-color:var(--azul); }
+  .acepta{ display:flex; gap:10px; align-items:flex-start; background:var(--celeste); border-radius:12px; padding:13px 12px; margin-bottom:12px; font-size:.93rem; font-weight:500; }
+  .acepta input{ width:auto; margin-top:3px; accent-color:var(--azul); }
+  .nota{ font-size:.88rem; color:var(--suave); margin:0 0 14px; line-height:1.45; }
+  .progreso-wrap{ position:static; z-index:30; background:rgba(255,255,255,.96); border:1px solid #e0e9f9; border-radius:14px; box-shadow:0 4px 14px rgba(11,47,110,.12); padding:10px 14px 12px; margin:0 0 16px; }
+  .progreso-info{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:.85rem; font-weight:600; color:var(--azul-osc); margin-bottom:7px; }
+  #progreso-pct{ font-size:.95rem; }
+  .progreso{ height:9px; background:#dbe5f7; border-radius:99px; overflow:hidden; }
+  .progreso-barra{ height:100%; width:0%; background:linear-gradient(90deg, var(--azul), #2f7de1); border-radius:99px; transition:width .35s ease; }
+  @media (min-width:720px){ .progreso-wrap{ position:sticky; top:10px; } }
+  #btn-enviar{ width:100%; background:var(--azul); color:#fff; border:0; border-radius:14px; padding:17px; font-size:1.12rem; font-weight:700; cursor:pointer; box-shadow:0 6px 16px rgba(15,71,184,.35); }
+  #btn-enviar:disabled{ opacity:.6; cursor:wait; }
+  @media (max-width:700px){ #btn-enviar{ position:sticky; bottom:10px; z-index:30; } }
+  .btn-secundario{ background:#fff; color:var(--azul); border:1.5px solid var(--azul); border-radius:12px; padding:12px 20px; font-size:1rem; font-weight:700; cursor:pointer; }
+  #error{ display:none; background:#fdecea; color:#8f1d12; border:1px solid #f3b7ae; border-radius:12px; padding:12px 14px; margin:0 0 14px; font-size:.95rem; }
+  #exito{ display:none; background:#fff; border:1px solid #e0e9f9; border-radius:16px; box-shadow:0 3px 14px rgba(11,47,110,.08); padding:30px 20px; text-align:center; }
+  #exito .check{ font-size:3rem; }
+  #exito h2{ color:var(--azul-osc); margin:8px 0; }
+  footer{ text-align:center; color:var(--suave); font-size:.85rem; padding:0 16px 30px; }
+  .hp{ position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
+.credito-edu{ display:block; margin-top:16px; font-size:10px; font-weight:700; letter-spacing:.18em; color:#8494ab; text-transform:uppercase; }
+.logo-edu-pie{ width:168px; height:auto; margin-top:5px; }
+.copy-edu{ display:block; margin-top:6px; font-size:11px; color:#8494ab; }
+</style>
+</head>
+<body>
+<header>
+  <img src="/escudo.png" alt="Escudo del Centro Educativo Maravillas Infantiles">
+  <h1>Formulario de Matrícula 2027</h1>
+  <p><strong>Centro Educativo Maravillas Infantiles</strong> · Preescolar y Primaria</p>
+  <p>Licencia de funcionamiento # 001054 de abril 12 del 2000 · Barranquilla</p>
+</header>
+
+<div class="wrap">
+  <p class="nota">Diligencia este formulario desde tu celular. Al enviarlo, la información llega directamente a la secretaría del colegio. Los campos con <span style="color:#c0392b">*</span> son obligatorios.</p>
+  <div id="error"></div>
+
+  <div class="progreso-wrap" id="progreso-wrap">
+    <div class="progreso-info"><span id="progreso-texto">Completa los datos obligatorios</span><span id="progreso-pct">0%</span></div>
+    <div class="progreso"><div class="progreso-barra" id="progreso-barra"></div></div>
+  </div>
+
+  <form id="form-matricula" novalidate>
+    <!-- TRÁMITE -->
+    <section class="card">
+      <h2 class="card-title"><span class="numbadge">1</span> Tipo de trámite</h2>
+      <div class="radios">
+        <label><input type="radio" name="tramite" value="NUEVA" checked> 🆕 Matrícula nueva</label>
+        <label><input type="radio" name="tramite" value="ACTUALIZACION"> 🔄 Actualización de datos (estudiante antiguo)</label>
+      </div>
+      <div class="campo">
+        <label for="grado">Grado al que se matricula en 2027 <span class="req">*</span></label>
+        <select id="grado" required>
+          <option value="">— Selecciona el grado —</option>
+          <option>PÁRVULO</option><option>PRE-JARDÍN</option><option>JARDÍN</option><option>TRANSICIÓN</option>
+          <option>PRIMERO</option><option>SEGUNDO</option><option>TERCERO</option><option>CUARTO</option><option>QUINTO</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- CONSULTA ESTUDIANTE ANTIGUO -->
+    <section class="card" id="bloque-consulta" style="display:none">
+      <h2 class="card-title">🔎 Trae tu información actual</h2>
+      <p class="nota">Escribe el número de documento del estudiante: traemos los datos que el colegio ya tiene guardados para que solo corrijas lo que haya cambiado.</p>
+      <div class="fila">
+        <div class="campo"><label for="consulta-doc">Número de documento del estudiante <span class="req">*</span></label><input id="consulta-doc" inputmode="numeric"></div>
+      </div>
+      <button type="button" id="btn-consultar" class="btn-secundario">🔎 Buscar mi información</button>
+      <p id="consulta-msg" class="nota" style="margin:10px 0 4px"></p>
+    </section>
+
+    <!-- ESTUDIANTE -->
+    <section class="card">
+      <h2 class="card-title"><span class="numbadge">2</span> Datos del estudiante</h2>
+      <div class="fila">
+        <div class="campo"><label for="est-nombres">Nombres <span class="req">*</span></label><input id="est-nombres" required autocomplete="off"></div>
+        <div class="campo"><label for="est-apellidos">Apellidos <span class="req">*</span></label><input id="est-apellidos" required autocomplete="off"></div>
+      </div>
+      <div class="fila tres">
+        <div class="campo"><label for="est-fecha-nac">Fecha de nacimiento <span class="req">*</span></label><input id="est-fecha-nac" type="date" required></div>
+        <div class="campo"><label for="est-doctipo">Documento <span class="req">*</span></label>
+          <select id="est-doctipo"><option value="RC">RC — Registro civil</option><option value="TI">TI — Tarjeta de identidad</option></select></div>
+        <div class="campo"><label for="est-docnum">Número de documento <span class="req">*</span></label><input id="est-docnum" inputmode="numeric" required></div>
+      </div>
+      <div class="fila">
+        <div class="campo ancho"><label for="est-direccion">Dirección de residencia <span class="req">*</span></label><input id="est-direccion" required></div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label for="est-barrio">Barrio <span class="req">*</span></label><input id="est-barrio" required></div>
+        <div class="campo"><label for="simDeptoRes">Departamento de residencia</label>
+          <select id="simDeptoRes" onchange="poblarMunicipiosSim('res')"><option value="">—</option><option value="Amazonas">Amazonas</option><option value="Antioquia">Antioquia</option><option value="Arauca">Arauca</option><option value="Atlántico">Atlántico</option><option value="Bolívar">Bolívar</option><option value="Boyacá">Boyacá</option><option value="Caldas">Caldas</option><option value="Caquetá">Caquetá</option><option value="Casanare">Casanare</option><option value="Cauca">Cauca</option><option value="Cesar">Cesar</option><option value="Chocó">Chocó</option><option value="Córdoba">Córdoba</option><option value="Cundinamarca">Cundinamarca</option><option value="Bogotá D.C.">Bogotá D.C.</option><option value="La Guajira">La Guajira</option><option value="Guainía">Guainía</option><option value="Guaviare">Guaviare</option><option value="Huila">Huila</option><option value="Magdalena">Magdalena</option><option value="Meta">Meta</option><option value="Nariño">Nariño</option><option value="Norte de Santander">Norte de Santander</option><option value="Putumayo">Putumayo</option><option value="Quindío">Quindío</option><option value="Risaralda">Risaralda</option><option value="San Andrés y Providencia">San Andrés y Providencia</option><option value="Santander">Santander</option><option value="Sucre">Sucre</option><option value="Tolima">Tolima</option><option value="Valle del Cauca">Valle del Cauca</option><option value="Vaupés">Vaupés</option><option value="Vichada">Vichada</option></select></div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label for="simMuniRes">Municipio de residencia</label>
+          <select id="simMuniRes"><option value="">—</option></select></div>
+        <div class="campo"><label for="simZona">Zona de residencia</label>
+          <select id="simZona"><option value="">—</option><option value="URBANA">Urbana</option><option value="RURAL">Rural</option></select></div>
+      </div>
+    </section>
+
+        <!-- SIMAT -->
+    <section class="card">
+      <h2 class="card-title"><span class="numbadge">3</span> Datos para el reporte oficial (SIMAT)</h2>
+      <p class="nota">El Ministerio de Educación exige estos datos de cada estudiante para el reporte oficial de matrícula (SIMAT / SIMPADE). Diligéncialos una sola vez, tal como aparecen en los documentos del estudiante.</p>
+      <div class="fila">
+        <div class="campo"><label for="simDeptoNac">Departamento de nacimiento <span class="req">*</span></label>
+          <select id="simDeptoNac" onchange="poblarMunicipiosSim('nac')"><option value="">—</option><option value="Amazonas">Amazonas</option><option value="Antioquia">Antioquia</option><option value="Arauca">Arauca</option><option value="Atlántico">Atlántico</option><option value="Bolívar">Bolívar</option><option value="Boyacá">Boyacá</option><option value="Caldas">Caldas</option><option value="Caquetá">Caquetá</option><option value="Casanare">Casanare</option><option value="Cauca">Cauca</option><option value="Cesar">Cesar</option><option value="Chocó">Chocó</option><option value="Córdoba">Córdoba</option><option value="Cundinamarca">Cundinamarca</option><option value="Bogotá D.C.">Bogotá D.C.</option><option value="La Guajira">La Guajira</option><option value="Guainía">Guainía</option><option value="Guaviare">Guaviare</option><option value="Huila">Huila</option><option value="Magdalena">Magdalena</option><option value="Meta">Meta</option><option value="Nariño">Nariño</option><option value="Norte de Santander">Norte de Santander</option><option value="Putumayo">Putumayo</option><option value="Quindío">Quindío</option><option value="Risaralda">Risaralda</option><option value="San Andrés y Providencia">San Andrés y Providencia</option><option value="Santander">Santander</option><option value="Sucre">Sucre</option><option value="Tolima">Tolima</option><option value="Valle del Cauca">Valle del Cauca</option><option value="Vaupés">Vaupés</option><option value="Vichada">Vichada</option></select></div>
+        <div class="campo"><label for="simMuniNac">Municipio de nacimiento <span class="req">*</span></label>
+          <select id="simMuniNac"><option value="">—</option></select></div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label for="simEstrato">Estrato</label>
+          <select id="simEstrato"><option value="">—</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="SIN ESTRATO">Sin estrato</option></select></div>
+        <div class="campo"><label for="simSisben">Grupo SISBÉN</label>
+          <select id="simSisben"><option value="">—</option></select></div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label for="simEtnia">Pertenencia étnica</label>
+          <select id="simEtnia"><option value="">—</option><option value="NINGUNA">Ninguna</option><option value="INDÍGENA">Indígena</option><option value="AFROCOLOMBIANO">Afrocolombiano</option><option value="RAIZAL DEL ARCHIPIÉLAGO">Raizal del archipiélago</option><option value="PALENQUERO">Palenquero</option><option value="ROM (GITANO)">Rom (gitano)</option><option value="OTRA">Otra</option></select></div>
+        <div class="campo" id="campo-resguardo"><label for="simResguardo">Resguardo indígena</label><input id="simResguardo"></div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label for="simEps">EPS</label><input id="simEps" list="lista-eps-sim">
+          <datalist id="lista-eps-sim"><option value="SURA"></option><option value="NUEVA EPS"></option><option value="SANITAS"></option><option value="SALUD TOTAL"></option><option value="COOSALUD"></option><option value="FAMISANAR"></option><option value="COMPENSAR"></option><option value="MUTUAL SER"></option><option value="CAPITAL SALUD"></option><option value="CAJACOPI"></option><option value="OTRA"></option></datalist></div>
+        <div class="campo"><label for="simRegimen">Régimen de salud</label>
+          <select id="simRegimen"><option value="">—</option><option value="CONTRIBUTIVO">Contributivo</option><option value="SUBSIDIADO">Subsidiado</option><option value="EXCEPCIÓN / ESPECIAL">Excepción / Especial</option><option value="NO AFILIADO">No afiliado</option></select></div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label for="simDiscapacidad">¿Tiene discapacidad?</label>
+          <select id="simDiscapacidad"><option value="">—</option><option value="NO">No</option><option value="SÍ">Sí</option></select></div>
+        <div class="campo" id="campo-tipo-disc"><label for="simTipoDiscapacidad">Tipo de discapacidad</label>
+          <select id="simTipoDiscapacidad"><option value="">—</option><option value="FÍSICA">Física</option><option value="VISUAL">Visual</option><option value="AUDITIVA">Auditiva</option><option value="INTELECTUAL">Intelectual</option><option value="PSICOSOCIAL">Psicosocial</option><option value="MÚLTIPLE">Múltiple</option><option value="SORDOCEGUERA">Sordoceguera</option><option value="OTRA">Otra</option></select></div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label for="simVictima">¿Víctima del conflicto?</label>
+          <select id="simVictima"><option value="">—</option><option value="NO">No</option><option value="SÍ">Sí</option></select></div>
+        <div class="campo"><label for="simCapacidades">¿Capacidades o talentos excepcionales?</label>
+          <select id="simCapacidades"><option value="">—</option><option value="NO">No</option><option value="SÍ">Sí</option></select></div>
+      </div>
+    </section>
+
+        <!-- PADRES -->
+    <section class="card">
+      <h2 class="card-title"><span class="numbadge">4</span> Datos de los padres y acudiente</h2>
+      <p class="subtit primero">Padre</p>
+      <div class="fila">
+        <div class="campo"><label for="padre-nombre">Nombre del padre</label><input id="padre-nombre"></div>
+        <div class="campo"><label for="padre-tel">Teléfono o celular del padre</label><input id="padre-tel" type="tel"></div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label for="padre-ocupacion">Ocupación del padre</label><input id="padre-ocupacion"></div>
+        <div class="campo"><label for="padre-vive">¿Vive con el estudiante?</label>
+          <select id="padre-vive"><option value="">—</option><option>SÍ</option><option>NO</option></select></div>
+      </div>
+      <p class="subtit">Madre</p>
+      <div class="fila">
+        <div class="campo"><label for="madre-nombre">Nombre de la madre</label><input id="madre-nombre"></div>
+        <div class="campo"><label for="madre-tel">Teléfono o celular de la madre</label><input id="madre-tel" type="tel"></div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label for="madre-ocupacion">Ocupación de la madre</label><input id="madre-ocupacion"></div>
+        <div class="campo"><label for="madre-vive">¿Vive con el estudiante?</label>
+          <select id="madre-vive"><option value="">—</option><option>SÍ</option><option>NO</option></select></div>
+      </div>
+      <p class="subtit">Acudiente</p>
+      <span class="grupo-label">¿Quién es el acudiente? <span class="req">*</span></span>
+      <div class="radios">
+        <label><input type="radio" name="acu-tipo" value="MADRE"> 👩 La madre</label>
+        <label><input type="radio" name="acu-tipo" value="PADRE"> 👨 El padre</label>
+        <label><input type="radio" name="acu-tipo" value="OTRO" checked> 👤 Otra persona</label>
+      </div>
+      <div id="acu-datos-propios">
+        <div class="fila">
+          <div class="campo"><label for="acu-nombre">Nombre del acudiente <span class="req">*</span></label><input id="acu-nombre" required></div>
+          <div class="campo"><label for="acu-tel">Teléfono o celular del acudiente <span class="req">*</span></label><input id="acu-tel" type="tel" required></div>
+        </div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label for="acu-cc" id="lbl-acu-cc">Cédula (CC) del acudiente <span class="req">*</span></label><input id="acu-cc" inputmode="numeric" required></div>
+        <div class="campo" id="campo-parentesco"><label for="acu-parentesco">Parentesco con el estudiante</label><input id="acu-parentesco" placeholder="Abuela, tío, padrastro…"></div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label for="est-correo">Correo electrónico del acudiente <span class="req">*</span></label><input id="est-correo" type="email" required></div>
+      </div>
+    </section>
+
+        <!-- SALUD -->
+    <section class="card">
+      <h2 class="card-title"><span class="numbadge">5</span> Salud</h2>
+      <div class="fila">
+        <div class="campo"><label for="salud-rh">RH (tipo de sangre)</label>
+          <select id="salud-rh"><option value="">—</option><option>O+</option><option>O-</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option></select></div>
+        <div class="campo"><label for="salud-dificultad">¿Presenta dificultades para realizar ejercicios físicos?</label>
+          <select id="salud-dificultad"><option value="">—</option><option>NO</option><option>SÍ</option></select></div>
+      </div>
+      <div class="campo ancho"><label for="salud-alergias">Alergias y/o enfermedades</label><textarea id="salud-alergias"></textarea></div>
+      <span class="grupo-label">Actualmente recibe terapias de:</span>
+      <div class="checks">
+        <label><input type="checkbox" class="terapia" value="Lenguaje"> Lenguaje</label>
+        <label><input type="checkbox" class="terapia" value="Ocupacional"> Ocupacional</label>
+        <label><input type="checkbox" class="terapia" value="Psicológica"> Psicológica</label>
+        <label><input type="checkbox" class="terapia" value="Fonoaudiología"> Fonoaudiología</label>
+        <label><input type="checkbox" class="terapia" value="Neurología"> Neurología</label>
+      </div>
+      <div class="campo ancho" id="campo-explique"><label for="salud-explique">Si marcó alguna terapia, explique</label><textarea id="salud-explique"></textarea></div>
+      <p class="nota" style="margin-bottom:4px">La EPS se diligencia una sola vez, en la sección 3 (datos para el reporte oficial).</p>
+    </section>
+
+        <!-- AUTORIZADOS -->
+    <section class="card">
+      <h2 class="card-title"><span class="numbadge">6</span> Personas autorizadas para venir a buscar al estudiante</h2>
+      <div class="campo ancho" style="margin-bottom:6px"><textarea id="autorizados" placeholder="Escribe el nombre completo de cada persona autorizada, una por línea."></textarea></div>
+    </section>
+
+    <!-- LEGALIZACIÓN -->
+    <section class="card">
+      <h2 class="card-title"><span class="numbadge">7</span> Legalización de la matrícula</h2>
+      <label class="acepta"><input type="checkbox" id="acepta-pei" required>
+        <span>Aceptamos el proyecto educativo institucional (P.E.I.) y nos comprometemos a cumplir con el manual de convivencia y demás planes, programas, normas y disposiciones del colegio. <span class="req">*</span></span></label>
+      <label class="acepta"><input type="checkbox" id="acepta-datos" required>
+        <span>Autorizo al Centro Educativo Maravillas Infantiles el tratamiento de los datos personales suministrados en este formulario, únicamente para el proceso de matrícula y la vida escolar 2027. <span class="req">*</span></span></label>
+      <p style="font-size:.85rem;margin:2px 0 10px">Consulta la <a href="../politica-datos/" target="_blank" rel="noopener">Política de Tratamiento de Datos Personales</a>.</p>
+      <input class="hp" type="text" id="campo-empresa" tabindex="-1" autocomplete="off">
+    </section>
+
+    <button id="btn-enviar" type="submit">📨 Enviar formulario</button>
+    <p class="nota" style="margin-top:10px">«Superemos nuestros logros con exigencia y responsabilidad.»</p>
+  </form>
+
+  <div id="exito">
+    <div class="check">✅</div>
+    <h2>¡Formulario enviado!</h2>
+    <p id="exito-detalle"></p>
+    <p>La secretaría del colegio revisará la información. Si necesitas corregir algún dato, escríbenos al WhatsApp <strong>302 285 2745</strong>.</p>
+    <p>📋 Puedes seguir el estado de tu proceso en la <a href="https://maravillasinfantiles.com/padres" target="_blank" rel="noopener"><strong>plataforma para padres</strong></a>, ingresando con el documento del estudiante.</p>
+    <button id="btn-otro" type="button" class="btn-secundario">Diligenciar otro formulario</button>
+  </div>
+</div>
+
+<footer>Centro Educativo Maravillas Infantiles · Calle 34B #4A-35 Sur Orient, Barranquilla · Tel/WhatsApp 302 285 2745 · info@maravillasinfantiles.com<span class="credito-edu">Tecnología de</span><img class="logo-edu-pie" src="data:image/png;base64,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" alt="PlataformaEDU"><span class="copy-edu">© 2026 PlataformaEDU · Todos los derechos reservados.</span></footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyD8JESH5rhMkgmSjy-0h6p-zObQg-XAzQ0",
+    authDomain: "plataforma-cemi.firebaseapp.com",
+    databaseURL: "https://plataforma-cemi-default-rtdb.firebaseio.com",
+    projectId: "plataforma-cemi",
+    appId: "1:59598932057:web:24cb8ee45a831374a4c948"
+  });
+  const $ = (id) => document.getElementById(id);
+  let desdeConsulta = false;
+  async function sha256Hex(txt){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  function normDoc(s){ return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function esConsultaValida(d){ return !!d && typeof d === 'object' && !Array.isArray(d) && typeof d.nombres === 'string' && d.nombres.length > 0; }
+  document.querySelectorAll('input[name="tramite"]').forEach(r => r.addEventListener('change', () => {
+    $('bloque-consulta').style.display = document.querySelector('input[name="tramite"]:checked').value === 'ACTUALIZACION' ? '' : 'none';
+  }));
+  $('btn-consultar').addEventListener('click', async () => {
+    const doc = $('consulta-doc').value, msg = $('consulta-msg');
+    if(!normDoc(doc)){ msg.textContent = 'Escribe el número de documento del estudiante.'; return; }
+    msg.textContent = 'Buscando…';
+    try{
+      const clave = await sha256Hex(normDoc(doc));
+      const r = await fetch('https://plataforma-cemi-default-rtdb.firebaseio.com/consulta2027/' + clave + '.json');
+      if(!r.ok){ msg.textContent = 'No se pudo hacer la consulta (el servicio no respondió). Inténtalo de nuevo en un momento.'; return; }
+      const d = await r.json();
+      if(!esConsultaValida(d)){ msg.innerHTML = '❌ No encontramos un estudiante con ese número de documento. Verifica el número; si es un estudiante nuevo, cambia el tipo de trámite a «Matrícula nueva».'; return; }
+      $('est-nombres').value = d.nombres || ''; $('est-apellidos').value = d.apellidos || '';
+      $('est-fecha-nac').value = d.fechaNacimiento || '';
+      if(d.docTipo) $('est-doctipo').value = d.docTipo;
+      $('est-docnum').value = d.docNumero || doc;
+      $('est-direccion').value = d.direccion || ''; $('est-correo').value = d.correo || '';
+      $('acu-nombre').value = d.acudienteNombre || ''; $('acu-tel').value = d.acudienteTel || ''; $('acu-cc').value = d.acudienteCC || '';
+      const rOtro = document.querySelector('input[name="acu-tipo"][value="OTRO"]');
+      if (rOtro) rOtro.checked = true;
+      actualizarAcuTipo();
+      desdeConsulta = true;
+      msg.innerHTML = '✅ ¡Hola! Trajimos la información de <strong>' + esc(d.apellidos || '') + ' ' + esc(d.nombres || '') + '</strong>' + (d.gradoActual ? ' (grado actual: ' + esc(d.gradoActual) + ')' : '') + '. Revisa cada sección y corrige solo lo que haya cambiado; elige arriba el grado 2027.';
+    }catch(e){ msg.textContent = 'No se pudo hacer la consulta. Revisa tu conexión a internet e inténtalo de nuevo.'; }
+  });
+  (function(){
+    try{
+      const q = new URLSearchParams(location.search);
+      const gradoQ = q.get('grado'), docQ = q.get('doc');
+      if(gradoQ){ const sel = $('grado'); for(let i = 0; i < sel.options.length; i++){ if(sel.options[i].text === gradoQ){ sel.selectedIndex = i; break; } } }
+      if(docQ){
+        const r = document.querySelector('input[name="tramite"][value="ACTUALIZACION"]');
+        if(r){ r.checked = true; r.dispatchEvent(new Event('change')); }
+        $('consulta-doc').value = docQ;
+        setTimeout(() => { $('btn-consultar').click(); }, 400);
+      }
+    }catch(e){}
+  })();
+  const val = (id) => (($(id).value || '').trim());
+
+  /* ================= CARACTERIZACIÓN SIMAT / SIMPADE ================= */
+  const MUNICIPIOS_SIM = {"Amazonas":["EL ENCANTO","LA CHORRERA","LA PEDRERA","LA VICTORIA","LETICIA","MIRITÍ - PARANÁ","PUERTO ALEGRÍA","PUERTO ARICA","PUERTO NARIÑO","PUERTO SANTANDER","TARAPACÁ"],"Antioquia":["ABEJORRAL","ABRIAQUÍ","ALEJANDRÍA","AMAGÁ","AMALFI","ANDES","ANGELÓPOLIS","ANGOSTURA","ANORÍ","ANZÁ","APARTADÓ","ARBOLETES","ARGELIA","ARMENIA","BARBOSA","BELLO","BELMIRA","BETANIA","BETULIA","BRICEÑO","BURITICÁ","CÁCERES","CAICEDO","CALDAS","CAMPAMENTO","CAÑASGORDAS","CARACOLÍ","CARAMANTA","CAREPA","CAROLINA","CAUCASIA","CHIGORODÓ","CISNEROS","CIUDAD BOLÍVAR","COCORNÁ","CONCEPCIÓN","CONCORDIA","COPACABANA","DABEIBA","DONMATÍAS","EBÉJICO","EL BAGRE","EL CARMEN DE VIBORAL","EL SANTUARIO","ENTRERRÍOS","ENVIGADO","FREDONIA","FRONTINO","GIRALDO","GIRARDOTA","GÓMEZ PLATA","GRANADA","GUADALUPE","GUARNE","GUATAPÉ","HELICONIA","HISPANIA","ITAGÜÍ","ITUANGO","JARDÍN","JERICÓ","LA CEJA","LA ESTRELLA","LA PINTADA","LA UNIÓN","LIBORINA","MACEO","MARINILLA","MEDELLÍN","MONTEBELLO","MURINDÓ","MUTATÁ","NARIÑO","NECHÍ","NECOCLÍ","OLAYA","PEÑOL","PEQUE","PUEBLORRICO","PUERTO BERRÍO","PUERTO NARE","PUERTO TRIUNFO","REMEDIOS","RETIRO","RIONEGRO","SABANALARGA","SABANETA","SALGAR","SAN ANDRÉS DE CUERQUÍA","SAN CARLOS","SAN FRANCISCO","SAN JERÓNIMO","SAN JOSÉ DE LA MONTAÑA","SAN JUAN DE URABÁ","SAN LUIS","SAN PEDRO DE LOS MILAGROS","SAN PEDRO DE URABÁ","SAN RAFAEL","SAN ROQUE","SAN VICENTE FERRER","SANTA BÁRBARA","SANTA FÉ DE ANTIOQUIA","SANTA ROSA DE OSOS","SANTO DOMINGO","SEGOVIA","SONSÓN","SOPETRÁN","TÁMESIS","TARAZÁ","TARSO","TITIRIBÍ","TOLEDO","TURBO","URAMITA","URRAO","VALDIVIA","VALPARAÍSO","VEGACHÍ","VENECIA","VIGÍA DEL FUERTE","YALÍ","YARUMAL","YOLOMBÓ","YONDÓ","ZARAGOZA"],"Arauca":["ARAUCA","ARAUQUITA","CRAVO NORTE","FORTUL","PUERTO RONDÓN","SARAVENA","TAME"],"Atlántico":["BARANOA","BARRANQUILLA","CAMPO DE LA CRUZ","CANDELARIA","GALAPA","JUAN DE ACOSTA","LURUACO","MALAMBO","MANATÍ","PALMAR DE VARELA","PIOJÓ","POLONUEVO","PONEDERA","PUERTO COLOMBIA","REPELÓN","SABANAGRANDE","SABANALARGA","SANTA LUCÍA","SANTO TOMÁS","SOLEDAD","SUAN","TUBARÁ","USIACURÍ"],"Bolívar":["ACHÍ","ALTOS DEL ROSARIO","ARENAL","ARJONA","ARROYOHONDO","BARRANCO DE LOBA","CALAMAR","CANTAGALLO","CARTAGENA DE INDIAS","CICUCO","CLEMENCIA","CÓRDOBA","EL CARMEN DE BOLÍVAR","EL GUAMO","EL PEÑÓN","HATILLO DE LOBA","MAGANGUÉ","MAHATES","MARGARITA","MARÍA LA BAJA","MONTECRISTO","MORALES","NOROSÍ","PINILLOS","REGIDOR","RÍO VIEJO","SAN CRISTÓBAL","SAN ESTANISLAO","SAN FERNANDO","SAN JACINTO","SAN JACINTO DEL CAUCA","SAN JUAN NEPOMUCENO","SAN MARTÍN DE LOBA","SAN PABLO","SANTA CATALINA","SANTA CRUZ DE MOMPOX","SANTA ROSA","SANTA ROSA DEL SUR","SIMITÍ","SOPLAVIENTO","TALAIGUA NUEVO","TIQUISIO","TURBACO","TURBANÁ","VILLANUEVA","ZAMBRANO"],"Boyacá":["ALMEIDA","AQUITANIA","ARCABUCO","BELÉN","BERBEO","BETÉITIVA","BOAVITA","BOYACÁ","BRICEÑO","BUENAVISTA","BUSBANZÁ","CALDAS","CAMPOHERMOSO","CERINZA","CHINAVITA","CHIQUINQUIRÁ","CHÍQUIZA","CHISCAS","CHITA","CHITARAQUE","CHIVATÁ","CHIVOR","CIÉNEGA","CÓMBITA","COPER","CORRALES","COVARACHÍA","CUBARÁ","CUCAITA","CUÍTIVA","DUITAMA","EL COCUY","EL ESPINO","FIRAVITOBA","FLORESTA","GACHANTIVÁ","GÁMEZA","GARAGOA","GUACAMAYAS","GUATEQUE","GUAYATÁ","GÜICÁN DE LA SIERRA","IZA","JENESANO","JERICÓ","LA CAPILLA","LA UVITA","LA VICTORIA","LABRANZAGRANDE","MACANAL","MARIPÍ","MIRAFLORES","MONGUA","MONGUÍ","MONIQUIRÁ","MOTAVITA","MUZO","NOBSA","NUEVO COLÓN","OICATÁ","OTANCHE","PACHAVITA","PÁEZ","PAIPA","PAJARITO","PANQUEBA","PAUNA","PAYA","PAZ DE RÍO","PESCA","PISBA","PUERTO BOYACÁ","QUÍPAMA","RAMIRIQUÍ","RÁQUIRA","RONDÓN","SABOYÁ","SÁCHICA","SAMACÁ","SAN EDUARDO","SAN JOSÉ DE PARE","SAN LUIS DE GACENO","SAN MATEO","SAN MIGUEL DE SEMA","SAN PABLO DE BORBUR","SANTA MARÍA","SANTA ROSA DE VITERBO","SANTA SOFÍA","SANTANA","SATIVANORTE","SATIVASUR","SIACHOQUE","SOATÁ","SOCHA","SOCOTÁ","SOGAMOSO","SOMONDOCO","SORA","SORACÁ","SOTAQUIRÁ","SUSACÓN","SUTAMARCHÁN","SUTATENZA","TASCO","TENZA","TIBANÁ","TIBASOSA","TINJACÁ","TIPACOQUE","TOCA","TOGÜÍ","TÓPAGA","TOTA","TUNJA","TUNUNGUÁ","TURMEQUÉ","TUTA","TUTAZÁ","ÚMBITA","VENTAQUEMADA","VILLA DE LEYVA","VIRACACHÁ","ZETAQUIRA"],"Caldas":["AGUADAS","ANSERMA","ARANZAZU","BELALCÁZAR","CHINCHINÁ","FILADELFIA","LA DORADA","LA MERCED","MANIZALES","MANZANARES","MARMATO","MARQUETALIA","MARULANDA","NEIRA","NORCASIA","PÁCORA","PALESTINA","PENSILVANIA","RIOSUCIO","RISARALDA","SALAMINA","SAMANÁ","SAN JOSÉ","SUPÍA","VICTORIA","VILLAMARÍA","VITERBO"],"Caquetá":["ALBANIA","BELÉN DE LOS ANDAQUÍES","CARTAGENA DEL CHAIRÁ","CURILLO","EL DONCELLO","EL PAUJÍL","FLORENCIA","LA MONTAÑITA","MILÁN","MORELIA","PUERTO RICO","SAN JOSÉ DEL FRAGUA","SAN VICENTE DEL CAGUÁN","SOLANO","SOLITA","VALPARAÍSO"],"Casanare":["AGUAZUL","CHÁMEZA","HATO COROZAL","LA SALINA","MANÍ","MONTERREY","NUNCHÍA","OROCUÉ","PAZ DE ARIPORO","PORE","RECETOR","SABANALARGA","SÁCAMA","SAN LUIS DE PALENQUE","TÁMARA","TAURAMENA","TRINIDAD","VILLANUEVA","YOPAL"],"Cauca":["ALMAGUER","ARGELIA","BALBOA","BOLÍVAR","BUENOS AIRES","CAJIBÍO","CALDONO","CALOTO","CORINTO","EL TAMBO","FLORENCIA","GUACHENÉ","GUAPI","INZÁ","JAMBALÓ","LA SIERRA","LA VEGA","LÓPEZ DE MICAY","MERCADERES","MIRANDA","MORALES","PADILLA","PÁEZ","PATÍA","PIAMONTE","PIENDAMÓ - TUNÍA","POPAYÁN","PUERTO TEJADA","PURACÉ","ROSAS","SAN SEBASTIÁN","SANTA ROSA","SANTANDER DE QUILICHAO","SILVIA","SOTARÁ - PAISPAMBA","SUÁREZ","SUCRE","TIMBÍO","TIMBIQUÍ","TORIBÍO","TOTORÓ","VILLA RICA"],"Cesar":["AGUACHICA","AGUSTÍN CODAZZI","ASTREA","BECERRIL","BOSCONIA","CHIMICHAGUA","CHIRIGUANÁ","CURUMANÍ","EL COPEY","EL PASO","GAMARRA","GONZÁLEZ","LA GLORIA","LA JAGUA DE IBIRICO","LA PAZ","MANAURE BALCÓN DEL CESAR","PAILITAS","PELAYA","PUEBLO BELLO","RÍO DE ORO","SAN ALBERTO","SAN DIEGO","SAN MARTÍN","TAMALAMEQUE","VALLEDUPAR"],"Chocó":["ACANDÍ","ALTO BAUDÓ","ATRATO","BAGADÓ","BAHÍA SOLANO","BAJO BAUDÓ","BOJAYÁ","CARMEN DEL DARIÉN","CÉRTEGUI","CONDOTO","EL CANTÓN DEL SAN PABLO","EL CARMEN DE ATRATO","EL LITORAL DEL SAN JUAN","ISTMINA","JURADÓ","LLORÓ","MEDIO ATRATO","MEDIO BAUDÓ","MEDIO SAN JUAN","NÓVITA","NUEVO BELÉN DE BAJIRÁ","NUQUÍ","QUIBDÓ","RÍO IRÓ","RÍO QUITO","RIOSUCIO","SAN JOSÉ DEL PALMAR","SIPÍ","TADÓ","UNGUÍA","UNIÓN PANAMERICANA"],"Córdoba":["AYAPEL","BUENAVISTA","CANALETE","CERETÉ","CHIMÁ","CHINÚ","CIÉNAGA DE ORO","COTORRA","LA APARTADA","LORICA","LOS CÓRDOBAS","MOMIL","MOÑITOS","MONTELÍBANO","MONTERÍA","PLANETA RICA","PUEBLO NUEVO","PUERTO ESCONDIDO","PUERTO LIBERTADOR","PURÍSIMA DE LA CONCEPCIÓN","SAHAGÚN","SAN ANDRÉS DE SOTAVENTO","SAN ANTERO","SAN BERNARDO DEL VIENTO","SAN CARLOS","SAN JOSÉ DE URÉ","SAN PELAYO","TIERRALTA","TUCHÍN","VALENCIA"],"Cundinamarca":["AGUA DE DIOS","ALBÁN","ANAPOIMA","ANOLAIMA","APULO","ARBELÁEZ","BELTRÁN","BITUIMA","BOJACÁ","CABRERA","CACHIPAY","CAJICÁ","CAPARRAPÍ","CÁQUEZA","CARMEN DE CARUPA","CHAGUANÍ","CHÍA","CHIPAQUE","CHOACHÍ","CHOCONTÁ","COGUA","COTA","CUCUNUBÁ","EL COLEGIO","EL PEÑÓN","EL ROSAL","FACATATIVÁ","FÓMEQUE","FOSCA","FUNZA","FÚQUENE","FUSAGASUGÁ","GACHALÁ","GACHANCIPÁ","GACHETÁ","GAMA","GIRARDOT","GRANADA","GUACHETÁ","GUADUAS","GUASCA","GUATAQUÍ","GUATAVITA","GUAYABAL DE SÍQUIMA","GUAYABETAL","GUTIÉRREZ","JERUSALÉN","JUNÍN","LA CALERA","LA MESA","LA PALMA","LA PEÑA","LA VEGA","LENGUAZAQUE","MACHETÁ","MADRID","MANTA","MEDINA","MOSQUERA","NARIÑO","NEMOCÓN","NILO","NIMAIMA","NOCAIMA","PACHO","PAIME","PANDI","PARATEBUENO","PASCA","PUERTO SALGAR","PULÍ","QUEBRADANEGRA","QUETAME","QUIPILE","RICAURTE","SAN ANTONIO DEL TEQUENDAMA","SAN BERNARDO","SAN CAYETANO","SAN FRANCISCO","SAN JUAN DE RIOSECO","SASAIMA","SESQUILÉ","SIBATÉ","SILVANIA","SIMIJACA","SOACHA","SOPÓ","SUBACHOQUE","SUESCA","SUPATÁ","SUSA","SUTATAUSA","TABIO","TAUSA","TENA","TENJO","TIBACUY","TIBIRITA","TOCAIMA","TOCANCIPÁ","TOPAIPÍ","UBALÁ","UBAQUE","UNE","ÚTICA","VENECIA","VERGARA","VIANÍ","VILLA DE SAN DIEGO DE UBATÉ","VILLAGÓMEZ","VILLAPINZÓN","VILLETA","VIOTÁ","YACOPÍ","ZIPACÓN","ZIPAQUIRÁ"],"Bogotá D.C.":["BOGOTÁ, D.C."],"La Guajira":["ALBANIA","BARRANCAS","DIBULLA","DISTRACCIÓN","EL MOLINO","FONSECA","HATONUEVO","LA JAGUA DEL PILAR","MAICAO","MANAURE","RIOHACHA","SAN JUAN DEL CESAR","URIBIA","URUMITA","VILLANUEVA"],"Guainía":["BARRANCOMINAS","CACAHUAL","INÍRIDA","LA GUADALUPE","MORICHAL","PANA PANA","PUERTO COLOMBIA","SAN FELIPE"],"Guaviare":["CALAMAR","EL RETORNO","MIRAFLORES","SAN JOSÉ DEL GUAVIARE"],"Huila":["ACEVEDO","AGRADO","AIPE","ALGECIRAS","ALTAMIRA","BARAYA","CAMPOALEGRE","COLOMBIA","ELÍAS","GARZÓN","GIGANTE","GUADALUPE","HOBO","ÍQUIRA","ISNOS","LA ARGENTINA","LA PLATA","NÁTAGA","NEIVA","OPORAPA","PAICOL","PALERMO","PALESTINA","PITAL","PITALITO","RIVERA","SALADOBLANCO","SAN AGUSTÍN","SANTA MARÍA","SUAZA","TARQUI","TELLO","TERUEL","TESALIA","TIMANÁ","VILLAVIEJA","YAGUARÁ"],"Magdalena":["ALGARROBO","ARACATACA","ARIGUANÍ","CERRO DE SAN ANTONIO","CHIVOLO","CIÉNAGA","CONCORDIA","EL BANCO","EL PIÑÓN","EL RETÉN","FUNDACIÓN","GUAMAL","NUEVA GRANADA","PEDRAZA","PIJIÑO DEL CARMEN","PIVIJAY","PLATO","PUEBLOVIEJO","REMOLINO","SABANAS DE SAN ÁNGEL","SALAMINA","SAN SEBASTIÁN DE BUENAVISTA","SAN ZENÓN","SANTA ANA","SANTA BÁRBARA DE PINTO","SANTA MARTA","SITIONUEVO","TENERIFE","ZAPAYÁN","ZONA BANANERA"],"Meta":["ACACÍAS","BARRANCA DE UPÍA","CABUYARO","CASTILLA LA NUEVA","CUBARRAL","CUMARAL","EL CALVARIO","EL CASTILLO","EL DORADO","FUENTE DE ORO","GRANADA","GUAMAL","LA MACARENA","LEJANÍAS","MAPIRIPÁN","MESETAS","PUERTO CONCORDIA","PUERTO GAITÁN","PUERTO LLERAS","PUERTO LÓPEZ","PUERTO RICO","RESTREPO","SAN CARLOS DE GUAROA","SAN JUAN DE ARAMA","SAN JUANITO","SAN MARTÍN","URIBE","VILLAVICENCIO","VISTAHERMOSA"],"Nariño":["ALBÁN","ALDANA","ANCUYA","ARBOLEDA","BARBACOAS","BELÉN","BUESACO","CHACHAGÜÍ","COLÓN","CONSACÁ","CONTADERO","CÓRDOBA","CUASPUD CARLOSAMA","CUMBAL","CUMBITARA","EL CHARCO","EL PEÑOL","EL ROSARIO","EL TABLÓN DE GÓMEZ","EL TAMBO","FRANCISCO PIZARRO","FUNES","GUACHUCAL","GUAITARILLA","GUALMATÁN","ILES","IMUÉS","IPIALES","LA CRUZ","LA FLORIDA","LA LLANADA","LA TOLA","LA UNIÓN","LEIVA","LINARES","LOS ANDES","MAGÜÍ","MALLAMA","MOSQUERA","NARIÑO","OLAYA HERRERA","OSPINA","PASTO","POLICARPA","POTOSÍ","PROVIDENCIA","PUERRES","PUPIALES","RICAURTE","ROBERTO PAYÁN","SAMANIEGO","SAN ANDRÉS DE TUMACO","SAN BERNARDO","SAN LORENZO","SAN PABLO","SAN PEDRO DE CARTAGO","SANDONÁ","SANTA BÁRBARA","SANTACRUZ","SAPUYES","TAMINANGO","TANGUA","TÚQUERRES","YACUANQUER"],"Norte de Santander":["ÁBREGO","ARBOLEDAS","BOCHALEMA","BUCARASICA","CÁCHIRA","CÁCOTA","CHINÁCOTA","CHITAGÁ","CONVENCIÓN","CUCUTILLA","DURANIA","EL CARMEN","EL TARRA","EL ZULIA","GRAMALOTE","HACARÍ","HERRÁN","LA ESPERANZA","LA PLAYA","LABATECA","LOS PATIOS","LOURDES","MUTISCUA","OCAÑA","PAMPLONA","PAMPLONITA","PUERTO SANTANDER","RAGONVALIA","SALAZAR","SAN CALIXTO","SAN CAYETANO","SAN JOSÉ DE CÚCUTA","SANTIAGO","SARDINATA","SILOS","TEORAMA","TIBÚ","TOLEDO","VILLA CARO","VILLA DEL ROSARIO"],"Putumayo":["COLÓN","MOCOA","ORITO","PUERTO ASÍS","PUERTO CAICEDO","PUERTO GUZMÁN","PUERTO LEGUÍZAMO","SAN FRANCISCO","SAN MIGUEL","SANTIAGO","SIBUNDOY","VALLE DEL GUAMUEZ","VILLAGARZÓN"],"Quindío":["ARMENIA","BUENAVISTA","CALARCÁ","CIRCASIA","CÓRDOBA","FILANDIA","GÉNOVA","LA TEBAIDA","MONTENEGRO","PIJAO","QUIMBAYA","SALENTO"],"Risaralda":["APÍA","BALBOA","BELÉN DE UMBRÍA","DOSQUEBRADAS","GUÁTICA","LA CELIA","LA VIRGINIA","MARSELLA","MISTRATÓ","PEREIRA","PUEBLO RICO","QUINCHÍA","SANTA ROSA DE CABAL","SANTUARIO"],"San Andrés y Providencia":["PROVIDENCIA","SAN ANDRÉS"],"Santander":["AGUADA","ALBANIA","ARATOCA","BARBOSA","BARICHARA","BARRANCABERMEJA","BETULIA","BOLÍVAR","BUCARAMANGA","CABRERA","CALIFORNIA","CAPITANEJO","CARCASÍ","CEPITÁ","CERRITO","CHARALÁ","CHARTA","CHIMA","CHIPATÁ","CIMITARRA","CONCEPCIÓN","CONFINES","CONTRATACIÓN","COROMORO","CURITÍ","EL CARMEN DE CHUCURÍ","EL GUACAMAYO","EL PEÑÓN","EL PLAYÓN","ENCINO","ENCISO","FLORIÁN","FLORIDABLANCA","GALÁN","GÁMBITA","GIRÓN","GUACA","GUADALUPE","GUAPOTÁ","GUAVATÁ","GÜEPSA","HATO","JESÚS MARÍA","JORDÁN","LA BELLEZA","LA PAZ","LANDÁZURI","LEBRIJA","LOS SANTOS","MACARAVITA","MÁLAGA","MATANZA","MOGOTES","MOLAGAVITA","OCAMONTE","OIBA","ONZAGA","PALMAR","PALMAS DEL SOCORRO","PÁRAMO","PIEDECUESTA","PINCHOTE","PUENTE NACIONAL","PUERTO PARRA","PUERTO WILCHES","RIONEGRO","SABANA DE TORRES","SAN ANDRÉS","SAN BENITO","SAN GIL","SAN JOAQUÍN","SAN JOSÉ DE MIRANDA","SAN MIGUEL","SAN VICENTE DE CHUCURÍ","SANTA BÁRBARA","SANTA HELENA DEL OPÓN","SIMACOTA","SOCORRO","SUAITA","SUCRE","SURATÁ","TONA","VALLE DE SAN JOSÉ","VÉLEZ","VETAS","VILLANUEVA","ZAPATOCA"],"Sucre":["BUENAVISTA","CAIMITO","CHALÁN","COLOSÓ","COROZAL","COVEÑAS","EL ROBLE","GALERAS","GUARANDA","LA UNIÓN","LOS PALMITOS","MAJAGUAL","MORROA","OVEJAS","PALMITO","SAMPUÉS","SAN BENITO ABAD","SAN JOSÉ DE TOLUVIEJO","SAN JUAN DE BETULIA","SAN LUIS DE SINCÉ","SAN MARCOS","SAN ONOFRE","SAN PEDRO","SANTIAGO DE TOLÚ","SINCELEJO","SUCRE"],"Tolima":["ALPUJARRA","ALVARADO","AMBALEMA","ANZOÁTEGUI","ARMERO","ATACO","CAJAMARCA","CARMEN DE APICALÁ","CASABIANCA","CHAPARRAL","COELLO","COYAIMA","CUNDAY","DOLORES","ESPINAL","FALAN","FLANDES","FRESNO","GUAMO","HERVEO","HONDA","IBAGUÉ","ICONONZO","LÉRIDA","LÍBANO","MELGAR","MURILLO","NATAGAIMA","ORTEGA","PALOCABILDO","PIEDRAS","PLANADAS","PRADO","PURIFICACIÓN","RIOBLANCO","RONCESVALLES","ROVIRA","SALDAÑA","SAN ANTONIO","SAN LUIS","SAN SEBASTIÁN DE MARIQUITA","SANTA ISABEL","SUÁREZ","VALLE DE SAN JUAN","VENADILLO","VILLAHERMOSA","VILLARRICA"],"Valle del Cauca":["ALCALÁ","ANDALUCÍA","ANSERMANUEVO","ARGELIA","BOLÍVAR","BUENAVENTURA","BUGALAGRANDE","CAICEDONIA","CALIMA","CANDELARIA","CARTAGO","DAGUA","EL ÁGUILA","EL CAIRO","EL CERRITO","EL DOVIO","FLORIDA","GINEBRA","GUACARÍ","GUADALAJARA DE BUGA","JAMUNDÍ","LA CUMBRE","LA UNIÓN","LA VICTORIA","OBANDO","PALMIRA","PRADERA","RESTREPO","RIOFRÍO","ROLDANILLO","SAN PEDRO","SANTIAGO DE CALI","SEVILLA","TORO","TRUJILLO","TULUÁ","ULLOA","VERSALLES","VIJES","YOTOCO","YUMBO","ZARZAL"],"Vaupés":["CARURÚ","MITÚ","PACOA","PAPUNAHUA","TARAIRA","YAVARATÉ"],"Vichada":["CUMARIBO","LA PRIMAVERA","PUERTO CARREÑO","SANTA ROSALÍA"]};
+  const IDS_SIM = { nac: ['simDeptoNac', 'simMuniNac'], res: ['simDeptoRes', 'simMuniRes'] };
+  function poblarMunicipiosSim(cual, valor){
+    const par = IDS_SIM[cual]; if(!par) return;
+    const selD = $(par[0]), selM = $(par[1]);
+    if(!selD || !selM) return;
+    const lista = MUNICIPIOS_SIM[selD.value] || [];
+    const actual = (valor !== undefined && valor !== null) ? valor : selM.value;
+    selM.innerHTML = '<option value="">—</option>' + lista.map(function(m){ return '<option value="' + m + '">' + m + '</option>'; }).join('');
+    selM.value = lista.indexOf(actual) >= 0 ? actual : '';
+  }
+  function poblarSisbenSim(){
+    const sel = $('simSisben'); if(!sel || sel.options.length > 1) return;
+    const ops = ['<option value="">—</option>'];
+    [['A',5],['B',7],['C',18],['D',21]].forEach(function(r){ for(let i = 1; i <= r[1]; i++) ops.push('<option value="' + r[0] + i + '">' + r[0] + i + '</option>'); });
+    ops.push('<option value="NO TIENE">NO TIENE</option>');
+    sel.innerHTML = ops.join('');
+  }
+  poblarSisbenSim();
+
+  /* ================= ACUDIENTE: MADRE / PADRE / OTRO ================= */
+  function actualizarAcuTipo(){
+    const sel = document.querySelector('input[name="acu-tipo"]:checked');
+    const tipo = sel ? sel.value : 'OTRO';
+    const propio = tipo === 'OTRO';
+    const bloque = $('acu-datos-propios'); if (bloque) bloque.style.display = propio ? '' : 'none';
+    const par = $('campo-parentesco'); if (par) par.style.display = propio ? '' : 'none';
+    const lbl = $('lbl-acu-cc');
+    if (lbl) lbl.innerHTML = (tipo === 'MADRE' ? 'Cédula (CC) de la madre (acudiente)' : tipo === 'PADRE' ? 'Cédula (CC) del padre (acudiente)' : 'Cédula (CC) del acudiente') + ' <span class="req">*</span>';
+    actualizarProgreso();
+  }
+  document.querySelectorAll('input[name="acu-tipo"]').forEach(r => r.addEventListener('change', actualizarAcuTipo));
+
+  /* ================= CAMPOS CONDICIONALES ================= */
+  function actualizarCondicionales(){
+    const disc = val('simDiscapacidad') === 'SÍ';
+    const ctd = $('campo-tipo-disc'); if (ctd) ctd.style.display = disc ? '' : 'none';
+    if (!disc) $('simTipoDiscapacidad').value = '';
+    const ind = val('simEtnia') === 'INDÍGENA';
+    const crg = $('campo-resguardo'); if (crg) crg.style.display = ind ? '' : 'none';
+    if (!ind) $('simResguardo').value = '';
+    const ter = document.querySelectorAll('.terapia:checked').length > 0;
+    const cex = $('campo-explique'); if (cex) cex.style.display = ter ? '' : 'none';
+    if (!ter) $('salud-explique').value = '';
+  }
+  ['simDiscapacidad', 'simEtnia'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', actualizarCondicionales); });
+  document.querySelectorAll('.terapia').forEach(c => c.addEventListener('change', actualizarCondicionales));
+
+  /* ================= BARRA DE PROGRESO ================= */
+  function requeridosActuales(){
+    const ids = ['grado', 'est-nombres', 'est-apellidos', 'simDeptoNac', 'simMuniNac', 'est-fecha-nac', 'est-docnum', 'est-direccion', 'est-barrio', 'est-correo', 'acu-cc'];
+    const sel = document.querySelector('input[name="acu-tipo"]:checked');
+    const tipo = sel ? sel.value : 'OTRO';
+    if (tipo === 'MADRE') ids.push('madre-nombre', 'madre-tel');
+    else if (tipo === 'PADRE') ids.push('padre-nombre', 'padre-tel');
+    else ids.push('acu-nombre', 'acu-tel');
+    return ids;
+  }
+  function actualizarProgreso(){
+    const barra = $('progreso-barra'); if (!barra) return;
+    const ids = requeridosActuales();
+    let ok = 0;
+    ids.forEach(id => { const el = $(id); if (el && (el.value || '').trim() !== '') ok++; });
+    if ($('acepta-pei').checked) ok++;
+    if ($('acepta-datos').checked) ok++;
+    const total = ids.length + 2;
+    const pct = Math.round(ok * 100 / total);
+    barra.style.width = pct + '%';
+    $('progreso-pct').textContent = pct + '%';
+    $('progreso-texto').textContent = pct >= 100 ? '✅ ¡Listo para enviar!' : ('Llevas ' + ok + ' de ' + total + ' datos obligatorios');
+  }
+  $('form-matricula').addEventListener('input', actualizarProgreso);
+  $('form-matricula').addEventListener('change', actualizarProgreso);
+
+  /* ================= VALORES POR DEFECTO Y ESTADO INICIAL ================= */
+  (function(){
+    const dRes = $('simDeptoRes');
+    if (dRes && !dRes.value){ dRes.value = 'Atlántico'; poblarMunicipiosSim('res', 'BARRANQUILLA'); }
+    const zRes = $('simZona');
+    if (zRes && !zRes.value){ zRes.value = 'URBANA'; }
+    actualizarAcuTipo();
+    actualizarCondicionales();
+    actualizarProgreso();
+  })();
+
+  function mostrarError(msg){
+    const e = $('error'); e.textContent = msg; e.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  $('form-matricula').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    if ($('campo-empresa').value) return; // trampa anti-robots
+        const requerido = [
+      ['grado','el grado'], ['est-nombres','los nombres del estudiante'], ['est-apellidos','los apellidos del estudiante'],
+      ['simDeptoNac','el departamento de nacimiento'], ['simMuniNac','el municipio de nacimiento'], ['est-fecha-nac','la fecha de nacimiento'], ['est-docnum','el número de documento del estudiante'],
+      ['est-direccion','la dirección de residencia'], ['est-barrio','el barrio'], ['est-correo','el correo electrónico del acudiente']
+    ];
+    for (const [id, nombre] of requerido){
+      if (!val(id)){ mostrarError('Falta por diligenciar: ' + nombre + '.'); $(id).focus(); return; }
+    }
+    const tipoAcuVal = (document.querySelector('input[name="acu-tipo"]:checked') || {}).value || 'OTRO';
+    if (tipoAcuVal === 'OTRO'){
+      if (!val('acu-nombre')){ mostrarError('Falta por diligenciar: el nombre del acudiente.'); $('acu-nombre').focus(); return; }
+      if (!val('acu-tel')){ mostrarError('Falta por diligenciar: el teléfono del acudiente.'); $('acu-tel').focus(); return; }
+    } else if (tipoAcuVal === 'MADRE'){
+      if (!val('madre-nombre')){ mostrarError('Falta por diligenciar: el nombre de la madre (es la acudiente).'); $('madre-nombre').focus(); return; }
+      if (!val('madre-tel')){ mostrarError('Falta por diligenciar: el teléfono de la madre (es la acudiente).'); $('madre-tel').focus(); return; }
+    } else if (tipoAcuVal === 'PADRE'){
+      if (!val('padre-nombre')){ mostrarError('Falta por diligenciar: el nombre del padre (es el acudiente).'); $('padre-nombre').focus(); return; }
+      if (!val('padre-tel')){ mostrarError('Falta por diligenciar: el teléfono del padre (es el acudiente).'); $('padre-tel').focus(); return; }
+    }
+    if (!val('acu-cc')){ mostrarError('Falta por diligenciar: la cédula del acudiente.'); $('acu-cc').focus(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('est-correo'))){ mostrarError('El correo electrónico del acudiente no parece válido. Revísalo.'); $('est-correo').focus(); return; }
+    if (!$('acepta-pei').checked){ mostrarError('Debes aceptar el P.E.I. y el manual de convivencia para legalizar la matrícula.'); return; }
+    if (!$('acepta-datos').checked){ mostrarError('Debes autorizar el tratamiento de los datos personales para poder enviar el formulario.'); return; }
+    const terapias = [...document.querySelectorAll('.terapia:checked')].map(c => c.value);
+    if (!terapias.length) $('salud-explique').value = '';
+    if (val('simDiscapacidad') !== 'SÍ') $('simTipoDiscapacidad').value = '';
+    if (val('simEtnia') !== 'INDÍGENA') $('simResguardo').value = '';
+    const tipoAcu = (document.querySelector('input[name="acu-tipo"]:checked') || {}).value || 'OTRO';
+    const acuResuelto = tipoAcu === 'MADRE'
+      ? { nombre: val('madre-nombre'), telefono: val('madre-tel'), parentesco: 'Madre' }
+      : tipoAcu === 'PADRE'
+      ? { nombre: val('padre-nombre'), telefono: val('padre-tel'), parentesco: 'Padre' }
+      : { nombre: val('acu-nombre'), telefono: val('acu-tel'), parentesco: val('acu-parentesco') };
+    const lugarNacResuelto = [val('simMuniNac'), val('simDeptoNac')].filter(Boolean).join(', ');
+    const datos = {
+      ts: Date.now(),
+      estado: 'NUEVA',
+      tramite: document.querySelector('input[name="tramite"]:checked').value,
+      grado: val('grado'),
+      estudiante: {
+        nombres: val('est-nombres'), apellidos: val('est-apellidos'),
+        lugarNacimiento: lugarNacResuelto, fechaNacimiento: val('est-fecha-nac'),
+        docTipo: val('est-doctipo'), docNumero: val('est-docnum'),
+        direccion: val('est-direccion'), barrio: val('est-barrio'),
+        telefono: acuResuelto.telefono, correo: val('est-correo'),
+        simDeptoNac: val('simDeptoNac'), simMuniNac: val('simMuniNac'),
+        simDeptoRes: val('simDeptoRes'), simMuniRes: val('simMuniRes'),
+        simZona: val('simZona'), simEstrato: val('simEstrato'), simSisben: val('simSisben'),
+        simEtnia: val('simEtnia'), simResguardo: val('simResguardo'), simEps: val('simEps'),
+        simRegimen: val('simRegimen'), simDiscapacidad: val('simDiscapacidad'),
+        simTipoDiscapacidad: val('simTipoDiscapacidad'), simVictima: val('simVictima'),
+        simCapacidades: val('simCapacidades')
+      },
+      padre: { nombre: val('padre-nombre'), telefono: val('padre-tel'), ocupacion: val('padre-ocupacion'), viveCon: val('padre-vive') },
+      madre: { nombre: val('madre-nombre'), telefono: val('madre-tel'), ocupacion: val('madre-ocupacion'), viveCon: val('madre-vive') },
+      acudiente: { nombre: acuResuelto.nombre, telefono: acuResuelto.telefono, cc: val('acu-cc'), parentesco: acuResuelto.parentesco },
+      salud: {
+        eps: val('simEps'), rh: val('salud-rh'), alergias: val('salud-alergias'),
+        dificultadEjercicio: val('salud-dificultad'), terapias, expliqueTerapias: val('salud-explique')
+      },
+      autorizados: val('autorizados'),
+      desdeConsulta,
+      aceptaPEI: true, aceptaDatos: true
+    };
+    const btn = $('btn-enviar');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      await firebase.database().ref('matriculas2027').push(datos);
+      $('form-matricula').style.display = 'none';
+      $('error').style.display = 'none';
+      $('exito-detalle').textContent = 'Recibimos la ' + (datos.tramite === 'NUEVA' ? 'matrícula' : 'actualización de datos') + ' de ' + datos.estudiante.nombres + ' ' + datos.estudiante.apellidos + ' para el grado ' + datos.grado + ' 2027.';
+      $('exito').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      mostrarError('No se pudo enviar el formulario. Revisa tu conexión a internet e inténtalo de nuevo; si sigue fallando, comunícate con el colegio al WhatsApp 302 285 2745.');
+      btn.disabled = false; btn.textContent = '📨 Enviar formulario';
+    }
+  });
+  $('btn-otro').addEventListener('click', () => location.reload());
+</script>
+</body>
+</html>

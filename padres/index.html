@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consulta para padres · Centro Educativo Maravillas Infantiles</title>
+<link rel="icon" href="/favicon-48.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  html,body{overflow-x:hidden}
+  img,video,table{max-width:100%}
+  input,select,textarea{max-width:100%}
+  p,li,td,th,.nota,.doc{overflow-wrap:break-word}
+  .tabla-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px 0}
+  .tabla-scroll .doc-tabla{margin:0}
+  :root{--azul:#0f47b8;--azul2:#2f6bdf;--tinta:#1c2b3a;--suave:#4c5f7a}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:linear-gradient(180deg,#dfeafc 0,#eef3fc 260px,#f2f6fd 100%);color:var(--tinta);min-height:100vh}
+  header{background:linear-gradient(135deg,#0b3a94,#1256c4 55%,#2f6bdf);color:#fff;text-align:center;padding:30px 16px;box-shadow:0 4px 18px rgba(11,58,148,.25)}
+  header img{width:92px;height:92px;object-fit:contain;background:#fff;border-radius:22px;padding:7px;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+  header h1{margin:12px 0 2px;font-size:1.5rem}
+  header p{margin:0;opacity:.88;font-size:.98rem}
+  main{max-width:780px;margin:0 auto;padding:20px 14px 42px}
+  .card{background:#fff;border:1px solid #e3ecfb;border-radius:18px;box-shadow:0 6px 24px rgba(15,71,184,.08);padding:22px;margin-bottom:16px}
+  label{font-weight:700;display:block;margin:12px 0 6px}
+  input,select,textarea{width:100%;padding:13px;border:1.5px solid #b9c8e4;border-radius:12px;font-size:1.03rem;font-family:inherit;background:#fff;color:var(--tinta)}
+  input:focus,select:focus,textarea:focus{outline:3px solid rgba(47,107,223,.25);border-color:var(--azul2)}
+  button{font-family:inherit}
+  .btn-pri{background:linear-gradient(135deg,#1256c4,#2f6bdf);color:#fff;border:0;border-radius:999px;padding:14px 22px;font-size:1.05rem;font-weight:700;cursor:pointer;width:100%;margin-top:14px;box-shadow:0 6px 14px rgba(18,86,196,.28)}
+  .btn-pri:disabled{opacity:.6;cursor:wait}
+  button.sec{background:#e8eefb;color:var(--azul);border:0;border-radius:999px;padding:11px 18px;font-weight:700;cursor:pointer}
+  .btn-link{background:none;border:0;color:var(--azul);font-weight:700;cursor:pointer;width:100%;margin-top:10px;padding:6px;text-decoration:underline;font-size:.95rem}
+  .error{background:#fdecea;color:#8f1d1d;border:1px solid #f3c0bb;border-radius:12px;padding:12px;margin-top:12px}
+  .msg-ok{background:#e2f4e5;color:#1e7d32;border:1px solid #bfe6c6;border-radius:12px;padding:12px;margin-top:12px}
+  .aviso-ok{background:#e2f4e5;color:#1e7d32;border:1px solid #bfe6c6;border-radius:12px;padding:10px 12px;margin:8px 0}
+  .aviso-no{background:#fdecea;color:#8f1d1d;border:1px solid #f3c0bb;border-radius:12px;padding:10px 12px;margin:8px 0}
+  .aviso-x{float:right;background:none;border:none;font-size:1.05rem;line-height:1;cursor:pointer;color:inherit;opacity:.5;padding:0 0 4px 10px}
+  .alumno{font-size:1.22rem;font-weight:800;color:var(--azul)}
+  .grado{display:inline-block;background:#e8eefb;color:var(--azul);border-radius:999px;padding:3px 12px;font-weight:700;font-size:.88rem}
+  .chip{display:inline-block;border-radius:999px;padding:3px 12px;font-weight:700;font-size:.88rem}
+  .chip-ok{background:#e2f4e5;color:#1e7d32}
+  .chip-warn{background:#fff4d6;color:#8a6100}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .hero-top{display:flex;gap:14px;align-items:center}
+  .avatar{width:58px;height:58px;flex:none;border-radius:50%;background:linear-gradient(135deg,#1256c4,#2f6bdf);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:800;box-shadow:0 4px 10px rgba(18,86,196,.3)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}
+  .stat{background:#f4f8ff;border:1px solid #e3ecfb;border-radius:14px;padding:12px 14px}
+  .stat .st-t{font-size:.78rem;font-weight:700;color:var(--suave);text-transform:uppercase;letter-spacing:.4px}
+  .stat .st-v{font-size:1.3rem;font-weight:800;color:var(--azul);margin:2px 0}
+  .stat .st-s{font-size:.85rem;color:var(--suave)}
+  .barra{height:8px;background:#e1ebfb;border-radius:99px;overflow:hidden;margin-top:8px}
+  .barra i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#2f6bdf,#37b24d)}
+  h2{color:var(--azul);margin:4px 0 12px;font-size:1.18rem;display:flex;align-items:center;gap:9px}
+  h2 .ico{background:#e8eefb;border-radius:10px;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem;flex:none}
+  .doc h3{color:var(--azul)} .doc h4{margin:14px 0 6px;color:#33527e}
+  .doc-tabla{border-collapse:collapse;width:100%;margin:8px 0}
+  .doc-tabla th,.doc-tabla td{border:1px solid #c9d6ef;padding:8px 10px;text-align:left}
+  .doc-tabla th{background:#e8eefb}
+  .doc-firma{text-align:right;font-weight:700;margin-top:16px}
+  .nota{font-size:.92rem;color:var(--suave)}
+  .intro{margin:0 0 6px;color:var(--suave);line-height:1.5}
+  footer{text-align:center;color:#6b7d94;font-size:.88rem;padding:8px 10px 26px}
+  footer .wa{display:inline-block;margin-top:8px;background:#1eb85a;color:#fff;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:999px;box-shadow:0 4px 10px rgba(30,184,90,.3)}
+  .desp-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;user-select:none}
+  .desp-cab h2{margin:0}
+  .desp-flecha{font-size:1.05rem;color:var(--azul);transition:transform .25s;flex:none}
+  .desp-cuerpo{display:none;margin-top:12px}
+  .card.abierta .desp-cuerpo{display:block}
+  .card.abierta .desp-flecha{transform:rotate(180deg)}
+  .pdf-dl{ display:inline-flex; align-items:center; gap:7px; background:#c62828; color:#fff; padding:7px 12px; border-radius:9px; font-size:.85rem; font-weight:600; text-decoration:none; margin-left:8px; vertical-align:middle }
+  .pdf-dl .pdf-ico{ background:#fff; color:#c62828; font-weight:800; font-size:.68rem; padding:2px 4px; border-radius:3px; letter-spacing:.4px }
+  @media print{ header,.buscador,.no-print,footer{display:none} .card{box-shadow:none} }
+  @page{ size:Letter; margin:0 }
+  #cert-print{display:none}
+  @media print{ body.imprimiendo-cert header, body.imprimiendo-cert main, body.imprimiendo-cert footer{display:none !important} body.imprimiendo-cert #cert-print{display:block} }
+  .proc-pasos{display:flex;align-items:stretch;gap:5px;margin:14px 0 4px}
+  .proc-paso{flex:1 1 0;min-width:0;text-align:center;padding:10px 3px;border-radius:14px;border:1.5px solid #e3ecfb;background:#f7faff}
+  .proc-ico{font-size:1.3rem;line-height:1.25}
+  .proc-nom{font-size:.76rem;font-weight:700;margin-top:2px;overflow-wrap:break-word}
+  .proc-ok{background:#e2f4e5;border-color:#bfe6c6;color:#1e7d32}
+  .proc-actual{background:#e8eefb;border-color:var(--azul2);color:var(--azul);box-shadow:0 0 0 3px rgba(47,107,223,.16)}
+  .proc-pend{opacity:.42}
+  .proc-flecha{align-self:center;color:#9db4d8;font-weight:800;font-size:.85rem;flex:none}
+  .proc-msg{font-size:1.03rem;margin:10px 0 0;line-height:1.45}
+  @media (max-width:420px){ .proc-pasos{flex-wrap:wrap} .proc-paso{flex:1 1 40%} .proc-flecha{display:none} .proc-nom{font-size:.72rem} }
+  @media (max-width:640px){
+    main{padding:16px 10px 36px}
+    .card{padding:18px 15px}
+    h2{font-size:1.22rem;flex-wrap:wrap}
+    .pdf-dl{margin-left:0;min-height:48px;padding:10px 14px}
+    .desp-cab{min-height:52px;padding:4px 0}
+    .btn-pri{min-height:52px}
+    button.sec{min-height:48px;padding:12px 18px}
+    .btn-link{min-height:48px;padding:12px 6px}
+    footer .wa{min-height:48px;padding:12px 20px;display:inline-flex;align-items:center}
+    .aviso-x{padding:10px 6px 10px 16px;margin-top:-6px}
+    input,select,textarea{min-height:48px}
+    .alumno{font-size:1.38rem}
+    .chip,.grado{font-size:.95rem;padding:5px 14px}
+    .stat .st-v{font-size:1.5rem}
+    .stat .st-s{font-size:.92rem}
+    .desp-cuerpo{font-size:1.02rem;line-height:1.5}
+    .doc img{height:auto}
+  }
+.credito-edu{ display:block; margin-top:16px; font-size:10px; font-weight:700; letter-spacing:.18em; color:#8494ab; text-transform:uppercase; }
+.logo-edu-pie{ width:168px; height:auto; margin-top:5px; }
+.copy-edu{ display:block; margin-top:6px; font-size:11px; color:#8494ab; }
+</style>
+</head>
+<body>
+<header>
+  <img src="/escudo.png" alt="Escudo del colegio">
+  <h1>Centro Educativo Maravillas Infantiles</h1>
+  <p>Consulta para padres de familia</p>
+</header>
+<main>
+  <div class="card buscador">
+    <p class="intro">Escribe el <strong>número de documento del estudiante</strong> para <strong>seguir el estado de su proceso de matrícula 2027</strong> y, si ya está matriculado, ver sus notas, su asistencia y el estado de pensiones, justificar una falta, pedir certificados y ver los próximos eventos del colegio. Solo se muestra la información de ese estudiante.</p>
+    <label for="doc">Número de documento del estudiante</label>
+    <input id="doc" inputmode="numeric" autocomplete="off" placeholder="Ej.: 1234567890">
+    <button class="btn-pri" id="btn-consultar" onclick="consultar()">Consultar</button>
+    <button class="btn-link" id="btn-otro" style="display:none" onclick="otroDocumento()">Usar otro documento</button>
+    <div id="error"></div>
+  </div>
+  <div id="resultado"></div>
+  <div class="card" id="doc-cal-card" style="display:none">
+    <h2><span class="ico">📅</span> Calendario escolar</h2>
+    <p style="margin:6px 0">El colegio publicó el documento oficial del calendario escolar: <strong id="doc-cal-nombre"></strong></p>
+    <button class="btn-pri" onclick="verDocCalendario()">📄 Ver documento del calendario</button>
+    <a class="pdf-dl" href="/documentos/planeacion-institucional-2026.pdf" download><span class="pdf-ico">PDF</span> Descargar la planeación</a>
+  </div>
+</main>
+<div id="cert-print"></div>
+<footer>Centro Educativo Maravillas Infantiles · Barranquilla<br><a class="wa" href="https://wa.me/573022852745" target="_blank" rel="noopener">💬 Escríbenos por WhatsApp · 302 285 2745</a><br><a href="../politica-datos/">Política de tratamiento de datos personales</a><span class="credito-edu">Tecnología de</span><img class="logo-edu-pie" src="data:image/png;base64,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" alt="PlataformaEDU"><span class="copy-edu">© 2026 PlataformaEDU · Todos los derechos reservados.</span></footer>
+<script>
+const RTDB = 'https://plataforma-cemi-default-rtdb.firebaseio.com';
+function normDoc(v){ return String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+async function sha256Hex(texto){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function $(id){ return document.getElementById(id); }
+let CLAVE_ACTUAL = '', DATOS_ACTUAL = null;
+const TIPOS_CERT = { estudio: 'Certificado de estudio', matricula: 'Constancia de matrícula', convivencia: 'Certificado de convivencia', pazysalvo: 'Paz y salvo' };
+const fmtFecha = iso => { try{ return new Date(String(iso)+'T12:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long' }); }catch(e){ return String(iso||''); } };
+const hoyISO = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const ETAPAS_PROC = [
+  { k:'NUEVA', ico:'📥', nombre:'Inscrito', msg:'Recibimos tu formulario; está en la fila de revisión.' },
+  { k:'PROCESO', ico:'🔄', nombre:'En proceso', msg:'El colegio está revisando tu solicitud.' },
+  { k:'ADMITIDA', ico:'✅', nombre:'Admitido', msg:'¡Fuiste admitido! Comunícate con secretaría para formalizar.' },
+  { k:'IMPORTADA', ico:'🎓', nombre:'Matriculado', msg:'¡Ya eres parte del colegio! 🎓' }
+];
+function esProcesoValido(p){ return !!p && typeof p === 'object' && typeof p.etapa === 'string' && typeof p.nombre === 'string'; }
+function esConsultaValida(d){ return !!d && typeof d === 'object' && !Array.isArray(d) && typeof d.nombres === 'string' && d.nombres.length > 0; }
+function procesoHTML(p){
+  const etapa = p.etapa || 'NUEVA';
+  let idx = ETAPAS_PROC.findIndex(x => x.k === etapa); if(idx < 0) idx = 0;
+  let h = '<div class="card"><h2><span class="ico">📋</span> Tu proceso de matrícula 2027</h2>'
+    + '<p style="margin:0"><strong>' + esc(p.nombre || '') + '</strong>' + (p.grado ? ' · Grado solicitado: <strong>' + esc(p.grado) + '</strong>' : '') + '</p>';
+  if(p.tramite === 'ACTUALIZACION'){
+    if(etapa === 'IMPORTADA'){
+      h += '<div class="aviso-ok" style="margin-top:12px">✅ <strong>Tus datos ya fueron actualizados</strong> por el colegio. ¡Gracias por mantener la información al día!</div>';
+    } else if(idx >= 1){
+      h += '<p style="margin:10px 0 0">🔄 <strong>En revisión:</strong> recibimos tu actualización de datos y el colegio la está revisando.</p>';
+    } else {
+      h += '<p style="margin:10px 0 0">📥 <strong>Recibida:</strong> recibimos tu formulario de actualización de datos; está en la fila de revisión.</p>';
+    }
+  } else {
+    h += '<div class="proc-pasos">' + ETAPAS_PROC.map((s, i) => {
+        const cls = i < idx ? 'proc-ok' : (i === idx ? 'proc-actual' : 'proc-pend');
+        return (i ? '<div class="proc-flecha">➜</div>' : '') + '<div class="proc-paso ' + cls + '"><div class="proc-ico">' + (i < idx ? '✅' : s.ico) + '</div><div class="proc-nom">' + s.nombre + '</div></div>';
+      }).join('') + '</div>'
+      + '<p class="proc-msg">' + esc(ETAPAS_PROC[idx].msg) + '</p>';
+  }
+  if(p.ts) h += '<p class="nota" style="margin:8px 0 0">Formulario recibido el ' + new Date(p.ts).toLocaleDateString('es-CO', { day:'numeric', month:'long', year:'numeric' }) + '. Vuelve a consultar con el mismo documento para ver los avances.</p>';
+  return h + '</div>';
+}
+async function consultar(){
+  const err = $('error'), res = $('resultado'), btn = $('btn-consultar');
+  err.innerHTML = ''; res.innerHTML = '';
+  const doc = normDoc($('doc').value);
+  if(!doc){ err.innerHTML = '<div class="error">Escribe el número de documento del estudiante.</div>'; return; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Consultando…'; }
+  let datos = null, proceso = null, estadoConsulta = 'ok', procesoConsultado = false;
+  try{
+    const clave = await sha256Hex(doc);
+    CLAVE_ACTUAL = clave;
+    const r = await fetch(RTDB + '/consulta2027/' + clave + '.json');
+    if(r.ok){ const dj = await r.json(); if(esConsultaValida(dj)) datos = dj; }
+    else if(r.status === 401 || r.status === 403) estadoConsulta = 'permiso';
+    if(datos) DATOS_ACTUAL = datos;
+    try{
+      const rp = await fetch(RTDB + '/proceso2027/' + clave + '.json');
+      const pj = await rp.json();
+      if(rp.ok){ procesoConsultado = true; proceso = esProcesoValido(pj) ? pj : null; }
+      else if(rp.status === 401 || rp.status === 403) estadoConsulta = 'permiso';
+    }catch(ep){ proceso = null; }
+  }catch(e){ estadoConsulta = 'red'; }
+  if(btn){ btn.disabled = false; btn.textContent = 'Consultar'; }
+  if(!datos && !proceso){
+    if(estadoConsulta === 'red'){ err.innerHTML = '<div class="error">No pudimos conectarnos con el colegio. Revisa tu conexión a internet e inténtalo de nuevo.</div>'; return; }
+    if(estadoConsulta === 'permiso'){ err.innerHTML = '<div class="error">El servicio de consulta no está disponible en este momento. Inténtalo más tarde o comunícate con el colegio por WhatsApp.</div>'; return; }
+    err.innerHTML = '<div class="error">No encontramos un estudiante matriculado con ese documento. Verifica el número o comunícate con el colegio por WhatsApp al 302 285 2745.</div>';
+    return;
+  }
+  if(proceso && !datos){
+    try{ localStorage.setItem('padres_doc', doc); const bo = $('btn-otro'); if(bo) bo.style.display = ''; }catch(e){}
+    res.innerHTML = procesoHTML(proceso);
+    res.scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  try{ localStorage.setItem('padres_doc', doc); const bo = $('btn-otro'); if(bo) bo.style.display = ''; }catch(e){}
+  const nombre = ((datos.apellidos||'') + ' ' + (datos.nombres||'')).trim();
+  const fmtP = v => '$' + Number(v || 0).toLocaleString('es-CO');
+  const bloqueado = datos.bloqueado || (datos.pagos && datos.pagos.deuda > 0);
+  const iniciales = (nombre.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('') || '·').toUpperCase();
+  const barra = pc => '<div class="barra"><i style="width:' + Math.max(0, Math.min(100, pc)) + '%"></i></div>';
+  const stat = (t, v, s, pc) => '<div class="stat"><div class="st-t">' + t + '</div><div class="st-v">' + v + '</div><div class="st-s">' + s + '</div>' + (pc == null ? '' : barra(pc)) + '</div>';
+  let stats = '';
+  if(!bloqueado && datos.asistencia){ const a = datos.asistencia; const tot = (a.presentes||0) + (a.faltas||0) + (a.justificadas||0); const pc = tot ? Math.round((a.presentes||0) / tot * 100) : 100; stats += stat('Asistencia', pc + '%', (a.presentes||0) + ' presentes · ' + ((a.faltas||0) + (a.justificadas||0)) + ' faltas', pc); }
+  if(datos.pagos){ const p = datos.pagos; stats += stat('Pensiones', (p.mesesPagados||0) + ' de 10', p.deuda > 0 ? ('Pendiente: ' + fmtP(p.deuda)) : 'A paz y salvo ✔', (p.mesesPagados||0) * 10); }
+  if(!bloqueado && datos.notas && datos.notas.promedio != null && !datos.notas.preescolar){ const n = datos.notas; stats += stat('Promedio · Periodo ' + n.periodo, Number(n.promedio).toFixed(2).replace('.', ','), n.puesto ? ('Puesto ' + n.puesto + ' en el curso') : 'Primaria', Number(n.promedio) / 5 * 100); }
+  let h = '<div class="card"><div class="hero-top"><div class="avatar">' + esc(iniciales) + '</div><div><span class="alumno">' + esc(nombre) + '</span><div class="chips"><span class="grado">' + esc(datos.gradoActual||'') + '</span>' + (datos.anio ? '<span class="grado">Año ' + esc(datos.anio) + '</span>' : '') + (datos.pagos ? (bloqueado ? '<span class="chip chip-warn">⚠ Con deuda</span>' : '<span class="chip chip-ok">✔ Al día</span>') : '') + '</div></div></div>'
+    + (stats ? '<div class="stats">' + stats + '</div>' : '')
+    + '<p class="nota" style="margin:10px 0 0">Información del último año en que el estudiante estuvo matriculado.</p></div>';
+  if(bloqueado){
+    h += '<div class="card"><h2><span class="ico">🔒</span> Información detallada no disponible</h2><p style="margin:0">Para ver las <strong>notas</strong> y la <strong>asistencia</strong> del estudiante, debe estar <strong>al día con los pagos</strong>. Abajo puedes consultar el estado de matrícula y pensiones.</p></div>';
+  }
+  if(!bloqueado && datos.notas && datos.notas.filas && datos.notas.filas.length){
+    const n = datos.notas;
+    h += '<div class="card"><h2><span class="ico">📚</span> Notas · Periodo ' + n.periodo + '</h2>';
+    h += '<div class="tabla-scroll"><table class="doc-tabla"><tr><th>Asignatura</th><th>' + (n.preescolar ? 'Valoración' : 'Nota') + '</th></tr>' + n.filas.map(f => '<tr><td>' + esc(f.asignatura) + '</td><td>' + (n.preescolar ? esc((f.letra || '') + (f.texto ? ' · ' + f.texto : '')) : Number(f.nota).toFixed(1).replace('.', ',')) + '</td></tr>').join('') + '</table></div>';
+    if(!n.preescolar){ if(n.promedio != null) h += '<p style="margin:8px 0 0"><strong>Promedio del periodo:</strong> ' + Number(n.promedio).toFixed(2).replace('.', ',') + '</p>'; if(n.puesto) h += '<p style="margin:4px 0 0"><strong>Puesto en el curso:</strong> ' + n.puesto + '</p>'; }
+    h += '<p class="nota">Notas del periodo más reciente registrado en la plataforma.</p></div>';
+  }
+  if(!bloqueado && datos.asistencia){
+    const a = datos.asistencia;
+    h += '<div class="card"><h2><span class="ico">📋</span> Asistencia</h2><p style="margin:0">Presentes: <strong>' + a.presentes + '</strong> · Faltas: <strong>' + (a.faltas + a.justificadas) + '</strong> (' + a.justificadas + ' justificadas · ' + a.faltas + ' sin justificar)</p></div>';
+  }
+  if(datos.tareas && datos.tareas.length){
+    const hoyT = hoyISO();
+    h += '<div class="card"><h2><span class="ico">📌</span> Tareas y actividades</h2>'
+      + datos.tareas.map(t => {
+          const venc = (t.fechaEntrega || '') < hoyT;
+          const esHoy = (t.fechaEntrega || '') === hoyT;
+          return '<div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin:8px 0">'
+            + '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><strong>' + esc(t.titulo) + '</strong>'
+            + '<span style="font-size:12px;padding:2px 8px;border-radius:20px;' + (venc ? 'background:#fee2e2;color:#991b1b' : esHoy ? 'background:#fef3c7;color:#92400e' : 'background:#dcfce7;color:#166534') + '">' + (venc ? 'Vencida' : esHoy ? '¡Se entrega hoy!' : 'Vigente') + '</span></div>'
+            + '<div style="color:#555;font-size:13px;margin:3px 0">' + (t.asignatura ? esc(t.asignatura) + ' · ' : '') + 'Entrega: <strong>' + fmtFecha(t.fechaEntrega) + '</strong></div>'
+            + (t.detalle ? '<div style="font-size:14px">' + esc(t.detalle) + '</div>' : '')
+            + '</div>';
+        }).join('')
+      + '<p class="nota">Tareas publicadas por las docentes en la plataforma del colegio.</p></div>';
+  }
+  const SIGUIENTE = { 'PÁRVULO': 'PRE-JARDÍN', 'PRE-JARDÍN': 'JARDÍN', 'JARDÍN': 'TRANSICIÓN', 'TRANSICIÓN': 'PRIMERO', 'PRIMERO': 'SEGUNDO', 'SEGUNDO': 'TERCERO', 'TERCERO': 'CUARTO', 'CUARTO': 'QUINTO' };
+  const gAct = String(datos.gradoActual || '').trim().toUpperCase();
+  if(SIGUIENTE[gAct] && !proceso && procesoConsultado){ /* solo se invita si el proceso SÍ se pudo consultar y no existe; si esa consulta falló, no se invita a reenviar el formulario */
+    h += '<div class="card" style="background:linear-gradient(135deg,#eaf7ee,#e8f0fe);border:1.5px solid #bfe6c6"><h2><span class="ico">📝</span> Matrícula 2027</h2>'
+      + '<p style="margin:0 0 10px">Ya están abiertas las matrículas del próximo año: el estudiante pasa a <strong>' + SIGUIENTE[gAct] + '</strong>. Llena el formulario con su información <strong>ya diligenciada</strong>; solo revisa y corrige lo que haya cambiado.</p>'
+      + '<a href="/matricula2027/?doc=' + encodeURIComponent(datos.docNumero || '') + '&grado=' + encodeURIComponent(SIGUIENTE[gAct]) + '" style="display:block;text-align:center;text-decoration:none;background:#0f47b8;color:#fff;border-radius:12px;padding:14px;font-size:1.05rem;font-weight:700;box-shadow:0 4px 12px rgba(15,71,184,.3)">📝 Llenar el formulario de matrícula 2027</a></div>';
+  }
+  h += '<div class="card"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">✉️</span> Justificar una falta</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">'
+    + '<p class="nota" style="margin:0 0 4px">Si tu hijo(a) faltó o va a faltar, envía aquí la excusa: la docente la verá en la plataforma y podrá marcar la falta como justificada, sin necesidad de escribir por WhatsApp.</p>'
+    + '<div id="just-historial">' + justifHistorial() + '</div>'
+    + '<label for="just-fecha">Fecha de la falta</label><input type="date" id="just-fecha" value="' + hoyISO() + '" max="' + hoyISO() + '">'
+    + '<label for="just-motivo">Motivo</label><select id="just-motivo"><option>Enfermedad</option><option>Cita médica</option><option>Diligencia familiar</option><option>Otro</option></select>'
+    + '<label for="just-detalle">Detalle (opcional)</label><textarea id="just-detalle" rows="2" placeholder="Ej.: Tiene gripa y está en reposo en casa"></textarea>'
+    + '<button class="btn-pri" onclick="enviarJustificacion()">Enviar justificación</button>'
+    + '<div id="just-msg"></div></div></div>';
+  if(datos.pagos){
+    const p = datos.pagos;
+    h += '<div class="card"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">💰</span> Matrícula y pensiones</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">';
+    h += '<p style="margin:0">Matrícula: ' + (p.matriculaOk ? '<strong>Pagada ✔</strong>' : '<strong>Pendiente</strong> (' + fmtP(p.tarifaMatricula) + ')') + '<br>Pensión mensual: ' + fmtP(p.tarifaPension) + ' · Meses pagados: <strong>' + p.mesesPagados + '</strong> de 10</p>' + barra((p.mesesPagados||0) * 10);
+    if(p.deuda > 0){ h += '<p>Pendiente por pagar: <strong>' + fmtP(p.deuda) + '</strong>' + (p.pendientes && p.pendientes.length ? '<br>Meses pendientes: ' + p.pendientes.map(esc).join(', ') : '') + '</p><p class="nota">Las pensiones se pagan dentro de los primeros 10 días de cada mes. Si ya pagaste y aún aparece pendiente, escríbenos por WhatsApp al 302 285 2745.</p>'; }
+    else { h += '<p style="margin:8px 0 0"><strong>✔ El estudiante se encuentra a paz y salvo.</strong></p>'; }
+    h += pagoHistorial();
+    (function(){
+      const ops = [];
+      if(p.matriculaOk === false && (p.tarifaMatricula || 0) > 0) ops.push({ v: p.tarifaMatricula, l: 'Matrícula', m: 'Matrícula' });
+      (p.pendientes || []).forEach(nm => { if((p.tarifaPension || 0) > 0) ops.push({ v: p.tarifaPension, l: 'Mensualidad de ' + nm, m: nm }); });
+      if(p.deuda > 0 && ops.length > 1) ops.push({ v: p.deuda, l: 'Todo lo pendiente', m: (p.pendientes || []).join(', ') });
+      if(!ops.length && (p.tarifaPension || 0) > 0){
+        const NOMBRES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre'];
+        const MESES_P = ['Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre'];
+        const prox = NOMBRES.slice(new Date().getMonth() + 1).find(n => MESES_P.indexOf(n) >= 0);
+        if(prox) ops.push({ v: p.tarifaPension, l: 'Mensualidad de ' + prox + ' (pago anticipado)', m: prox });
+      }
+      if(!ops.length) return;
+      h += '<div style="border-top:1px solid #e3ecfb;margin-top:14px;padding-top:12px"><p style="margin:0 0 4px"><strong>💳 Pagar con Bre-B / Nequi</strong></p>'
+        + '<label for="pago-concepto">¿Qué vas a pagar?</label><select id="pago-concepto" style="width:100%;padding:12px;border:1.5px solid #b9c8e4;border-radius:10px;font-size:1.02rem">' + ops.map(o => '<option value="' + o.v + '" data-m="' + esc(o.m) + '">' + esc(o.l) + ' — ' + fmtP(o.v) + '</option>').join('') + '</select>'
+        + '<p class="nota" style="margin:8px 0">Transfiere el valor del concepto elegido' + (datos.nequiCert ? ' a la llave <strong>' + esc(datos.nequiCert) + '</strong>' : '') + ' — es el mismo QR de los certificados — y envíanos el comprobante aquí mismo: el colegio lo verifica y tu estado se actualiza, sin escribir por WhatsApp.</p>'
+        + '<img src="/documentos/qr-breb.jpg" alt="QR Bre-B de Nequi" style="width:185px;max-width:72%;height:auto;display:block;margin:8px auto;border:1px solid #e2e8f0;border-radius:12px"><p class="nota" style="text-align:center;margin:2px 0 10px">Escanea el QR Bre-B de Nequi · Diana Barros · Llave 302 285 2745</p>'
+        + '<label for="pago-file">Comprobante del pago (foto o PDF)</label><input type="file" id="pago-file" accept="image/*,.pdf"><button class="btn-pri" onclick="enviarPagoPension()">Enviar comprobante del pago</button><div id="pago-msg"></div></div>';
+    })();
+
+    h += '</div></div>';
+  }
+  const fmtC = v => '$' + Number(v || 0).toLocaleString('es-CO');
+  const precioCert = datos.precioCert || 12000;
+  const certsPre = datos.certificados ? Object.keys(datos.certificados) : [];
+  h += '<div class="card' + (certsPre.length ? ' abierta' : '') + '"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">📜</span> Certificados</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">';
+  if(bloqueado){
+    h += '<p style="margin:0">Para descargar certificados, el estudiante debe estar <strong>al día con los pagos</strong>.</p>';
+  } else {
+    const certs = datos.certificados ? Object.keys(datos.certificados).map(k => Object.assign({ id: k }, datos.certificados[k])) : [];
+    if(certs.length){
+      h += '<p style="margin:0 0 6px"><strong>Listos para descargar:</strong></p>' + certs.map(c => {
+        const vence = c.tsAprobacion ? c.tsAprobacion + 48 * 3600 * 1000 : null;
+        const base = '<p style="margin:6px 0">✔ ' + esc(TIPOS_CERT[c.tipo] || 'Certificado') + (c.fecha ? ' · ' + esc(c.fecha) : '');
+        if(!vence || Date.now() < vence){
+          return base + ' <button class="sec" style="width:auto;margin:0 0 0 8px;padding:9px 14px" onclick="descargarCert(\'' + c.id + '\')">⬇ Descargar</button>' + (vence ? ' <span class="nota">descarga activa hasta el ' + new Date(vence).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) + '</span>' : '') + '</p>';
+        }
+        const kV = 'cv:' + c.id; if(!avisoSeVe(kV, vence + 24 * 3600 * 1000)) return '';
+        return base + botonX(kV) + ' <span class="nota">⏰ La descarga venció: el botón estuvo activo 48 horas desde la aprobación. Si lo necesitas, pide el certificado de nuevo.</span></p>';
+      }).join('');
+    }
+    (datos.certAvisos || []).filter(a => a && a.estado === 'RECHAZADA').forEach(a => {
+      const kC = 'cr:' + (a.ts || 0) + ':' + (a.tipo || ''); if(!avisoSeVe(kC, a.ts)) return;
+      h += '<div class="error">' + botonX(kC) + 'Tu solicitud de ' + esc(TIPOS_CERT[a.tipo] || 'certificado') + ' no fue aprobada.' + (a.nota ? ' Motivo: ' + esc(a.nota) + '.' : '') + ' Escríbenos por WhatsApp al 302 285 2745.</div>';
+    });
+    let enviadas = [];
+    try{ enviadas = JSON.parse(localStorage.getItem('certsol_' + CLAVE_ACTUAL) || '[]'); }catch(e){}
+    if(enviadas.length) h += enviadas.map(x => { const kCe = 'ce:' + (x.ts || 0) + ':' + (x.tipo || ''); if(certs.some(c => c.tipo === x.tipo) || !avisoSeVe(kCe, x.ts)) return ''; return '<p class="nota" style="margin:6px 0">' + botonX(kCe) + '🕐 Tu solicitud de ' + esc(TIPOS_CERT[x.tipo] || 'certificado') + ' está <strong>en revisión</strong> (enviada el ' + new Date(x.ts).toLocaleDateString('es-CO') + '). Cuando el colegio verifique el pago, aquí aparecerá el botón de descarga.</p>'; }).join('');
+    h += '<p style="margin:10px 0 4px"><strong>Pide un certificado nuevo:</strong></p>'
+      + '<label for="cert-tipo">Tipo de certificado</label>'
+      + '<select id="cert-tipo" style="width:100%;padding:12px;border:1.5px solid #b9c8e4;border-radius:10px;font-size:1.02rem">'
+      + '<option value="estudio">Certificado de estudio</option><option value="matricula">Constancia de matrícula</option><option value="convivencia">Certificado de convivencia</option><option value="pazysalvo">Paz y salvo</option></select>'
+      + '<p class="nota" style="margin:8px 0">1. Transfiere <strong>' + fmtC(precioCert) + '</strong>' + (datos.nequiCert ? ' a la llave <strong>' + esc(datos.nequiCert) + '</strong> (Bre-B desde cualquier banco, o Nequi)' : ' — pide los datos del pago por WhatsApp al 302 285 2745') + '.<br>2. Adjunta la foto o el archivo del comprobante.<br>3. El colegio verifica el pago y aquí mismo podrás descargar tu certificado.</p>'
+      + '<img src="/documentos/qr-breb.jpg" alt="QR Bre-B de Nequi" style="width:185px;max-width:72%;height:auto;display:block;margin:8px auto;border:1px solid #e2e8f0;border-radius:12px">'
+      + '<p class="nota" style="text-align:center;margin:2px 0 10px">Escanea el QR Bre-B de Nequi · Diana Barros · Llave 302 285 2745</p>'
+      + '<label for="cert-file">Comprobante de pago (foto o PDF)</label>'
+      + '<input type="file" id="cert-file" accept="image/*,.pdf">'
+      + '<button class="btn-pri" onclick="enviarSolicitudCert()">Enviar solicitud</button>'
+      + '<div id="cert-sol-msg"></div>';
+  }
+  h += '</div></div>';
+  if(datos.calendario && datos.calendario.length){
+    const fmtF = iso => new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+    h += '<div class="card"><div class="desp-cab" onclick="altDesp(this)"><h2>📅 Próximos eventos del colegio <a class="pdf-dl" href="/documentos/planeacion-institucional-2026.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar planeación</a></h2><span class="desp-flecha">\u25BE</span></div><div class="desp-cuerpo">' + datos.calendario.map(ev => '<p style="margin:6px 0"><strong>' + esc(fmtF(ev.fecha)) + '</strong> · ' + esc(ev.titulo) + (detVisible(ev.detalle) ? ' <span class="nota">(' + esc(detVisible(ev.detalle)) + ')</span>' : '') + '</p>').join('') + '</div></div>';
+  }
+  h += '<div class="card doc"><div class="desp-cab" onclick="altDesp(this)"><h2>📘 Manual de Convivencia <a class="pdf-dl" href="/documentos/manual-convivencia.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar</a></h2><span class="desp-flecha">\u25BE</span></div><div class="desp-cuerpo">' + (datos.manualHtml || '<p class="nota">El manual aún no está publicado en este espacio.</p>') + '</div></div>';
+
+  res.innerHTML = (proceso ? procesoHTML(proceso) : '') + h;
+  res.scrollIntoView({behavior:'smooth'});
+}
+
+
+const DIA_MS = 24 * 3600 * 1000;
+function avisosOcultos(){ try{ return JSON.parse(localStorage.getItem('avisosx_' + CLAVE_ACTUAL) || '[]'); }catch(e){ return []; } }
+function avisoSeVe(claveAviso, ts){ if(avisosOcultos().indexOf(claveAviso) >= 0) return false; if(ts && (Date.now() - ts) > DIA_MS) return false; return true; }
+function ocultarAviso(btn, claveAviso){ try{ const o = avisosOcultos(); if(o.indexOf(claveAviso) < 0){ o.push(claveAviso); localStorage.setItem('avisosx_' + CLAVE_ACTUAL, JSON.stringify(o.slice(-60))); } }catch(e){} const el = btn.closest('p,div'); if(el) el.remove(); }
+function botonX(claveAviso){ return '<button class="aviso-x" onclick="ocultarAviso(this,\'' + claveAviso + '\')" title="Quitar este aviso">✕</button>'; }
+function justifHistorial(){
+  const d = DATOS_ACTUAL; if(!d) return '';
+  let hh = '';
+  const avisos = (d.justifAvisos || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  avisos.forEach(a => {
+    const kJ = 'j:' + (a.ts || 0) + ':' + (a.fechaFalta || ''); if(!avisoSeVe(kJ, a.ts)) return;
+    if(a.estado === 'JUSTIFICADA') hh += '<p class="aviso-ok">' + botonX(kJ) + '✔ Falta del <strong>' + fmtFecha(a.fechaFalta) + '</strong>' + (a.motivo ? ' (' + esc(a.motivo) + ')' : '') + ': quedó <strong>justificada</strong>.</p>';
+    else hh += '<p class="aviso-no">' + botonX(kJ) + '✖ Falta del <strong>' + fmtFecha(a.fechaFalta) + '</strong>' + (a.motivo ? ' (' + esc(a.motivo) + ')' : '') + ': <strong>no fue aceptada</strong> como justificada.' + (a.nota ? ' Motivo: ' + esc(a.nota) + '.' : '') + '</p>';
+  });
+  let ecos = [];
+  try{ ecos = JSON.parse(localStorage.getItem('justif_' + CLAVE_ACTUAL) || '[]'); }catch(e){}
+  ecos.filter(x => !avisos.some(a => a.fechaFalta === x.fechaFalta && (a.ts || 0) >= (x.ts || 0))).forEach(x => {
+    const kE = 'je:' + (x.ts || 0) + ':' + (x.fechaFalta || ''); if(!avisoSeVe(kE, x.ts)) return;
+    hh += '<p class="nota" style="margin:6px 0">' + botonX(kE) + '🕐 Justificación del <strong>' + fmtFecha(x.fechaFalta) + '</strong>' + (x.motivo ? ' (' + esc(x.motivo) + ')' : '') + ' <strong>en revisión</strong> · enviada el ' + new Date(x.ts).toLocaleDateString('es-CO') + '.</p>';
+  });
+  return hh;
+}
+async function enviarJustificacion(){
+  const msg = $('just-msg'); if(!msg) return;
+  const pon = t => { msg.innerHTML = '<div class="error">' + t + '</div>'; };
+  if(!DATOS_ACTUAL || !CLAVE_ACTUAL){ pon('Primero consulta los datos del estudiante.'); return; }
+  const fecha = $('just-fecha').value, motivo = $('just-motivo').value, detalle = $('just-detalle').value.trim();
+  if(!fecha){ pon('Elige la fecha de la falta.'); return; }
+  if(fecha > hoyISO()){ pon('La fecha de la falta no puede ser una fecha futura.'); return; }
+  msg.innerHTML = '<p class="nota">Enviando la justificación…</p>';
+  try{
+    const d = DATOS_ACTUAL;
+    const sol = { ts: Date.now(), estado: 'PENDIENTE', tipoSolicitud: 'JUSTIFICACION', clave: CLAVE_ACTUAL, estudiante: (((d.apellidos || '') + ' ' + (d.nombres || '')).trim()), grado: d.gradoActual || '', docTipo: d.docTipo || '', docNumero: d.docNumero || '', genero: d.genero || '', tipo: 'JUSTIFICACION', valor: 0, fechaFalta: fecha, motivo: motivo, detalle: detalle, comprobante: { nombre: '', tipo: '', b64: '' } };
+    const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    let arr = []; try{ arr = JSON.parse(localStorage.getItem('justif_' + CLAVE_ACTUAL) || '[]'); }catch(e){}
+    arr.push({ fechaFalta: fecha, motivo: motivo, ts: sol.ts });
+    try{ localStorage.setItem('justif_' + CLAVE_ACTUAL, JSON.stringify(arr.slice(-6))); }catch(e){}
+    msg.innerHTML = '<p class="msg-ok">✔ <strong>Justificación enviada.</strong> El colegio la revisará; vuelve a consultar más tarde y aquí verás el resultado.</p>';
+    const hist = $('just-historial'); if(hist) hist.innerHTML = justifHistorial();
+    $('just-detalle').value = '';
+    try{
+      fetch('https://formsubmit.co/ajax/0a325c2d025ec296233c9fa6fb208e62', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ _subject: 'Nueva justificación de falta — ' + sol.estudiante, _template: 'table', Estudiante: sol.estudiante, Grado: sol.grado, Fecha_de_la_falta: sol.fechaFalta, Motivo: sol.motivo, Detalle: sol.detalle || '', Revisar: 'PlataformaEDU → Asistencia' }) }).catch(function(){});
+    }catch(e){}
+  }catch(e){
+    pon('No pudimos enviar la justificación en este momento. Escríbenos por WhatsApp al 302 285 2745 y te ayudamos.');
+  }
+}
+
+function pagoHistorial(){
+  const d = DATOS_ACTUAL; if(!d) return '';
+  let hh = '';
+  const avisos = (d.pagoAvisos || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  avisos.forEach(a => {
+    const kP = 'p:' + (a.ts || 0) + ':' + (a.valor || 0); if(!avisoSeVe(kP, a.ts)) return;
+    if(a.estado === 'CONFIRMADO') hh += '<p class="aviso-ok">' + botonX(kP) + '✔ Tu pago de <strong>' + '$' + Number(a.valor || 0).toLocaleString('es-CO') + '</strong> fue <strong>confirmado</strong> por el colegio' + (a.nota ? ' (' + esc(a.nota) + ')' : '') + '.</p>';
+    else hh += '<p class="aviso-no">' + botonX(kP) + '✖ El pago de <strong>' + '$' + Number(a.valor || 0).toLocaleString('es-CO') + '</strong> que reportaste <strong>no pudo verificarse</strong>.' + (a.nota ? ' Motivo: ' + esc(a.nota) + '.' : '') + ' Escríbenos por WhatsApp si necesitas ayuda.</p>';
+  });
+  let ecos = [];
+  try{ ecos = JSON.parse(localStorage.getItem('pagosol_' + CLAVE_ACTUAL) || '[]'); }catch(e){}
+  ecos.filter(x => !avisos.some(a => (a.ts || 0) >= (x.ts || 0))).forEach(x => {
+    const kE2 = 'pe:' + (x.ts || 0) + ':' + (x.valor || 0); if(!avisoSeVe(kE2, x.ts)) return;
+    hh += '<p class="nota" style="margin:6px 0">' + botonX(kE2) + '🕐 Reportaste un pago de <strong>' + '$' + Number(x.valor || 0).toLocaleString('es-CO') + '</strong> el ' + new Date(x.ts).toLocaleDateString('es-CO') + ': está <strong>en verificación</strong>.</p>';
+  });
+  return hh;
+}
+async function enviarPagoPension(){
+  const msg = $('pago-msg'); if(!msg) return;
+  const pon = t => { msg.innerHTML = '<div class="error">' + t + '</div>'; };
+  if(!DATOS_ACTUAL || !CLAVE_ACTUAL){ pon('Primero consulta los datos del estudiante.'); return; }
+  const inp = $('pago-file');
+  const f = inp && inp.files && inp.files[0];
+  if(!f){ pon('Adjunta el comprobante del pago para poder verificarlo.'); return; }
+  if(f.size > 6 * 1024 * 1024){ pon('El archivo pesa más de 6 MB. Toma una foto más liviana.'); return; }
+  msg.innerHTML = '<p class="nota">Enviando tu comprobante…</p>';
+  try{
+    const comp = await leerComprobante(f);
+    const d = DATOS_ACTUAL;
+    const sol = { ts: Date.now(), estado: 'PENDIENTE', tipoSolicitud: 'PAGO_PENSION', clave: CLAVE_ACTUAL, estudiante: (((d.apellidos || '') + ' ' + (d.nombres || '')).trim()), grado: d.gradoActual || '', docTipo: d.docTipo || '', docNumero: d.docNumero || '', genero: d.genero || '', tipo: 'PAGO_PENSION', valor: (function(){ const sel = $('pago-concepto'); return sel ? Number(sel.value || 0) : ((d.pagos && d.pagos.deuda) || 0); })(), meses: (function(){ const sel = $('pago-concepto'); return sel && sel.options[sel.selectedIndex] ? (sel.options[sel.selectedIndex].getAttribute('data-m') || '') : ((d.pagos && d.pagos.pendientes) || []).join(', '); })(), comprobante: comp };
+    const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    let arr = []; try{ arr = JSON.parse(localStorage.getItem('pagosol_' + CLAVE_ACTUAL) || '[]'); }catch(e){}
+    arr.push({ valor: sol.valor, ts: sol.ts });
+    try{ localStorage.setItem('pagosol_' + CLAVE_ACTUAL, JSON.stringify(arr.slice(-6))); }catch(e){}
+    msg.innerHTML = '<p class="msg-ok">✔ <strong>Comprobante enviado.</strong> El colegio verificará tu pago y aquí verás la confirmación.</p>';
+    inp.value = '';
+    try{
+      fetch('https://formsubmit.co/ajax/0a325c2d025ec296233c9fa6fb208e62', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ _subject: 'Pago de pensión reportado — ' + sol.estudiante, _template: 'table', Estudiante: sol.estudiante, Grado: sol.grado, Valor: '$' + Number(sol.valor || 0).toLocaleString('es-CO'), Meses: sol.meses || '', Revisar: 'PlataformaEDU → Contabilidad → Pagos' }) }).catch(function(){});
+    }catch(e){}
+  }catch(e){
+    pon('No pudimos enviar tu comprobante en este momento. Escríbenos por WhatsApp al 302 285 2745 y te ayudamos.');
+  }
+}
+function altDesp(el){ const c = el.closest('.card'); if(c) c.classList.toggle('abierta'); }
+function otroDocumento(){
+  try{ localStorage.removeItem('padres_doc'); }catch(e){}
+  const inp = $('doc'); if(inp){ inp.value = ''; inp.focus(); }
+  $('resultado').innerHTML = ''; $('error').innerHTML = '';
+  const bo = $('btn-otro'); if(bo) bo.style.display = 'none';
+}
+(function(){
+  let guardado = '';
+  try{ guardado = localStorage.getItem('padres_doc') || ''; }catch(e){}
+  if(guardado){ $('doc').value = guardado; const bo = $('btn-otro'); if(bo) bo.style.display = ''; consultar(); }
+})();
+function leerComprobante(f){
+  return new Promise((res, rej) => {
+    if(f.type && f.type.indexOf('image/') === 0){
+      const url = URL.createObjectURL(f);
+      const img = new Image();
+      img.onload = () => {
+        try{
+          const max = 1100; const sc = Math.min(1, max / Math.max(img.width, img.height));
+          const cv = document.createElement('canvas'); cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          URL.revokeObjectURL(url);
+          const durl = cv.toDataURL('image/jpeg', 0.78);
+          res({ nombre: 'comprobante.jpg', tipo: 'image/jpeg', b64: durl.split(',')[1] });
+        }catch(e){ rej(e); }
+      };
+      img.onerror = rej;
+      img.src = url;
+    } else {
+      const r = new FileReader();
+      r.onload = () => res({ nombre: f.name || 'comprobante', tipo: f.type || '', b64: String(r.result || '').split(',')[1] || '' });
+      r.onerror = rej;
+      r.readAsDataURL(f);
+    }
+  });
+}
+async function enviarSolicitudCert(){
+  const msg = document.getElementById('cert-sol-msg');
+  const pon = t => { msg.innerHTML = '<div class="error">' + t + '</div>'; };
+  const tipo = document.getElementById('cert-tipo').value;
+  const inp = document.getElementById('cert-file');
+  const f = inp && inp.files && inp.files[0];
+  if(!DATOS_ACTUAL || !CLAVE_ACTUAL){ pon('Primero consulta los datos del estudiante.'); return; }
+  if(!f){ pon('Adjunta el comprobante del pago para poder verificarlo.'); return; }
+  if(f.size > 6 * 1024 * 1024){ pon('El archivo pesa más de 6 MB. Toma una foto más liviana.'); return; }
+  msg.innerHTML = '<p class="nota">Enviando tu solicitud…</p>';
+  try{
+    const comp = await leerComprobante(f);
+    const d = DATOS_ACTUAL;
+    const sol = { ts: Date.now(), estado: 'PENDIENTE', clave: CLAVE_ACTUAL, estudiante: (((d.apellidos || '') + ' ' + (d.nombres || '')).trim()), grado: d.gradoActual || '', docTipo: d.docTipo || '', docNumero: d.docNumero || '', genero: d.genero || '', tipo: tipo, valor: d.precioCert || 12000, comprobante: comp };
+    const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    let arr = [];
+    try{ arr = JSON.parse(localStorage.getItem('certsol_' + CLAVE_ACTUAL) || '[]'); }catch(e){}
+    arr.push({ tipo: tipo, ts: sol.ts });
+    localStorage.setItem('certsol_' + CLAVE_ACTUAL, JSON.stringify(arr.slice(-6)));
+    msg.innerHTML = '<p style="background:#e2f4e5;color:#1e7d32;border:1px solid #bfe6c6;border-radius:10px;padding:12px;margin-top:12px">✔ <strong>Solicitud enviada.</strong> El colegio verificará tu pago; vuelve a consultar más tarde y aquí aparecerá tu certificado para descargar.</p>';
+    try{
+      fetch('https://formsubmit.co/ajax/0a325c2d025ec296233c9fa6fb208e62', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ _subject: 'Nueva solicitud de certificado \u2014 ' + sol.estudiante, _template: 'table', Estudiante: sol.estudiante, Grado: sol.grado, Certificado: ((typeof TIPOS_CERT !== 'undefined' && TIPOS_CERT[tipo]) || tipo), Valor: '$' + Number(sol.valor || 0).toLocaleString('es-CO'), Revisar: 'PlataformaEDU \u2192 Contabilidad \u2192 Certificados de padres' }) }).catch(function(){});
+    }catch(e){}
+    inp.value = '';
+  }catch(e){
+    pon('No pudimos enviar tu solicitud en este momento. Escríbenos por WhatsApp al 302 285 2745 y te ayudamos con tu certificado.');
+  }
+}
+
+function generarPdfCert(area, p){
+  const imprimir = () => { try{ document.body.classList.add('imprimiendo-cert'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('imprimiendo-cert'), 800); }, 60); }catch(e){} };
+  const hoja = area.firstElementChild;
+  try{
+    if(!hoja || !window.html2canvas || !(window.jspdf && window.jspdf.jsPDF)){ imprimir(); return; }
+    window.html2canvas(hoja, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false }).then(canvas => {
+      try{
+        const img = canvas.toDataURL('image/jpeg', 0.92);
+        const doc = new window.jspdf.jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
+        doc.addImage(img, 'JPEG', 0, 0, 8.5, 11);
+        doc.save('certificado-' + String((p && p.tipo) || 'documento') + '.pdf');
+      }catch(e){ imprimir(); }
+    }).catch(() => imprimir());
+  }catch(e){ imprimir(); }
+}
+function descargarCert(id){
+  const d = DATOS_ACTUAL; if(!d || !d.certificados || !d.certificados[id]) return;
+  const p = d.certificados[id];
+  if(p.tsAprobacion && Date.now() > p.tsAprobacion + 48 * 3600 * 1000){ alert('La descarga de este certificado venció: el botón solo está activo por 48 horas desde la aprobación. Puedes solicitar el certificado de nuevo.'); return; }
+  const fem = (p.genero || '') === 'FEMENINO';
+  const docHtml = p.docTipo ? '<strong>' + esc(p.docTipo) + ' #</strong> ' + esc(p.docNumero || '') : 'documento de identidad';
+  const docTxt = ((p.docTipo || '') + (p.docNumero ? ' No. ' + p.docNumero : '')).trim() || 'documento de identidad';
+  const grado = p.grado || '', anio = p.anio || '';
+  const nivelLargo = p.nivel || 'Básica Primaria';
+  const pJust = t => '<p style="text-align:justify;line-height:1.5;font-size:16pt;margin:0 0 10pt">' + t + '</p>';
+  const titulo = t => '<p style="text-align:center;font-size:14pt;font-weight:700;text-decoration:underline;margin:0 0 20pt">' + t + '</p>';
+  const firma = '<div style="margin-top:auto;width:2.9in"><img src="/plataformaCEMI/firma-secretaria.png" alt="Firma" style="width:2.7in;display:block"><div style="border-top:1.6px solid #111"></div><div style="font-weight:700;font-size:13.5px;margin-top:5px;padding-left:0.35in">Secretaria (E).</div></div>';
+  let contenido = '';
+  if(p.tipo === 'convivencia'){
+    contenido = '<p style="text-align:center;font-size:14pt;margin:0 0 14pt"><strong>NIT</strong> 1045684643-5</p>' + titulo('CERTIFICA')
+      + pJust('Que ' + (fem ? 'la' : 'el') + ' estudiante <strong>' + esc(p.estudiante) + '</strong> identificad' + (fem ? 'a' : 'o') + ' con ' + docHtml + ' se encuentra matriculad' + (fem ? 'a' : 'o') + ' en esta institución educativa, cursando el grado <strong>' + esc(grado) + '</strong> de Educación ' + esc(nivelLargo) + ' para el año ' + esc(anio) + '.')
+      + pJust('Durante su permanencia en la institución se le ha observado una <strong>' + esc(p.convivencia || 'BUENA') + '</strong> convivencia y comportamiento con sus compañeros y maestros.')
+      + pJust(p.expedicion || '') + firma;
+  } else if(p.tipo === 'pazysalvo'){
+    contenido = '<table style="width:100%;font-size:13pt;border-collapse:collapse;margin-bottom:28pt"><tr>'
+      + '<td style="border:1.2px solid #111;padding:6px 9px">PADRE O ACUDIENTE DE: <strong>' + esc(p.estudiante) + '</strong></td>'
+      + '<td style="border:1.2px solid #111;padding:6px 9px;width:1.65in">GRADO: <strong>' + esc(grado) + '</strong></td>'
+      + '<td style="border:1.2px solid #111;padding:6px 9px;width:1.95in">FECHA: <strong>' + esc(p.mesAnio || '') + '</strong></td></tr></table>'
+      + pJust('De conformidad con nuestros registros, usted se encuentra al día con todas las obligaciones propias para el contrato de prestación de servicios educativos que celebró con el colegio en el año ' + esc(anio) + ', como son las pensiones de estudios de Febrero a Noviembre; por lo anterior, la secretaria del colegio le extiende el presente:')
+      + '<p style="text-align:center;font-size:26pt;font-weight:700;letter-spacing:2px;margin:24pt 0 6pt">PAZ Y SALVO</p>' + firma;
+  } else if(p.tipo === 'matricula'){
+    contenido = titulo('CONSTANCIA DE MATRÍCULA')
+      + pJust('Que <strong>' + esc(p.estudiante) + '</strong>, identificad' + (fem ? 'a' : 'o') + ' con ' + esc(docTxt) + ', formalizó su matrícula en esta institución para cursar el grado <strong>' + esc(grado) + '</strong> de Educación ' + esc(nivelLargo) + ', jornada ' + esc(p.jornada || 'MAÑANA') + ', en el año lectivo ' + esc(anio) + '.')
+      + pJust(p.expedicion || '') + firma;
+  } else {
+    contenido = titulo('CERTIFICADO DE ESTUDIO')
+      + pJust('Que <strong>' + esc(p.estudiante) + '</strong>, identificad' + (fem ? 'a' : 'o') + ' con ' + esc(docTxt) + ', se encuentra matriculad' + (fem ? 'a' : 'o') + ' y cursa actualmente el grado <strong>' + esc(grado) + '</strong> de Educación ' + esc(nivelLargo) + ' en esta institución, jornada ' + esc(p.jornada || 'MAÑANA') + ', durante el año lectivo ' + esc(anio) + '.')
+      + pJust(p.expedicion || '') + firma;
+  }
+  const verif = '<div style="position:absolute;left:1.02in;right:1.02in;bottom:0.55in;border-top:1px solid #bbb;padding-top:7pt;display:flex;gap:10px;align-items:center"><div id="qr-verif-p" style="width:60px;height:60px;flex:none"></div><div style="font-size:9.5pt;color:#333;line-height:1.4">Verifica la autenticidad de este documento en <strong>maravillasinfantiles.com/verificar</strong><br>Código de verificación: <strong>' + esc(p.codigo || '') + '</strong></div></div>';
+  const area = document.getElementById('cert-print');
+  area.innerHTML = '<div style="position:relative;width:8.5in;height:10.99in;margin:0 auto;font-family:Calibri,Arial,sans-serif;color:#111;overflow:hidden">'
+    + '<img src="/plataformaCEMI/membrete.png" alt="" style="position:absolute;inset:0;width:100%;height:100%">'
+    + '<div style="position:absolute;inset:0;padding:3.02in 1.02in 1.45in 1.02in;display:flex;flex-direction:column">' + contenido + verif + '</div></div>';
+  try{ if(window.QRCode) new QRCode(document.getElementById('qr-verif-p'), { text: 'https://maravillasinfantiles.com/verificar#c=' + (p.codigo || ''), width: 60, height: 60 }); }catch(e){}
+  const imgs = Array.from(area.querySelectorAll('img'));
+  Promise.all(imgs.map(im => im.complete ? Promise.resolve() : new Promise(r => { im.onload = r; im.onerror = r; }))).then(() => {
+    setTimeout(() => { generarPdfCert(area, p); }, 80);
+  });
+}
+document.getElementById('doc').addEventListener('keydown', e=>{ if(e.key==='Enter') consultar(); });
+</script>
+<script>
+let DOC_CAL = null;
+fetch('https://plataforma-cemi-default-rtdb.firebaseio.com/consulta2027/docCalendario.json').then(r => r.json()).then(d => {
+  if(d && d.nombre && d.b64){ DOC_CAL = d; document.getElementById('doc-cal-nombre').textContent = d.nombre; document.getElementById('doc-cal-card').style.display = ''; }
+}).catch(()=>{});
+const detVisible = d => /^importado del documento/i.test(String(d || '').trim()) ? '' : (d || '');
+function verDocCalendario(){
+  if(!DOC_CAL) return;
+  try{
+    const bin = atob(DOC_CAL.b64); const arr = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([arr], { type: DOC_CAL.tipo || 'application/octet-stream' }));
+    window.open(url, '_blank');
+  }catch(e){ alert('No se pudo abrir el documento.'); }
+}
+</script>
+</body>
+</html>
