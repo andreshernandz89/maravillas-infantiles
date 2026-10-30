@@ -864,7 +864,7 @@ button.btn:hover{ background:var(--azul-osc); }
     <section id="tab-perfiles" class="hidden">
       <div class="card">
         <h2>Perfiles y accesos</h2>
-        <p class="ayuda">Cada persona entra con su usuario y su contraseña. El <strong>dueño (owner)</strong> lo ve y lo edita todo; la <strong>coordinadora</strong> también ve y edita todo el panel académico. Cada <strong>docente</strong> solo ve y edita <strong>su curso</strong>, en los módulos que tenga marcados. Desde aquí el dueño crea perfiles nuevos, asigna el curso, marca los módulos permitidos, cambia el rol (docente, coordinadora o administrativo), ajusta las claves y elimina los perfiles que ya no se usen (su propio perfil de dueño no se puede eliminar).</p>
+        <p class="ayuda">Cada persona entra con su usuario y su contraseña. El <strong>dueño (owner)</strong> lo ve y lo edita todo; la <strong>coordinadora</strong> también ve y edita todo el panel académico. Cada <strong>docente</strong> solo ve y edita <strong>su curso</strong>, en los módulos que tenga marcados. Desde aquí el dueño y el administrativo crean perfiles nuevos, asignan el curso, marcan los módulos permitidos —incluido el módulo Perfiles, para darle acceso a otra persona— y cambian el rol (docente, coordinadora o administrativo). Las claves y la eliminación de perfiles quedan solo para el dueño (su propio perfil de dueño no se puede eliminar).</p>
         <div id="perfiles-admin-zona">
         <div class="fila">
           <button class="btn" onclick="guardarCambiosPerfiles()">💾 Guardar cambios</button>
@@ -950,7 +950,7 @@ button.btn:hover{ background:var(--azul-osc); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 /* ================= CONFIGURACIÓN ================= */
-const MODULOS = [ ['panel','Panel de control'], ['rector','Panel del rector'], ['instituto','Instituto'], ['cursos','Cursos y estudiantes'], ['asignaturas','Asignaturas y logros'], ['notas','Registro de notas'], ['boletines','Boletines'], ['final','Informe final'], ['asistencia','Asistencia diaria'], ['planeador','Planeador semanal'], ['observador','Observador'], ['tareas','Tareas y actividades'], ['certificados','Certificados'], ['pagos','Matrículas y pensiones'], ['facturacion','Facturación electrónica'], ['nomina','Nómina'], ['transacciones','Transacciones (Wallet)'], ['matriculas','Matrículas 2027'], ['archivo','Años anteriores (filtro de año)'] ];
+const MODULOS = [ ['panel','Panel de control'], ['rector','Panel del rector'], ['instituto','Instituto'], ['cursos','Cursos y estudiantes'], ['asignaturas','Asignaturas y logros'], ['notas','Registro de notas'], ['boletines','Boletines'], ['final','Informe final'], ['asistencia','Asistencia diaria'], ['planeador','Planeador semanal'], ['observador','Observador'], ['tareas','Tareas y actividades'], ['certificados','Certificados'], ['pagos','Matrículas y pensiones'], ['facturacion','Facturación electrónica'], ['nomina','Nómina'], ['transacciones','Transacciones (Wallet)'], ['matriculas','Matrículas 2027'], ['perfiles','Perfiles'], ['archivo','Años anteriores (filtro de año)'] ];
 const MODULOS_TODOS = MODULOS.map(m=>m[0]);
 const PERFILES_BASE = [
   { id:'p-andres', nombre:'Andrés Hernández', usuario:'andres', email:'andres.hernandz89@gmail.com', rol:'owner', rolTxt:'Dueño (Owner)', cursoNombre:'', clave:'', modulos: MODULOS_TODOS.slice() },
@@ -2193,7 +2193,7 @@ function puedeModulo(m){
   if(p.rol==='owner') return true;
   if(m==='calendario') return true;
   if(m==='certpadres') return p.rol === 'admin' || p.rol === 'coord';
-  if(m==='perfiles') return p.rol==='admin';
+  if(m==='perfiles') return p.rol==='admin' || (p.modulos||[]).includes('perfiles');
   if(p.rol==='docente' && ['certificados','pagos','facturacion','nomina','transacciones','matriculas','archivo'].includes(m)) return false;
   if(m==='panel' && p.rol==='docente') return true;
   if(m==='rector') return p.rol==='admin' || p.rol==='coord';
@@ -2281,7 +2281,7 @@ function verTab(tab){
   if(tab !== 'transacciones' && typeof TX_TIMER !== 'undefined' && TX_TIMER){ clearInterval(TX_TIMER); TX_TIMER = null; TX_ACTIVA = false; }
   if(tab!=='miperfil' && !perfilCompleto(perfilActual())){ verTab('miperfil'); return; }
   const pa = $('print-area'); if(pa) pa.innerHTML = '';
-  if(tab==='perfiles'){ if(!esOwner()) return; }
+  if(tab==='perfiles'){ if(!puedeModulo('perfiles')) return; }
   else if(tab!=='miperfil' && !puedeModulo(tab)) return;
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('activo', b.dataset.tab===tab));
   expandirGrupoDe(tab);
@@ -4036,9 +4036,10 @@ function puedeVerSalario(){ const v = perfilActual(); return !!(v && (v.rol==='o
 function renderPerfiles(){
   const cont = $('lista-perfiles'); if(!cont) return;
   const viewer = perfilActual();
-  const zona = $('perfiles-admin-zona'); if(zona) zona.style.display = esOwner() ? '' : 'none';
-  if(!esOwner() && !(viewer && viewer.rol==='admin')){ cont.innerHTML = '<p class="ayuda">Solo el dueño (owner) y el administrativo pueden ver los perfiles.</p>'; return; }
-  const editaTodo = esOwner();
+  const gestionaPerfiles = esOwner() || (viewer && viewer.rol==='admin');
+  const zona = $('perfiles-admin-zona'); if(zona) zona.style.display = gestionaPerfiles ? '' : 'none';
+  if(!puedeModulo('perfiles')){ cont.innerHTML = '<p class="ayuda">No tienes acceso al módulo de perfiles.</p>'; return; }
+  const editaTodo = gestionaPerfiles;
   const editaFS = puedeVerSalario();
   cont.innerHTML = perfiles().map(p=>{
     const abierto = PERFIL_SEL === p.id;
@@ -4068,8 +4069,8 @@ function renderPerfiles(){
             ? '<div style="margin-top:10px"><label>Grados adicionales (solo el Owner los modifica)</label><div>' + DB.cursos.filter(c=>normNombre(c.nombre)!==normNombre(p.cursoNombre||'')).map(c=>'<label class="check-mod"><input type="checkbox" ' + (((p.gradosExtra||[]).some(n=>normNombre(n)===normNombre(c.nombre))) ? 'checked' : '') + ' onchange="perfilGradoExtra(\'' + p.id + '\',\'' + esc(c.nombre) + '\',this.checked)"> ' + esc(c.nombre) + '</label>').join('') + '</div><p class="ayuda" style="margin:2px 0 0">La docente también podrá trabajar estos grados en Notas, Asistencia, Planeador, Observador y Boletines.</p></div>'
             : '<p class="ayuda" style="margin-top:10px">Grados adicionales: ' + ((p.gradosExtra||[]).length ? esc((p.gradosExtra||[]).join(', ')) : 'ninguno') + ' — solo el Owner los modifica.</p>')
         : '';
-      const claveHtml = editaTodo ? '<div><label>Contraseña (la ves solo tú, Owner)</label><input type="text" value="' + esc(CLAVES_VIS[p.id] || '') + '" style="width:150px" onchange="ownerGuardarClave(\'' + p.id + '\',this.value)"><div style="font-size:11px;color:#5a6a7d;margin-top:2px">Restablece en: ' + esc((p.info && p.info.correo) || (p.email && !String(p.email).endsWith('@plataforma-cemi.local') ? p.email : '') || 'Sin correo registrado aún') + '</div></div>' : '';
-      const del = (editaTodo && p.rol!=='owner') ? '<div><label>&nbsp;</label><br><button class="btn rojo mini" onclick="eliminarPerfil(\'' + p.id + '\')">Eliminar perfil</button></div>' : '';
+      const claveHtml = esOwner() ? '<div><label>Contraseña (la ves solo tú, Owner)</label><input type="text" value="' + esc(CLAVES_VIS[p.id] || '') + '" style="width:150px" onchange="ownerGuardarClave(\'' + p.id + '\',this.value)"><div style="font-size:11px;color:#5a6a7d;margin-top:2px">Restablece en: ' + esc((p.info && p.info.correo) || (p.email && !String(p.email).endsWith('@plataforma-cemi.local') ? p.email : '') || 'Sin correo registrado aún') + '</div></div>' : '';
+      const del = (esOwner() && p.rol!=='owner') ? '<div><label>&nbsp;</label><br><button class="btn rojo mini" onclick="eliminarPerfil(\'' + p.id + '\')">Eliminar perfil</button></div>' : '';
       const salarioHtml = editaFS ? '<div><label>Salario mensual (solo lo ven Owner y Administrativo)</label><input type="number" min="0" step="1000" value="' + (p.salario || '') + '" placeholder="0" style="width:150px" onchange="perfilSalario(\'' + p.id + '\',this.value)"><div style="font-size:11px;color:#5a6a7d;margin-top:2px">' + (p.salario ? fmtPesos(p.salario) + ' al mes · quincena de ' + fmtPesos(Math.round(p.salario/2)) : 'Sin salario registrado') + '</div></div>' : '';
       det = '<div style="border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px">'
         + '<div class="fila" style="align-items:flex-start"><div>' + fotoHtml
