@@ -4555,6 +4555,19 @@ nav.tabs.menu-lateral button{ display:flex; align-items:center; }
   .grid-notas select{ min-height:44px; font-size:14px; }
   #tab-notas .scroll, #tab-asistencia .scroll{ -webkit-overflow-scrolling:touch; }
 }
+/* ---------- Encabezado compacto en celular (2026-10-29) ---------- */
+@media (max-width:720px){
+  header.app-head{ flex-wrap:wrap; padding:10px 12px; gap:8px; max-width:100vw; }
+  header.app-head img{ width:36px; height:36px; flex:0 0 auto; }
+  header.app-head > div{ flex:1 1 auto; min-width:0; }
+  header.app-head .t{ font-size:15px; line-height:1.15; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  header.app-head .sp{ display:none; }
+  #sync-dot{ flex:0 0 auto; }
+  header.app-head .anio-sel{ flex:0 1 auto; min-width:0; max-width:96px; padding:6px 8px; font-size:12px; }
+  header.app-head .user-chip{ flex:0 1 auto; min-width:0; max-width:32vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:7px 10px; font-size:12.5px; }
+  #btn-menu{ width:40px; height:44px; flex:0 0 auto; }
+  header.app-head .btn-salir{ flex:0 0 auto; min-height:44px; padding:10px 13px; display:inline-flex; align-items:center; }
+}
 </style>
 <script>
 /* ===== Sistema de diseño PlataformaEDU: avisos, sincronización y navegación inferior (2026-10-29) ===== */
