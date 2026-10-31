@@ -3979,6 +3979,7 @@ function initInstitutoDesplegables(){
  * correo: no pasa por servidores de PlataformaEDU ni de terceros, y no
  * depende de nadie más. Los ID de cliente son los de la aplicación de
  * PlataformaEDU registrada una sola vez en Google y en Microsoft. */
+const FIRMA_EDU_HTML = '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:18px"><tr><td style="vertical-align:middle"><img src="https://plataformaedu.app/logo-correo.png" alt="PlataformaEDU" style="height:36px;width:auto;display:block"></td><td style="vertical-align:middle;padding-left:10px"><span style="font-size:15px;font-weight:bold;color:#0f47b8">PlataformaEDU</span><br><span style="font-size:12px;color:#7a8798">Plataforma de gesti\u00f3n acad\u00e9mica</span></td></tr></table>';
 const GOOGLE_CLIENT_ID = '251585550501-275ektpp7k0rtjgs6skugahmt3a28g7j.apps.googleusercontent.com'; // App de PlataformaEDU en Google (se llena al registrarla).
 const MS_CLIENT_ID = '';     // App de PlataformaEDU en Microsoft (se llena al registrarla).
 let googleTokenClient = null, msalApp = null;
@@ -4057,7 +4058,7 @@ async function correoAvisoSincronizacion(email, proveedorTxt){
     + '<p style="font-size:14.5px;line-height:1.55;color:#3c4a5a;margin:12px 0 0">La sincronización del correo institucional se completó correctamente. A partir de ahora, todos los correos que se envíen desde la plataforma saldrán desde esta cuenta:</p>'
     + '<p style="font-size:15px;font-weight:bold;color:' + color + ';margin:14px 0 0">' + email + '</p>'
     + '<p style="font-size:12.5px;color:#7a8798;margin:6px 0 0">Proveedor: ' + proveedorTxt + ' · ' + fecha + '</p></div>'
-    + '<div style="padding:16px 26px 22px;text-align:center;font-size:12.5px;color:#7a8798;border-top:1px solid #eef1f6;margin-top:14px">Si no reconoces esta conexión, desconéctala desde el módulo Instituto de tu plataforma.<br><strong style="color:#3c4a5a">PlataformaEDU</strong></div>'
+    + '<div style="padding:16px 26px 22px;text-align:center;font-size:12.5px;color:#7a8798;border-top:1px solid #eef1f6;margin-top:14px">Si no reconoces esta conexión, desconéctala desde el módulo Instituto de tu plataforma.<br>' + FIRMA_EDU_HTML + '</div>'
     + '</div></div>';
   return await correoEnviarPlataforma(email, asunto, cuerpo, html);
 }
@@ -4164,7 +4165,9 @@ async function correoProbarConexion(){
     const destino = (DB.instituto && DB.instituto.correo) || '';
     if(!destino){ alert('Primero escribe el correo de la institución o conéctalo con Google/Microsoft.'); return; }
     const inst = (DB.instituto && DB.instituto.nombre) || 'tu institución';
-    const resp = await correoEnviarPlataforma(destino, '✅ Correo sincronizado — ' + inst, 'Este es un correo de prueba: la plataforma ya puede enviar correos desde la cuenta institucional ' + destino + '.\n\nPlataformaEDU', '');
+    const textoPrueba = 'Este es un correo de prueba: la plataforma ya puede enviar correos desde la cuenta institucional ' + destino + '.';
+    const htmlPrueba = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14.5px;line-height:1.55;color:#1c2733"><p>' + textoPrueba + '</p>' + FIRMA_EDU_HTML + '</div>';
+    const resp = await correoEnviarPlataforma(destino, '✅ Correo sincronizado — ' + inst, textoPrueba + '\n\nPlataformaEDU', htmlPrueba);
     if(resp && resp.ok) alert('✅ Correo sincronizado: la prueba se envió desde ' + (resp.desde || destino) + '. Revisa esa bandeja.');
     else alert('El envío respondió: ' + ((resp && resp.error) || 'sin respuesta'));
   }catch(err){ alert('No se pudo enviar la prueba: ' + err.message); }
