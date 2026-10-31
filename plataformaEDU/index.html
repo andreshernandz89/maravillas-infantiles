@@ -3792,6 +3792,8 @@ function renderPanelNotificaciones(){
   });
   Object.keys(MATRI || {}).forEach(id => {
     const m = MATRI[id]; if(!m || etapaDe(m) !== 'NUEVA') return;
+    if(m.avisoCorreoInicial) return; // el aviso de esta etapa ya salió (vigía automático)
+    if(m.avisoCorreoEtapa && m.avisoCorreoEtapa.etapa === 'NUEVA') return; // o se envió desde la plataforma
     const e = m.estudiante || {};
     const nom = (((e.apellidos || '') + ' ' + (e.nombres || '')).trim()) || 'Nuevo aspirante';
     items.push({ ts: m.ts || 0, icono: '📝', tab: 'matriculas',
