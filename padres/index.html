@@ -371,19 +371,12 @@ function justifHistorial(){
   return hh;
 }
 
-/* Aviso interno al colegio: con el puente de correo sale con el diseno
- * institucional desde la cuenta del colegio; sin puente, respaldo FormSubmit. */
+/* Aviso interno al colegio: sale por el puente de correo con el diseno
+ * institucional desde la cuenta del colegio. */
 const AVISO_PUENTE_URL = 'https://script.google.com/macros/s/AKfycbyq68ebZL42Zf3OxY6CiN7Y2L-bhZAXNIRLjC3gSmrHbzJ6A1TB8WC_Y-znQciaA6lYtg/exec';
 function avisoColegio(tipo, sol, idSol, campos, revisar){
-  if(AVISO_PUENTE_URL){
-    try{ fetch(AVISO_PUENTE_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ accion: 'avisoPadres', tipo: tipo, clave: (typeof CLAVE_ACTUAL !== 'undefined' ? CLAVE_ACTUAL : ''), campos: campos || {} }) }).catch(function(){}); }catch(e){}
-    return;
-  }
-  const asuntos = { PAGO_PENSION: 'Pago de pensión reportado — ', JUSTIFICACION: 'Nueva justificación de falta — ', CERTIFICADO: 'Nueva solicitud de certificado — ' };
-  const body = { _subject: (asuntos[tipo] || 'Aviso — ') + sol.estudiante, _template: 'boxy', Estudiante: sol.estudiante, Grado: sol.grado };
-  Object.keys(campos || {}).forEach(function(k){ body[k] = campos[k]; });
-  body.Revisar = revisar;
-  try{ fetch('https://formsubmit.co/ajax/0a325c2d025ec296233c9fa6fb208e62', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(body) }).catch(function(){}); }catch(e){}
+  if(!AVISO_PUENTE_URL) return;
+  try{ fetch(AVISO_PUENTE_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ accion: 'avisoPadres', tipo: tipo, clave: (typeof CLAVE_ACTUAL !== 'undefined' ? CLAVE_ACTUAL : ''), campos: campos || {} }) }).catch(function(){}); }catch(e){}
 }
 async function enviarJustificacion(){
   const msg = $('just-msg'); if(!msg) return;
