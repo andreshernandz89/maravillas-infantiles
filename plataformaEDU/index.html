@@ -320,6 +320,7 @@ button.btn:hover{ background:var(--azul-osc); }
     <section id="tab-panel">
       <div class="card">
         <h2>📊 Panel de control</h2>
+        <div id="panel-notificaciones"></div>
         <div id="panel-justif"></div>
         <div id="panel-avisos-padres"></div>
         <div class="fila">
@@ -1343,6 +1344,8 @@ function iniciarMatriculas(){
     MATRI = snap.val() || {};
     const sec = $('tab-matriculas');
     if(sec && !sec.classList.contains('hidden')) renderMatriculas();
+    const secP = $('tab-panel');
+    if(secP && !secP.classList.contains('hidden')) renderPanel();
   });
 }
 function matriLista(){
@@ -3028,6 +3031,7 @@ function renderPanelDocente(){
   const P = PANEL_PERIODO;
   $('panel-periodo').value = String(P);
   if(typeof renderPanelEventos === 'function') renderPanelEventos();
+  renderPanelNotificaciones();
   renderPanelJustif();
   const misCursos = cursosVisibles() || [];
   const curso = misCursos[0];
@@ -3083,6 +3087,7 @@ function renderPanel(){
   const P = PANEL_PERIODO;
   $('panel-periodo').value = String(P);
   if(typeof renderPanelEventos === 'function') renderPanelEventos();
+  renderPanelNotificaciones();
   renderPanelJustif();
   const hoy = new Date();
   const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - ((hoy.getDay()+6)%7));
@@ -3771,18 +3776,41 @@ async function justifRechazar(id){
 
 
 
-function renderPanelAvisosPadres(){
-  const cont = $('panel-avisos-padres'); if(!cont) return;
+function renderPanelNotificaciones(){
+  const cont = $('panel-notificaciones'); if(!cont) return;
   const p = perfilActual(); if(!p || p.rol === 'docente'){ cont.innerHTML = ''; return; }
-  const todos = Object.keys(CERTSOL).map(id => CERTSOL[id]);
-  const pagosPend = todos.filter(x => x.tipoSolicitud === 'PAGO_PENSION' && x.estado === 'PENDIENTE').length;
-  const certPend = todos.filter(x => x.tipoSolicitud !== 'JUSTIFICACION' && x.tipoSolicitud !== 'PAGO_PENSION' && x.estado === 'PENDIENTE').length;
-  if(!pagosPend && !certPend){ cont.innerHTML = ''; return; }
-  let h = '';
-  if(pagosPend) h += '<div style="background:#e8f5e9;border:1.5px solid #81c784;border-radius:12px;padding:12px 14px;margin:12px 0;display:flex;justify-content:space-between;gap:10px;align-items:center"><strong>💳 ' + pagosPend + ' pago(s) de padres por verificar</strong><button class="btn mini" style="flex:none" onclick="verTab(\'pagos\')">Revisar</button></div>';
-  if(certPend) h += '<div style="background:#e3f2fd;border:1.5px solid #64b5f6;border-radius:12px;padding:12px 14px;margin:12px 0;display:flex;justify-content:space-between;gap:10px;align-items:center"><strong>📜 ' + certPend + ' solicitud(es) de certificado de padres por revisar</strong><button class="btn mini" style="flex:none" onclick="verTab(\'certpadres\')">Revisar</button></div>';
-  cont.innerHTML = h;
+  const items = [];
+  Object.keys(CERTSOL || {}).forEach(id => {
+    const x = CERTSOL[id]; if(!x || x.estado !== 'PENDIENTE') return;
+    if(x.tipoSolicitud === 'PAGO_PENSION'){
+      items.push({ ts: x.ts || 0, icono: '💳', tab: 'pagos',
+        texto: '<strong>Pago reportado por un padre</strong> · ' + esc(x.estudiante || '') + (x.grado ? ' (' + esc(x.grado) + ')' : '') + ' · ' + fmtPesos(x.valor || 0) + (x.meses ? ' · ' + esc(x.meses) : '') });
+    } else if(x.tipoSolicitud !== 'JUSTIFICACION'){
+      items.push({ ts: x.ts || 0, icono: '📜', tab: 'certpadres',
+        texto: '<strong>Solicitud de certificado</strong> · ' + esc(x.estudiante || '') + (x.grado ? ' (' + esc(x.grado) + ')' : '') + (x.tipo ? ' · ' + esc(x.tipo) : '') });
+    }
+  });
+  Object.keys(MATRI || {}).forEach(id => {
+    const m = MATRI[id]; if(!m || etapaDe(m) !== 'NUEVA') return;
+    const e = m.estudiante || {};
+    const nom = (((e.apellidos || '') + ' ' + (e.nombres || '')).trim()) || 'Nuevo aspirante';
+    items.push({ ts: m.ts || 0, icono: '📝', tab: 'matriculas',
+      texto: '<strong>Nueva inscripción 2027</strong> · ' + esc(nom) + (m.grado ? ' · ' + esc(m.grado) : '') });
+  });
+  if(!items.length){ cont.innerHTML = ''; return; }
+  items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const filas = items.slice(0, 8).map(it => {
+    const f = it.ts ? new Date(it.ts).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+    return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-top:1px solid #eef1f6">'
+      + '<div style="min-width:0">' + it.icono + ' ' + it.texto + (f ? '<div style="font-size:12px;color:#7a8699;margin-top:1px">' + esc(f) + '</div>' : '') + '</div>'
+      + '<button class="btn mini" style="flex:none" onclick="verTab(\'' + it.tab + '\')">Ver</button></div>';
+  }).join('');
+  cont.innerHTML = '<div style="background:#ffffff;border:1.5px solid #c9bffa;border-radius:12px;padding:12px 14px;margin:12px 0;box-shadow:var(--sombra)">'
+    + '<strong>🔔 Notificaciones</strong> <span style="background:#6a1b9a;color:#fff;border-radius:12px;padding:1px 8px;font-size:12px;font-weight:bold">' + items.length + '</span>'
+    + (items.length > 8 ? '<span style="font-size:12px;color:#7a8699"> · las 8 más recientes</span>' : '')
+    + filas + '</div>';
 }
+function renderPanelAvisosPadres(){ /* Reemplazada por la tarjeta unificada de Notificaciones (renderPanelNotificaciones). */ }
 function renderPanelJustif(){
   const cont = $('panel-justif'); if(!cont) return;
   const p = perfilActual(); if(!p){ cont.innerHTML = ''; return; }
