@@ -373,7 +373,7 @@ function justifHistorial(){
 
 /* Aviso interno al colegio: con el puente de correo sale con el diseno
  * institucional desde la cuenta del colegio; sin puente, respaldo FormSubmit. */
-const AVISO_PUENTE_URL = '';
+const AVISO_PUENTE_URL = 'https://script.google.com/macros/s/AKfycbyq68ebZL42Zf3OxY6CiN7Y2L-bhZAXNIRLjC3gSmrHbzJ6A1TB8WC_Y-znQciaA6lYtg/exec';
 function avisoColegio(tipo, sol, idSol, campos, revisar){
   if(AVISO_PUENTE_URL){
     try{ fetch(AVISO_PUENTE_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ accion: 'avisoPadres', tipo: tipo, clave: (typeof CLAVE_ACTUAL !== 'undefined' ? CLAVE_ACTUAL : ''), campos: campos || {} }) }).catch(function(){}); }catch(e){}
