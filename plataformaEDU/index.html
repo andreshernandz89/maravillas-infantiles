@@ -2383,6 +2383,7 @@ function verTab(tab){
   expandirGrupoDe(tab);
   $('user-chip').classList.toggle('en-miperfil', tab==='miperfil');
   ['panel','rector','certificados','pagos','facturacion','nomina','instituto','cursos','asignaturas','notas','boletines','final','asistencia','planeador','observador','tareas','perfiles','miperfil','matriculas','transacciones','calendario','certpadres'].forEach(t=>$('tab-'+t).classList.toggle('hidden', t!==tab));
+  if(tab==='cursos') renderEstudiantes();
   if(tab==='asignaturas') renderAsignaturas();
   if(tab==='notas'){ renderNotas(); }
   if(tab==='boletines') renderBoletines();
