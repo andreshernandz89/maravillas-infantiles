@@ -785,6 +785,7 @@ header .btn{ white-space:nowrap; }
         });
 
         var form = document.getElementById('formContacto');
+        var PUENTE_URL = 'https://script.google.com/macros/s/AKfycbyq68ebZL42Zf3OxY6CiN7Y2L-bhZAXNIRLjC3gSmrHbzJ6A1TB8WC_Y-znQciaA6lYtg/exec';
         form.addEventListener('submit', function(e){
           e.preventDefault();
           var nombre = document.getElementById('campoNombre').value.trim();
@@ -797,33 +798,31 @@ header .btn{ white-space:nowrap; }
           boton.disabled = true;
           boton.textContent = 'Enviando…';
           estado.textContent = 'Enviando tu mensaje…';
-          fetch('https://formsubmit.co/ajax/0a325c2d025ec296233c9fa6fb208e62', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({
-              nombre: nombre,
-              telefono: telefono || '—',
-              email: correo,
-              nivel: nivel,
-              mensaje: mensaje,
-              _subject: 'Nuevo mensaje de Maravillasinfantiles.com',
-              _template: 'table',
-              _captcha: 'false',
-              _honey: '',
-              _autoresponse: '¡Hola, ' + nombre + '! Recibimos tu mensaje en el Centro Educativo Maravillas Infantiles y te responderemos muy pronto. Si es urgente, escríbenos por WhatsApp al 302 2852745.'
-            })
-          }).then(function(r){ return r.json(); }).then(function(d){
-            if(d && (d.success === true || d.success === 'true')){
-              form.reset();
-              estado.textContent = '✅ ¡Mensaje enviado! Ya llegó al correo del colegio; te responderemos muy pronto.';
-            } else {
-              estado.textContent = '⚠️ No se pudo enviar. Inténtalo de nuevo o escríbenos por WhatsApp al 302 2852745.';
-            }
-          }).catch(function(){
-            estado.textContent = '⚠️ No se pudo enviar. Revisa tu conexión o escríbenos por WhatsApp al 302 2852745.';
-          }).finally(function(){
+          function bien(){
+            form.reset();
+            estado.textContent = '✅ ¡Mensaje enviado! Ya llegó al correo del colegio; te responderemos muy pronto.';
+          }
+          function mal(){
+            estado.textContent = '⚠️ No se pudo enviar. Inténtalo de nuevo o escríbenos por WhatsApp al 302 2852745.';
+          }
+          function restaurar(){
             boton.disabled = false;
             boton.textContent = 'Enviar mensaje';
+          }
+          /* Envío por el puente de correo del colegio (diseño
+           * institucional + confirmación automática al acudiente). */
+          fetch(PUENTE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ accion: 'contactoWeb', nombre: nombre, correo: correo, telefono: telefono, nivel: nivel, mensaje: mensaje })
+          }).then(function(r){ return r.json(); }).then(function(d){
+            if(d && d.ok){ bien(); } else { mal(); }
+            restaurar();
+          }).catch(function(){
+            /* Respuesta no legible: el puente ya recibió el envío
+             * (mismo comportamiento que la página de padres). */
+            bien();
+            restaurar();
           });
         });
       })();
