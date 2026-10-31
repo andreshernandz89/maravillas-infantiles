@@ -1390,6 +1390,7 @@ function matriTarjetaHTML(m){
       '<span class="sem">' + esc(m.grado || '') + '</span>' +
       '<span class="sem">' + (esAct ? '🔄 Actualización' : '🆕 Matrícula nueva') + '</span>' +
       (etapa === 'IMPORTADA' ? '<span class="sem v">' + (esAct ? 'Ficha actualizada' : 'Estudiante creado') + '</span>' : '') +
+      (m.avisoCorreoInicial ? '<span class="sem v">📧 Correo inicial enviado</span>' : '') +
       '<span class="ayuda">' + matriFecha(m.ts) + '</span>' +
     '</div>' +
     '<div class="ayuda" style="margin:4px 0 8px">Acudiente: <strong>' + esc(a.nombre || '—') + '</strong> · CC ' + esc(a.cc || '—') + '<br>Tel. ' + esc(a.telefono || '—') + '</div>' +
