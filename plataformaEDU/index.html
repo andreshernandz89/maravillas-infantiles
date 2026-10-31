@@ -551,7 +551,7 @@ button.btn:hover{ background:var(--azul-osc); }
       </div>
       <div class="card" id="card-correo">
         <h2>📧 Correo institucional</h2>
-        <p class="ayuda">Este es el correo con el que la plataforma escribe a los padres: el aviso automático cuando un estudiante queda inscrito y los avisos del proceso de admisión. Se sincroniza instalando el puente de correo en la cuenta de Google de la institución (guía de instalación de PlataformaEDU), para que los correos salgan desde el propio correo del colegio.</p>
+        <p class="ayuda">Este es el correo oficial de la institución dentro de la plataforma: cualquier correo que se envíe desde aquí (avisos a padres, proceso de admisión, certificados y demás comunicaciones) sale desde esta cuenta. Se sincroniza instalando el puente de correo en la cuenta de Google de la institución (guía de instalación de PlataformaEDU).</p>
         <div class="fila">
           <div style="flex:1;min-width:240px"><label>Correo de la institución</label><input type="email" id="inst-correo" placeholder="Ej.: info@colegio.edu.co"></div>
           <div style="align-self:flex-end"><span id="correo-estado" class="sem">⚪ Sin sincronizar</span></div>
@@ -3944,11 +3944,11 @@ function pintarEstadoCorreo(){
   const c = (DB.instituto && DB.instituto.correo) || '';
   if(PUENTE_CORREO_URL){
     el.textContent = '🟢 Sincronizado'; el.className = 'sem v';
-    ay.textContent = 'La plataforma envía desde ' + (c || 'el correo de la institución') + ': el aviso automático de inscripción y los avisos del proceso de admisión salen de esa cuenta.';
+    ay.textContent = 'Sincronizado: todos los correos que se envíen desde la plataforma salen desde ' + (c || 'el correo de la institución') + '.';
     if(btn) btn.disabled = false;
   } else {
     el.textContent = '⚪ Sin sincronizar'; el.className = 'sem';
-    ay.textContent = 'Todavía no hay un puente de correo conectado: los avisos se envían a mano desde el correo de quien los pulsa. Para sincronizar, instala el puente de correo en la cuenta de Google de la institución (guía de instalación de PlataformaEDU).';
+    ay.textContent = 'Todavía no hay un puente de correo conectado: por ahora los correos se envían a mano desde el correo de quien los pulsa. Para sincronizar, instala el puente de correo en la cuenta de Google de la institución (guía de instalación de PlataformaEDU).';
     if(btn) btn.disabled = true;
   }
 }
