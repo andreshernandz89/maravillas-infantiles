@@ -4011,11 +4011,34 @@ async function correoTokenGoogle(silencioso){
     googleTokenClient.requestAccessToken({ prompt: silencioso ? '' : 'consent' });
   });
 }
+async function correoAvisoSincronizacion(email, proveedorTxt){
+  if(!email) return;
+  const inst = (DB.instituto && DB.instituto.nombre) || 'tu institución';
+  const fecha = new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' });
+  const asunto = '✅ Correo institucional sincronizado — ' + inst;
+  const cuerpo = 'Hola,\n\nLa sincronización del correo institucional de ' + inst + ' se completó con éxito.\n\nCuenta conectada: ' + email + ' (' + proveedorTxt + ')\nFecha: ' + fecha + '\n\nA partir de ahora, todos los correos que se envíen desde la plataforma (avisos a padres, proceso de admisión y demás comunicaciones) saldrán desde esta cuenta.\n\nSi no reconoces esta conexión, desconéctala desde el módulo Instituto de la plataforma.\n\nPlataformaEDU';
+  let logo = '';
+  try{ logo = new URL('../escudo.png', location.href).href; }catch(e){}
+  const color = (getComputedStyle(document.documentElement).getPropertyValue('--primario') || '').trim() || '#0f47b8';
+  const html = '<div style="margin:0;padding:24px 12px;background:#eef1f6;font-family:Arial,Helvetica,sans-serif">'
+    + '<div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(15,40,90,.12)">'
+    + '<div style="text-align:center;padding:26px 24px 6px">' + (logo ? '<img src="' + logo + '" alt="" style="max-height:84px;max-width:220px">' : '') + '<div style="font-size:21px;font-weight:bold;color:' + color + ';letter-spacing:.4px;margin-top:8px">' + inst.toUpperCase() + '</div></div>'
+    + '<div style="height:3px;background:#d9a62e;margin:14px 24px 0;border-radius:2px"></div>'
+    + '<div style="padding:20px 26px 6px;text-align:center"><div style="font-size:30px">✅</div><div style="font-size:19px;font-weight:bold;color:#1c2733;margin-top:6px">¡Correo sincronizado con éxito!</div>'
+    + '<p style="font-size:14.5px;line-height:1.55;color:#3c4a5a;margin:12px 0 0">La sincronización del correo institucional se completó correctamente. A partir de ahora, todos los correos que se envíen desde la plataforma saldrán desde esta cuenta:</p>'
+    + '<p style="font-size:15px;font-weight:bold;color:' + color + ';margin:14px 0 0">' + email + '</p>'
+    + '<p style="font-size:12.5px;color:#7a8798;margin:6px 0 0">Proveedor: ' + proveedorTxt + ' · ' + fecha + '</p></div>'
+    + '<div style="padding:16px 26px 22px;text-align:center;font-size:12.5px;color:#7a8798;border-top:1px solid #eef1f6;margin-top:14px">Si no reconoces esta conexión, desconéctala desde el módulo Instituto de tu plataforma.<br><strong style="color:#3c4a5a">PlataformaEDU</strong></div>'
+    + '</div></div>';
+  return await correoEnviarPlataforma(email, asunto, cuerpo, html);
+}
 async function correoConectarGoogle(){
   try{
     await correoTokenGoogle(false);
     const g = correoGoogleGuardado();
-    alert('✅ Correo de Google conectado: ' + ((g && g.email) || '') + '. La plataforma ya puede enviar desde esa cuenta en este equipo.');
+    let avisoSync = '';
+    try{ await correoAvisoSincronizacion((g && g.email) || '', 'Google'); avisoSync = ' Se envió un correo de confirmación a esa cuenta.'; }catch(e){}
+    alert('✅ Correo de Google conectado: ' + ((g && g.email) || '') + '. La plataforma ya puede enviar desde esa cuenta en este equipo.' + avisoSync);
   }catch(e){ alert('No se pudo conectar con Google: ' + e.message); }
 }
 async function correoMsal(){
@@ -4047,7 +4070,9 @@ async function correoConectarMicrosoft(){
     if(email){ localStorage.setItem('correoMicrosoft', email); DB.instituto.correo = email; const ic = $('inst-correo'); if(ic) ic.value = email; }
     DB.instituto.correoProveedor = 'microsoft'; guardar();
     pintarEstadoCorreo();
-    alert('✅ Correo de Microsoft conectado: ' + email + '. La plataforma ya puede enviar desde esa cuenta en este equipo.');
+    let avisoSyncM = '';
+    try{ await correoAvisoSincronizacion(email, 'Microsoft'); avisoSyncM = ' Se envió un correo de confirmación a esa cuenta.'; }catch(e){}
+    alert('✅ Correo de Microsoft conectado: ' + email + '. La plataforma ya puede enviar desde esa cuenta en este equipo.' + avisoSyncM);
   }catch(e){ alert('No se pudo conectar con Microsoft: ' + e.message); }
 }
 function correoDesconectar(){
