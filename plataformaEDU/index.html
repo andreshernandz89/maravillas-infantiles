@@ -3354,14 +3354,14 @@ function pagosToggleMatricula(estId){
   const e = DB.estudiantes.find(x=>x.id===estId); if(!e) return;
   const r = regDe(estId); const t = tarifaDe(e.cursoId);
   if(r.matricula && r.matricula.ok){ if(!confirm('¿Desmarcar el pago de MATRÍCULA de ' + e.nombre + ' (' + fmtPesos(r.matricula.valor || 0) + ')? El registro del pago se borrará.')) return; r.matricula = null; registrarCambio('Pago de MATRÍCULA de ' + e.nombre + ' desmarcado'); }
-  else { r.matricula = { ok:true, fecha: hoyISO(), valor: t.matricula || 0 }; registrarCambio('Pago de MATRÍCULA de ' + e.nombre + ' registrado (' + fmtPesos(t.matricula) + ')'); }
+  else { if(!confirm('¿Registrar el pago de MATRÍCULA de ' + e.nombre + ' por ' + fmtPesos(t.matricula || 0) + '?')) return; r.matricula = { ok:true, fecha: hoyISO(), valor: t.matricula || 0 }; registrarCambio('Pago de MATRÍCULA de ' + e.nombre + ' registrado (' + fmtPesos(t.matricula) + ')'); }
   guardar(); renderPagos();
 }
 function pagosToggleMes(estId, mm){
   const e = DB.estudiantes.find(x=>x.id===estId); if(!e) return;
   const r = regDe(estId); const t = tarifaDe(e.cursoId);
   if(r.meses[mm] && r.meses[mm].ok){ if(!confirm('¿Desmarcar el pago de pensión de ' + (MESES_LARGO[mm] || mm) + ' de ' + e.nombre + ' (' + fmtPesos(r.meses[mm].valor || 0) + ')? El registro del pago se borrará.')) return; delete r.meses[mm]; registrarCambio('Pago de pensión de ' + (MESES_LARGO[mm] || mm) + ' de ' + e.nombre + ' desmarcado'); }
-  else { r.meses[mm] = { ok:true, fecha: hoyISO(), valor: t.pension || 0 }; registrarCambio('Pago de pensión de ' + (MESES_LARGO[mm] || mm) + ' de ' + e.nombre + ' registrado (' + fmtPesos(t.pension) + ')'); }
+  else { if(!confirm('¿Registrar el pago de pensión de ' + (MESES_LARGO[mm] || mm) + ' de ' + e.nombre + ' por ' + fmtPesos(t.pension || 0) + '?')) return; r.meses[mm] = { ok:true, fecha: hoyISO(), valor: t.pension || 0 }; registrarCambio('Pago de pensión de ' + (MESES_LARGO[mm] || mm) + ' de ' + e.nombre + ' registrado (' + fmtPesos(t.pension) + ')'); }
   guardar(); renderPagos();
 }
 function renderPagos(){
