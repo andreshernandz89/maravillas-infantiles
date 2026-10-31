@@ -370,6 +370,21 @@ function justifHistorial(){
   });
   return hh;
 }
+
+/* Aviso interno al colegio: con el puente de correo sale con el diseno
+ * institucional desde la cuenta del colegio; sin puente, respaldo FormSubmit. */
+const AVISO_PUENTE_URL = '';
+function avisoColegio(tipo, sol, idSol, campos, revisar){
+  if(AVISO_PUENTE_URL){
+    try{ fetch(AVISO_PUENTE_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ accion: 'avisoPadres', tipo: tipo, solicitudId: idSol || '' }) }).catch(function(){}); }catch(e){}
+    return;
+  }
+  const asuntos = { PAGO_PENSION: 'Pago de pensión reportado — ', JUSTIFICACION: 'Nueva justificación de falta — ', CERTIFICADO: 'Nueva solicitud de certificado — ' };
+  const body = { _subject: (asuntos[tipo] || 'Aviso — ') + sol.estudiante, _template: 'boxy', Estudiante: sol.estudiante, Grado: sol.grado };
+  Object.keys(campos || {}).forEach(function(k){ body[k] = campos[k]; });
+  body.Revisar = revisar;
+  try{ fetch('https://formsubmit.co/ajax/0a325c2d025ec296233c9fa6fb208e62', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(body) }).catch(function(){}); }catch(e){}
+}
 async function enviarJustificacion(){
   const msg = $('just-msg'); if(!msg) return;
   const pon = t => { msg.innerHTML = '<div class="error">' + t + '</div>'; };
@@ -383,15 +398,14 @@ async function enviarJustificacion(){
     const sol = { ts: Date.now(), estado: 'PENDIENTE', tipoSolicitud: 'JUSTIFICACION', clave: CLAVE_ACTUAL, estudiante: (((d.apellidos || '') + ' ' + (d.nombres || '')).trim()), grado: d.gradoActual || '', docTipo: d.docTipo || '', docNumero: d.docNumero || '', genero: d.genero || '', tipo: 'JUSTIFICACION', valor: 0, fechaFalta: fecha, motivo: motivo, detalle: detalle, comprobante: { nombre: '', tipo: '', b64: '' } };
     const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
     if(!r.ok) throw new Error('HTTP ' + r.status);
+    let idSol = ''; try{ idSol = (await r.clone().json()).name || ''; }catch(e){}
     let arr = []; try{ arr = JSON.parse(localStorage.getItem('justif_' + CLAVE_ACTUAL) || '[]'); }catch(e){}
     arr.push({ fechaFalta: fecha, motivo: motivo, ts: sol.ts });
     try{ localStorage.setItem('justif_' + CLAVE_ACTUAL, JSON.stringify(arr.slice(-6))); }catch(e){}
     msg.innerHTML = '<p class="msg-ok">✔ <strong>Justificación enviada.</strong> El colegio la revisará; vuelve a consultar más tarde y aquí verás el resultado.</p>';
     const hist = $('just-historial'); if(hist) hist.innerHTML = justifHistorial();
     $('just-detalle').value = '';
-    try{
-      fetch('https://formsubmit.co/ajax/0a325c2d025ec296233c9fa6fb208e62', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ _subject: 'Nueva justificación de falta — ' + sol.estudiante, _template: 'boxy', Estudiante: sol.estudiante, Grado: sol.grado, Fecha_de_la_falta: sol.fechaFalta, Motivo: sol.motivo, Detalle: sol.detalle || '', Revisar: 'PlataformaEDU → Asistencia' }) }).catch(function(){});
-    }catch(e){}
+    avisoColegio('JUSTIFICACION', sol, idSol, { Fecha_de_la_falta: sol.fechaFalta, Motivo: sol.motivo, Detalle: sol.detalle || '' }, 'PlataformaEDU → Asistencia');
   }catch(e){
     pon('No pudimos enviar la justificación en este momento. Escríbenos por WhatsApp al 302 285 2745 y te ayudamos.');
   }
@@ -429,14 +443,13 @@ async function enviarPagoPension(){
     const sol = { ts: Date.now(), estado: 'PENDIENTE', tipoSolicitud: 'PAGO_PENSION', clave: CLAVE_ACTUAL, estudiante: (((d.apellidos || '') + ' ' + (d.nombres || '')).trim()), grado: d.gradoActual || '', docTipo: d.docTipo || '', docNumero: d.docNumero || '', genero: d.genero || '', tipo: 'PAGO_PENSION', valor: (function(){ const sel = $('pago-concepto'); return sel ? Number(sel.value || 0) : ((d.pagos && d.pagos.deuda) || 0); })(), meses: (function(){ const sel = $('pago-concepto'); return sel && sel.options[sel.selectedIndex] ? (sel.options[sel.selectedIndex].getAttribute('data-m') || '') : ((d.pagos && d.pagos.pendientes) || []).join(', '); })(), comprobante: comp };
     const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
     if(!r.ok) throw new Error('HTTP ' + r.status);
+    let idSol = ''; try{ idSol = (await r.clone().json()).name || ''; }catch(e){}
     let arr = []; try{ arr = JSON.parse(localStorage.getItem('pagosol_' + CLAVE_ACTUAL) || '[]'); }catch(e){}
     arr.push({ valor: sol.valor, ts: sol.ts });
     try{ localStorage.setItem('pagosol_' + CLAVE_ACTUAL, JSON.stringify(arr.slice(-6))); }catch(e){}
     msg.innerHTML = '<p class="msg-ok">✔ <strong>Comprobante enviado.</strong> El colegio verificará tu pago y aquí verás la confirmación.</p>';
     inp.value = '';
-    try{
-      fetch('https://formsubmit.co/ajax/0a325c2d025ec296233c9fa6fb208e62', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ _subject: 'Pago de pensión reportado — ' + sol.estudiante, _template: 'boxy', Estudiante: sol.estudiante, Grado: sol.grado, Valor: '$' + Number(sol.valor || 0).toLocaleString('es-CO'), Meses: sol.meses || '', Revisar: 'PlataformaEDU → Contabilidad → Pagos' }) }).catch(function(){});
-    }catch(e){}
+    avisoColegio('PAGO_PENSION', sol, idSol, { Valor: '$' + Number(sol.valor || 0).toLocaleString('es-CO'), Meses: sol.meses || '' }, 'PlataformaEDU → Contabilidad → Pagos');
   }catch(e){
     pon('No pudimos enviar tu comprobante en este momento. Escríbenos por WhatsApp al 302 285 2745 y te ayudamos.');
   }
@@ -494,14 +507,13 @@ async function enviarSolicitudCert(){
     const sol = { ts: Date.now(), estado: 'PENDIENTE', clave: CLAVE_ACTUAL, estudiante: (((d.apellidos || '') + ' ' + (d.nombres || '')).trim()), grado: d.gradoActual || '', docTipo: d.docTipo || '', docNumero: d.docNumero || '', genero: d.genero || '', tipo: tipo, valor: d.precioCert || 12000, comprobante: comp };
     const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
     if(!r.ok) throw new Error('HTTP ' + r.status);
+    let idSol = ''; try{ idSol = (await r.clone().json()).name || ''; }catch(e){}
     let arr = [];
     try{ arr = JSON.parse(localStorage.getItem('certsol_' + CLAVE_ACTUAL) || '[]'); }catch(e){}
     arr.push({ tipo: tipo, ts: sol.ts });
     localStorage.setItem('certsol_' + CLAVE_ACTUAL, JSON.stringify(arr.slice(-6)));
     msg.innerHTML = '<p style="background:#e2f4e5;color:#1e7d32;border:1px solid #bfe6c6;border-radius:10px;padding:12px;margin-top:12px">✔ <strong>Solicitud enviada.</strong> El colegio verificará tu pago; vuelve a consultar más tarde y aquí aparecerá tu certificado para descargar.</p>';
-    try{
-      fetch('https://formsubmit.co/ajax/0a325c2d025ec296233c9fa6fb208e62', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ _subject: 'Nueva solicitud de certificado \u2014 ' + sol.estudiante, _template: 'boxy', Estudiante: sol.estudiante, Grado: sol.grado, Certificado: ((typeof TIPOS_CERT !== 'undefined' && TIPOS_CERT[tipo]) || tipo), Valor: '$' + Number(sol.valor || 0).toLocaleString('es-CO'), Revisar: 'PlataformaEDU \u2192 Contabilidad \u2192 Certificados de padres' }) }).catch(function(){});
-    }catch(e){}
+    avisoColegio('CERTIFICADO', sol, idSol, { Certificado: ((typeof TIPOS_CERT !== 'undefined' && TIPOS_CERT[tipo]) || tipo), Valor: '$' + Number(sol.valor || 0).toLocaleString('es-CO') }, 'PlataformaEDU → Contabilidad → Certificados de padres');
     inp.value = '';
   }catch(e){
     pon('No pudimos enviar tu solicitud en este momento. Escríbenos por WhatsApp al 302 285 2745 y te ayudamos con tu certificado.');
