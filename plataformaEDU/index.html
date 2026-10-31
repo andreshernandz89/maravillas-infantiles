@@ -556,6 +556,10 @@ button.btn:hover{ background:var(--azul-osc); }
           <div style="flex:1;min-width:240px"><label>Correo de la institución</label><input type="email" id="inst-correo" placeholder="Ej.: info@colegio.edu.co"></div>
           <div style="align-self:flex-end"><span id="correo-estado" class="sem">⚪ Sin sincronizar</span></div>
         </div>
+        <div class="fila">
+          <div style="flex:1;min-width:260px"><label>Dirección de conexión del puente (URL)</label><input type="url" id="inst-correo-puente" placeholder="https://script.google.com/macros/s/…/exec"></div>
+        </div>
+        <p class="ayuda"><strong>Cómo sincronizar (3 pasos):</strong> 1) En la cuenta de Google del correo institucional, sigue la guía de instalación para crear el puente de correo. 2) Desplégalo como aplicación web y copia la dirección que termina en <strong>/exec</strong>. 3) Pégala en el campo de arriba, pulsa «Guardar datos» y envía el correo de prueba.</p>
         <p class="ayuda" id="correo-ayuda"></p>
         <div class="fila">
           <button class="btn btn-sec" id="btn-correo-probar" onclick="correoProbarConexion()">📨 Enviar correo de prueba</button>
@@ -1458,7 +1462,7 @@ function matriTarjetaHTML(m){
     '<div class="ayuda" style="margin:4px 0 8px">Acudiente: <strong>' + esc(a.nombre || '—') + '</strong> · CC ' + esc(a.cc || '—') + '<br>Tel. ' + esc(a.telefono || '—') + '</div>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
       (tel ? '<a class="btn btn-sec mini" style="text-decoration:none" target="_blank" rel="noopener" href="' + waHref + '">💬 WhatsApp</a>' : '') +
-      (correoHref ? (PUENTE_CORREO_URL ? '<button class="btn btn-sec mini" onclick="matriAvisarCorreo(\'' + m.id + '\')">📧 Avisar por correo</button>' : '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>') : '') +
+      (correoHref ? (correoPuenteUrl() ? '<button class="btn btn-sec mini" onclick="matriAvisarCorreo(\'' + m.id + '\')">📧 Avisar por correo</button>' : '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>') : '') +
       '<button class="btn btn-sec mini" onclick="matriVer(\'' + m.id + '\')">' + (MATRI_SEL === m.id ? 'Ocultar detalle' : 'Ver detalle') + '</button>';
   if(etapa !== 'IMPORTADA' && esAct){
     h += '<button class="btn mini" style="background:#0f47b8;color:#fff" onclick="matriActualizarFicha(\'' + m.id + '\')">✏️ Actualizar ficha</button>';
@@ -2385,11 +2389,11 @@ function cargarInstitutoEnForm(){
   const i = DB.instituto;
   $('inst-nombre').value=i.nombre||''; $('inst-ciudad').value=i.ciudad||''; $('inst-anio').value=i.anio||'';
   $('inst-licencia').value=i.licencia||''; $('inst-sede').value=i.sede||''; $('inst-nivel').value=i.nivel||'';
-  $('inst-jornada').value=i.jornada||''; $('inst-rector').value=i.rector||''; $('inst-nequi').value=i.nequiCert||''; $('inst-precio-cert').value=i.precioCert||12000; $('inst-correo').value=i.correo||''; pintarEstadoCorreo();
+  $('inst-jornada').value=i.jornada||''; $('inst-rector').value=i.rector||''; $('inst-nequi').value=i.nequiCert||''; $('inst-precio-cert').value=i.precioCert||12000; $('inst-correo').value=i.correo||''; $('inst-correo-puente').value=i.correoPuenteUrl||''; pintarEstadoCorreo();
   $('head-inst').textContent = i.nombre||'';
 }
 function guardarInstituto(){
-  DB.instituto = { nombre:$('inst-nombre').value.trim(), ciudad:$('inst-ciudad').value.trim(), anio:$('inst-anio').value.trim(), licencia:$('inst-licencia').value.trim(), sede:$('inst-sede').value.trim(), nivel:$('inst-nivel').value.trim(), jornada:$('inst-jornada').value.trim(), rector:$('inst-rector').value.trim(), nequiCert:$('inst-nequi').value.trim(), precioCert:(parseInt($('inst-precio-cert').value,10)||12000), correo:$('inst-correo').value.trim() };
+  DB.instituto = { nombre:$('inst-nombre').value.trim(), ciudad:$('inst-ciudad').value.trim(), anio:$('inst-anio').value.trim(), licencia:$('inst-licencia').value.trim(), sede:$('inst-sede').value.trim(), nivel:$('inst-nivel').value.trim(), jornada:$('inst-jornada').value.trim(), rector:$('inst-rector').value.trim(), nequiCert:$('inst-nequi').value.trim(), precioCert:(parseInt($('inst-precio-cert').value,10)||12000), correo:$('inst-correo').value.trim(), correoPuenteUrl:$('inst-correo-puente').value.trim() };
   guardar(); $('head-inst').textContent = DB.instituto.nombre; $('inst-ok').textContent = '✔ Guardado';
   setTimeout(()=>$('inst-ok').textContent='', 2000);
 }
@@ -3939,10 +3943,11 @@ async function llamarPuenteIA(payload){
   return d;
 }
 /* ===== Correo institucional (puente de correo) ===== */
+function correoPuenteUrl(){ return ((DB.instituto && DB.instituto.correoPuenteUrl) || PUENTE_CORREO_URL || '').trim(); }
 function pintarEstadoCorreo(){
   const el = $('correo-estado'), ay = $('correo-ayuda'), btn = $('btn-correo-probar'); if(!el) return;
   const c = (DB.instituto && DB.instituto.correo) || '';
-  if(PUENTE_CORREO_URL){
+  if(correoPuenteUrl()){
     el.textContent = '🟢 Sincronizado'; el.className = 'sem v';
     ay.textContent = 'Sincronizado: todos los correos que se envíen desde la plataforma salen desde ' + (c || 'el correo de la institución') + '.';
     if(btn) btn.disabled = false;
@@ -3953,12 +3958,13 @@ function pintarEstadoCorreo(){
   }
 }
 async function correoLlamarPuente(extra){
-  if(!PUENTE_CORREO_URL) throw new Error('El correo institucional todavía no está sincronizado.');
+  const urlPuente = correoPuenteUrl();
+  if(!urlPuente) throw new Error('El correo institucional todavía no está sincronizado.');
   if (typeof SIMULANDO !== 'undefined' && SIMULANDO) throw new Error('Estás simulando otro perfil (vista previa): el correo no se envía en este modo.');
   const u = FB_AUTH && FB_AUTH.currentUser;
   if(!u) throw new Error('Tu sesión no está activa; sal y vuelve a entrar a la plataforma.');
   const idToken = await u.getIdToken();
-  const r = await fetch(PUENTE_CORREO_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({ idToken }, extra)) });
+  const r = await fetch(urlPuente, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({ idToken }, extra)) });
   return await r.json();
 }
 async function correoProbarConexion(){
