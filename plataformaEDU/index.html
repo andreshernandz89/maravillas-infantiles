@@ -549,6 +549,19 @@ button.btn:hover{ background:var(--azul-osc); }
         <button class="btn" onclick="guardarInstituto()">Guardar datos</button>
         <span id="inst-ok" class="ok-flash"></span>
       </div>
+      <div class="card" id="card-correo">
+        <h2>📧 Correo institucional</h2>
+        <p class="ayuda">Este es el correo con el que la plataforma escribe a los padres: el aviso automático cuando un estudiante queda inscrito y los avisos del proceso de admisión. Se sincroniza instalando el puente de correo en la cuenta de Google de la institución (guía de instalación de PlataformaEDU), para que los correos salgan desde el propio correo del colegio.</p>
+        <div class="fila">
+          <div style="flex:1;min-width:240px"><label>Correo de la institución</label><input type="email" id="inst-correo" placeholder="Ej.: info@colegio.edu.co"></div>
+          <div style="align-self:flex-end"><span id="correo-estado" class="sem">⚪ Sin sincronizar</span></div>
+        </div>
+        <p class="ayuda" id="correo-ayuda"></p>
+        <div class="fila">
+          <button class="btn btn-sec" id="btn-correo-probar" onclick="correoProbarConexion()">📨 Enviar correo de prueba</button>
+          <span class="ayuda">El correo institucional se guarda con el botón «Guardar datos» de la tarjeta de arriba. La prueba llega a la propia bandeja del correo institucional.</span>
+        </div>
+      </div>
       <div class="card" id="card-apis">
         <h2>🔌 Integraciones y APIs</h2>
         <p class="ayuda">Aquí se guardan las claves de acceso (APIs) de los servicios conectados a la plataforma. <strong>Solo el dueño (owner) puede ver y guardar esta información</strong>: ningún otro perfil tiene acceso a esta sección. Las claves quedan guardadas en el puente seguro, nunca en esta página.</p>
@@ -1374,6 +1387,54 @@ function matriAvisoTexto(etapa, nombreEst, grado, inst){
   }
   return { asunto, cuerpo, wa };
 }
+/* Plantilla visual de los correos de admisión: la institución en grande
+ * (logo y nombre), las 4 etapas con la actual destacada y un solo botón. */
+function matriAvisoHTML(etapa, nombreEst, grado, inst){
+  const nom = esc(nombreEst || 'su hijo(a)');
+  const gTxt = esc(grado ? ('el grado ' + grado) : 'el grado solicitado');
+  const color = (getComputedStyle(document.documentElement).getPropertyValue('--primario') || '#0f47b8').trim() || '#0f47b8';
+  const logo = new URL('../escudo.png', location.href).href;
+  const idx = etapa === 'PROCESO' ? 1 : etapa === 'ADMITIDA' ? 2 : etapa === 'IMPORTADA' ? 3 : 0;
+  let titulo, parrafos, boton;
+  if(etapa === 'PROCESO'){
+    titulo = 'El proceso está en revisión';
+    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', 'El proceso de admisión de <strong>' + nom + '</strong> para <strong>' + gTxt + '</strong> (año 2027) está en revisión por parte del colegio.', 'Les avisaremos en cuanto haya novedades.'];
+    boton = { texto: 'Ver el estado del proceso', url: URL_PADRES };
+  } else if(etapa === 'ADMITIDA'){
+    titulo = '¡Buenas noticias: fue admitido(a)!';
+    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', '<strong>' + nom + '</strong> fue <strong>ADMITIDO(A)</strong> en ' + esc(inst) + ' para <strong>' + gTxt + '</strong> del año 2027.', 'El siguiente paso es formalizar la matrícula: comuníquense con secretaría para completar el proceso.'];
+    boton = { texto: 'Ver el estado del proceso', url: URL_PADRES };
+  } else if(etapa === 'IMPORTADA'){
+    titulo = '¡Bienvenidos! Ya está matriculado(a)';
+    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', '<strong>' + nom + '</strong> ya quedó matriculado(a) en <strong>' + gTxt + '</strong> para el año 2027 en ' + esc(inst) + '.', 'En la plataforma para padres podrán consultar notas y boletines, la asistencia, justificar faltas, reportar pagos, solicitar certificados y ver las tareas y el calendario.'];
+    boton = { texto: 'Entrar a la plataforma para padres', url: URL_PADRES };
+  } else {
+    titulo = '¡Inscripción recibida!';
+    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', 'Recibimos el formulario de inscripción de <strong>' + nom + '</strong> para <strong>' + gTxt + '</strong> (año 2027). Su proceso está en la etapa <strong>INSCRITO</strong>.', 'Les avisaremos por este medio cuando el proceso avance. Si tienen alguna duda, respondan a este correo.'];
+    boton = { texto: 'Ver el estado del proceso', url: URL_PADRES };
+  }
+  const etapas = ['Inscrito', 'En proceso', 'Admitido', 'Matriculado'];
+  const celdas = etapas.map(function(t, i){
+    let bg = '#eef1f6', col = '#7a8699', extra = '';
+    if(i < idx){ bg = '#e3ecfd'; col = color; t = '✓ ' + t; }
+    if(i === idx){ bg = color; col = '#ffffff'; extra = 'font-weight:bold;'; }
+    return '<td align="center" style="background:' + bg + ';color:' + col + ';' + extra + 'font-size:12.5px;padding:8px 4px;border-radius:20px">' + t + '</td>';
+  }).join('<td style="width:6px"></td>');
+  const parr = parrafos.map(function(p){ return '<p style="margin:0 0 14px;font-size:15.5px;line-height:1.6;color:#26324a">' + p + '</p>'; }).join('');
+  return '<div style="background:#f2f5fb;padding:28px 12px;font-family:Arial,Helvetica,sans-serif">' +
+    '<table align="center" width="100%" style="max-width:560px;background:#ffffff;border:1px solid #dde5f2;border-radius:14px" cellpadding="0" cellspacing="0"><tr><td style="padding:30px 34px 26px">' +
+      '<div style="text-align:center;padding-bottom:18px;border-bottom:3px solid #d9a62e;margin-bottom:22px">' +
+        '<img src="' + logo + '" alt="" style="height:92px;max-width:220px;margin-bottom:10px"><br>' +
+        '<span style="font-size:23px;font-weight:bold;color:' + color + ';letter-spacing:.4px;text-transform:uppercase">' + esc(inst) + '</span>' +
+      '</div>' +
+      '<p style="margin:0 0 16px;font-size:20px;font-weight:bold;color:#1a2a4a;text-align:center">' + titulo + '</p>' +
+      parr +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 6px"><tr>' + celdas + '</tr></table>' +
+      '<div style="text-align:center;margin:22px 0 4px"><a href="' + boton.url + '" style="display:inline-block;background:' + color + ';color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 26px;border-radius:24px">' + boton.texto + '</a>' +
+      '<div style="font-size:12.5px;color:#7a8699;margin-top:9px">Ingresan con el número de documento del estudiante, sin contraseña.</div></div>' +
+      '<div style="border-top:1px solid #e4e9f4;margin-top:24px;padding-top:14px;text-align:center;font-size:12px;color:#8a94a6">' + esc(inst) + ' · Correo enviado desde su plataforma institucional</div>' +
+    '</td></tr></table></div>';
+}
 function matriTarjetaHTML(m){
   const e = m.estudiante || {}, a = m.acudiente || {};
   const etapa = etapaDe(m);
@@ -1391,12 +1452,13 @@ function matriTarjetaHTML(m){
       '<span class="sem">' + (esAct ? '🔄 Actualización' : '🆕 Matrícula nueva') + '</span>' +
       (etapa === 'IMPORTADA' ? '<span class="sem v">' + (esAct ? 'Ficha actualizada' : 'Estudiante creado') + '</span>' : '') +
       (m.avisoCorreoInicial ? '<span class="sem v">📧 Correo inicial enviado</span>' : '') +
+      (m.avisoCorreoEtapa ? '<span class="sem v">📧 Aviso de etapa enviado</span>' : '') +
       '<span class="ayuda">' + matriFecha(m.ts) + '</span>' +
     '</div>' +
     '<div class="ayuda" style="margin:4px 0 8px">Acudiente: <strong>' + esc(a.nombre || '—') + '</strong> · CC ' + esc(a.cc || '—') + '<br>Tel. ' + esc(a.telefono || '—') + '</div>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
       (tel ? '<a class="btn btn-sec mini" style="text-decoration:none" target="_blank" rel="noopener" href="' + waHref + '">💬 WhatsApp</a>' : '') +
-      (correoHref ? '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>' : '') +
+      (correoHref ? (PUENTE_CORREO_URL ? '<button class="btn btn-sec mini" onclick="matriAvisarCorreo(\'' + m.id + '\')">📧 Avisar por correo</button>' : '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>') : '') +
       '<button class="btn btn-sec mini" onclick="matriVer(\'' + m.id + '\')">' + (MATRI_SEL === m.id ? 'Ocultar detalle' : 'Ver detalle') + '</button>';
   if(etapa !== 'IMPORTADA' && esAct){
     h += '<button class="btn mini" style="background:#0f47b8;color:#fff" onclick="matriActualizarFicha(\'' + m.id + '\')">✏️ Actualizar ficha</button>';
@@ -2323,11 +2385,11 @@ function cargarInstitutoEnForm(){
   const i = DB.instituto;
   $('inst-nombre').value=i.nombre||''; $('inst-ciudad').value=i.ciudad||''; $('inst-anio').value=i.anio||'';
   $('inst-licencia').value=i.licencia||''; $('inst-sede').value=i.sede||''; $('inst-nivel').value=i.nivel||'';
-  $('inst-jornada').value=i.jornada||''; $('inst-rector').value=i.rector||''; $('inst-nequi').value=i.nequiCert||''; $('inst-precio-cert').value=i.precioCert||12000;
+  $('inst-jornada').value=i.jornada||''; $('inst-rector').value=i.rector||''; $('inst-nequi').value=i.nequiCert||''; $('inst-precio-cert').value=i.precioCert||12000; $('inst-correo').value=i.correo||''; pintarEstadoCorreo();
   $('head-inst').textContent = i.nombre||'';
 }
 function guardarInstituto(){
-  DB.instituto = { nombre:$('inst-nombre').value.trim(), ciudad:$('inst-ciudad').value.trim(), anio:$('inst-anio').value.trim(), licencia:$('inst-licencia').value.trim(), sede:$('inst-sede').value.trim(), nivel:$('inst-nivel').value.trim(), jornada:$('inst-jornada').value.trim(), rector:$('inst-rector').value.trim(), nequiCert:$('inst-nequi').value.trim(), precioCert:(parseInt($('inst-precio-cert').value,10)||12000) };
+  DB.instituto = { nombre:$('inst-nombre').value.trim(), ciudad:$('inst-ciudad').value.trim(), anio:$('inst-anio').value.trim(), licencia:$('inst-licencia').value.trim(), sede:$('inst-sede').value.trim(), nivel:$('inst-nivel').value.trim(), jornada:$('inst-jornada').value.trim(), rector:$('inst-rector').value.trim(), nequiCert:$('inst-nequi').value.trim(), precioCert:(parseInt($('inst-precio-cert').value,10)||12000), correo:$('inst-correo').value.trim() };
   guardar(); $('head-inst').textContent = DB.instituto.nombre; $('inst-ok').textContent = '✔ Guardado';
   setTimeout(()=>$('inst-ok').textContent='', 2000);
 }
@@ -3119,6 +3181,7 @@ function fmtPesos(n){ return n ? '$' + Number(n).toLocaleString('es-CO') : '—'
 const ALEGRA_ITEMS = ['Matricula 2026','Mensualidad PARVULO 2026','Mensualidad PRE-JARDIN 2026','Mensualidad JARDIN 2026','Mensualidad TRANSICION 2026','Mensualidad PRIMERO 2026','Mensualidad SEGUNDO 2026','Mensualidad TERCERO 2026','Mensualidad CUARTO 2026','Mensualidad QUINTO 2026'];
 const PUENTE_URL = 'https://script.google.com/macros/s/AKfycbyIGA-U8THJgR3GHLypZZFt2S2t4qqru_VNjBtuFfEMUhlKw3Dd30Z-0yZJ0bTMADw/exec';
 const PUENTE_IA_URL = 'https://script.google.com/macros/s/AKfycbxsDvjBI3_pdrtA7kqkM_I_wrU_BO8eelNUMkwV0S3eWfApEH2SOOaz8CwgRb0E1jiy3w/exec';
+const PUENTE_CORREO_URL = ''; // Puente de correo institucional: se llena al conectar el correo del colegio (módulo Instituto).
 const ALEGRA_ITEM_IDS = { 'Matricula 2026': 104, 'Mensualidad PARVULO 2026': 105, 'Mensualidad PRE-JARDIN 2026': 106, 'Mensualidad JARDIN 2026': 107, 'Mensualidad TRANSICION 2026': 108, 'Mensualidad PRIMERO 2026': 109, 'Mensualidad SEGUNDO 2026': 110, 'Mensualidad TERCERO 2026': 111, 'Mensualidad CUARTO 2026': 112, 'Mensualidad QUINTO 2026': 113 };
 let FACT_CURSO = null;
 function factDB(){ if(!DB.facturacion || !Array.isArray(DB.facturacion.solicitudes)) DB.facturacion = { solicitudes: [] }; return DB.facturacion; }
@@ -3874,6 +3937,57 @@ async function llamarPuenteIA(payload){
   const d = await r.json();
   if(!d || !d.ok) throw new Error((d && d.error) || 'La IA no respondió.');
   return d;
+}
+/* ===== Correo institucional (puente de correo) ===== */
+function pintarEstadoCorreo(){
+  const el = $('correo-estado'), ay = $('correo-ayuda'), btn = $('btn-correo-probar'); if(!el) return;
+  const c = (DB.instituto && DB.instituto.correo) || '';
+  if(PUENTE_CORREO_URL){
+    el.textContent = '🟢 Sincronizado'; el.className = 'sem v';
+    ay.textContent = 'La plataforma envía desde ' + (c || 'el correo de la institución') + ': el aviso automático de inscripción y los avisos del proceso de admisión salen de esa cuenta.';
+    if(btn) btn.disabled = false;
+  } else {
+    el.textContent = '⚪ Sin sincronizar'; el.className = 'sem';
+    ay.textContent = 'Todavía no hay un puente de correo conectado: los avisos se envían a mano desde el correo de quien los pulsa. Para sincronizar, instala el puente de correo en la cuenta de Google de la institución (guía de instalación de PlataformaEDU).';
+    if(btn) btn.disabled = true;
+  }
+}
+async function correoLlamarPuente(extra){
+  if(!PUENTE_CORREO_URL) throw new Error('El correo institucional todavía no está sincronizado.');
+  if (typeof SIMULANDO !== 'undefined' && SIMULANDO) throw new Error('Estás simulando otro perfil (vista previa): el correo no se envía en este modo.');
+  const u = FB_AUTH && FB_AUTH.currentUser;
+  if(!u) throw new Error('Tu sesión no está activa; sal y vuelve a entrar a la plataforma.');
+  const idToken = await u.getIdToken();
+  const r = await fetch(PUENTE_CORREO_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({ idToken }, extra)) });
+  return await r.json();
+}
+async function correoProbarConexion(){
+  try{
+    const resp = await correoLlamarPuente({ accion: 'correoProbar' });
+    if(resp && resp.ok) alert('✅ Correo sincronizado: la prueba se envió desde ' + (resp.desde || 'el correo institucional') + '. Revisa esa bandeja.');
+    else alert('El puente respondió: ' + ((resp && resp.error) || 'sin respuesta'));
+  }catch(err){ alert('No se pudo enviar la prueba: ' + err.message); }
+}
+async function matriAvisarCorreo(id){
+  const m = MATRI[id]; if(!m) return;
+  const e = m.estudiante || {};
+  const para = String(e.correo || '').trim();
+  if(!para){ alert('Esta solicitud no trae el correo del acudiente.'); return; }
+  const etapa = etapaDe(m);
+  const inst = (DB.instituto && DB.instituto.nombre) || 'el colegio';
+  const nombreEst = ((e.nombres || '') + ' ' + (e.apellidos || '')).trim();
+  const aviso = matriAvisoTexto(etapa, nombreEst, m.grado || '', inst);
+  const desde = (DB.instituto && DB.instituto.correo) || 'el correo institucional';
+  if(!confirm('Se enviará este correo DESDE ' + desde + ' a ' + para + ':\n\nAsunto: ' + aviso.asunto + '\n\n' + aviso.cuerpo + '\n\n¿Enviar ahora?')) return;
+  try{
+    const resp = await correoLlamarPuente({ accion: 'correoEnviar', para: para, asunto: aviso.asunto, cuerpo: aviso.cuerpo, html: matriAvisoHTML(etapa, nombreEst, m.grado || '', inst) });
+    if(!resp || !resp.ok) throw new Error((resp && resp.error) || 'El puente no respondió.');
+    const marca = { etapa: etapa, ts: Date.now() };
+    if(FB_DB) FB_DB.ref('matriculas2027/' + id).update({ avisoCorreoEtapa: marca });
+    m.avisoCorreoEtapa = marca;
+    alert('✅ Correo enviado a ' + para + ' desde ' + desde + '.');
+    renderMatriculas();
+  }catch(err){ alert('No se pudo enviar: ' + err.message); }
 }
 function resumenEstudianteIA(e, periodo){
   const curso = cursoDe(e.cursoId) || { nombre:'', nivel:'', asignaturas:[] };
