@@ -49,7 +49,12 @@
     nav.tabs.menu-lateral button{ width:auto; }
   }
   main{ padding:18px 20px 40px; max-width:1180px; margin:0 auto; }
-  .card{ background:#fff; border:1px solid var(--borde); border-radius:14px; padding:20px; margin-bottom:16px; }
+  /* Tarjetas desplegables (Instituto) */
+.card.desplegable>h2{cursor:pointer}
+.card.desplegable>h2::after{content:'\25BE';float:right;color:var(--muted,#7a8798);font-size:.85em}
+.card.desplegable.cerrada>h2::after{content:'\25B8'}
+.card.desplegable.cerrada>*:not(h2){display:none!important}
+.card{ background:#fff; border:1px solid var(--borde); border-radius:14px; padding:20px; margin-bottom:16px; }
   .card h2{ font-size:17px; color:var(--azul-osc); margin-bottom:6px; }
   .card p.ayuda{ font-size:13px; color:#5a6a7d; margin-bottom:12px; }
   label{ font-size:13px; font-weight:600; display:block; margin-bottom:4px; }
@@ -2341,7 +2346,7 @@ function aplicarPermisos(){
 function mostrarApp(){ if (typeof detectarSimulacion === 'function') detectarSimulacion(); if (typeof aplicarEstadoMenu === 'function') aplicarEstadoMenu();
   $('gate').classList.add('hidden'); $('app').classList.remove('hidden');
   ['/plataformaCEMI/membrete.png','/plataformaCEMI/firma-secretaria.png'].forEach(src => { const im = new Image(); im.src = src; });
-  cargarInstitutoEnForm(); refrescarSelectsCursos(); aplicarPermisos(); renderTodo(); actualizarBannerDemo();
+  cargarInstitutoEnForm(); initInstitutoDesplegables(); refrescarSelectsCursos(); aplicarPermisos(); renderTodo(); actualizarBannerDemo();
   const activo = document.querySelector('nav.tabs button.activo');
   if(!activo || activo.classList.contains('hidden')){
     const orden = esDocente() ? ['notas','boletines','asistencia','cursos','asignaturas','final','instituto'] : MODULOS.map(m=>m[0]);
@@ -3944,6 +3949,30 @@ async function llamarPuenteIA(payload){
   const d = await r.json();
   if(!d || !d.ok) throw new Error((d && d.error) || 'La IA no respondió.');
   return d;
+}
+/* ===== Tarjetas desplegables del Instituto (acordeon) ===== */
+function initInstitutoDesplegables(){
+  let abiertos = {};
+  try{ abiertos = JSON.parse(localStorage.getItem('inst_cards') || '{}'); }catch(e){}
+  document.querySelectorAll('#tab-instituto .card').forEach((card, i) => {
+    if(i === 0) return; // la tarjeta principal (Datos del instituto) queda siempre abierta
+    if(!card.id) card.id = 'card-inst-' + i;
+    card.classList.add('desplegable');
+    if(!abiertos[card.id]) card.classList.add('cerrada');
+    const h2 = card.querySelector('h2');
+    if(h2 && !h2.dataset.desplegable){
+      h2.dataset.desplegable = '1';
+      h2.title = 'Pulsa para desplegar u ocultar';
+      h2.addEventListener('click', () => {
+        card.classList.toggle('cerrada');
+        try{
+          const a = JSON.parse(localStorage.getItem('inst_cards') || '{}');
+          a[card.id] = !card.classList.contains('cerrada');
+          localStorage.setItem('inst_cards', JSON.stringify(a));
+        }catch(e){}
+      });
+    }
+  });
 }
 /* ===== Correo institucional: conexión directa con Google o Microsoft =====
  * La conexión vive entre la plataforma del colegio y su proveedor de
