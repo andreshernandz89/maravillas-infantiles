@@ -554,9 +554,15 @@ button.btn:hover{ background:var(--azul-osc); }
           <div style="align-self:flex-end"><span id="correo-estado" class="sem">⚪ Sin sincronizar</span></div>
         </div>
         <div class="fila">
+          <button class="btn" id="btn-google" onclick="correoConectarGoogle()">🔗 Conectar con Google</button>
+          <button class="btn" id="btn-microsoft" onclick="correoConectarMicrosoft()">🔗 Conectar con Microsoft</button>
+          <button class="btn btn-sec hidden" id="btn-correo-desconectar" onclick="correoDesconectar()">Desconectar</button>
+        </div>
+        <p class="ayuda">Pulsa el botón de tu proveedor, inicia sesión con el correo de la institución y acepta el permiso de envío. La conexión queda guardada en este equipo y la plataforma enviará desde esa cuenta; si cambias de equipo, vuelves a pulsar el botón.</p>
+        <div class="fila">
           <div style="flex:1;min-width:260px"><label>Dirección de conexión del puente (URL)</label><input type="url" id="inst-correo-puente" placeholder="https://script.google.com/macros/s/…/exec"></div>
         </div>
-        <p class="ayuda"><strong>Cómo sincronizar (3 pasos):</strong> 1) En la cuenta de Google del correo institucional, sigue la guía de instalación para crear el puente de correo. 2) Desplégalo como aplicación web y copia la dirección que termina en <strong>/exec</strong>. 3) Pégala en el campo de arriba, pulsa «Guardar datos» y envía el correo de prueba.</p>
+        <p class="ayuda"><strong>Opción avanzada — puente propio para el envío automático (solo cuentas Google):</strong> 1) En la cuenta de Google del correo institucional, sigue la guía de instalación para crear el puente de correo. 2) Desplégalo como aplicación web y copia la dirección que termina en <strong>/exec</strong>. 3) Pégala en el campo de arriba, pulsa «Guardar datos» y envía el correo de prueba.</p>
         <p class="ayuda" id="correo-ayuda"></p>
         <div class="fila">
           <button class="btn btn-sec" id="btn-correo-probar" onclick="correoProbarConexion()">📨 Enviar correo de prueba</button>
@@ -1459,7 +1465,7 @@ function matriTarjetaHTML(m){
     '<div class="ayuda" style="margin:4px 0 8px">Acudiente: <strong>' + esc(a.nombre || '—') + '</strong> · CC ' + esc(a.cc || '—') + '<br>Tel. ' + esc(a.telefono || '—') + '</div>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
       (tel ? '<a class="btn btn-sec mini" style="text-decoration:none" target="_blank" rel="noopener" href="' + waHref + '">💬 WhatsApp</a>' : '') +
-      (correoHref ? (correoPuenteUrl() ? '<button class="btn btn-sec mini" onclick="matriAvisarCorreo(\'' + m.id + '\')">📧 Avisar por correo</button>' : '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>') : '') +
+      (correoHref ? (correoConectado() ? '<button class="btn btn-sec mini" onclick="matriAvisarCorreo(\'' + m.id + '\')">📧 Avisar por correo</button>' : '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>') : '') +
       '<button class="btn btn-sec mini" onclick="matriVer(\'' + m.id + '\')">' + (MATRI_SEL === m.id ? 'Ocultar detalle' : 'Ver detalle') + '</button>';
   if(etapa !== 'IMPORTADA' && esAct){
     h += '<button class="btn mini" style="background:#0f47b8;color:#fff" onclick="matriActualizarFicha(\'' + m.id + '\')">✏️ Actualizar ficha</button>';
@@ -2390,7 +2396,7 @@ function cargarInstitutoEnForm(){
   $('head-inst').textContent = i.nombre||'';
 }
 function guardarInstituto(){
-  DB.instituto = { nombre:$('inst-nombre').value.trim(), ciudad:$('inst-ciudad').value.trim(), anio:$('inst-anio').value.trim(), licencia:$('inst-licencia').value.trim(), sede:$('inst-sede').value.trim(), nivel:$('inst-nivel').value.trim(), jornada:$('inst-jornada').value.trim(), rector:$('inst-rector').value.trim(), nequiCert:$('inst-nequi').value.trim(), precioCert:(parseInt($('inst-precio-cert').value,10)||12000), correo:$('inst-correo').value.trim(), correoPuenteUrl:$('inst-correo-puente').value.trim() };
+  DB.instituto = { nombre:$('inst-nombre').value.trim(), ciudad:$('inst-ciudad').value.trim(), anio:$('inst-anio').value.trim(), licencia:$('inst-licencia').value.trim(), sede:$('inst-sede').value.trim(), nivel:$('inst-nivel').value.trim(), jornada:$('inst-jornada').value.trim(), rector:$('inst-rector').value.trim(), nequiCert:$('inst-nequi').value.trim(), precioCert:(parseInt($('inst-precio-cert').value,10)||12000), correo:$('inst-correo').value.trim(), correoPuenteUrl:$('inst-correo-puente').value.trim(), correoProveedor:(DB.instituto && DB.instituto.correoProveedor) || '' };
   guardar(); $('head-inst').textContent = DB.instituto.nombre; $('inst-ok').textContent = '✔ Guardado';
   setTimeout(()=>$('inst-ok').textContent='', 2000);
 }
@@ -3939,20 +3945,155 @@ async function llamarPuenteIA(payload){
   if(!d || !d.ok) throw new Error((d && d.error) || 'La IA no respondió.');
   return d;
 }
-/* ===== Correo institucional (puente de correo) ===== */
+/* ===== Correo institucional: conexión directa con Google o Microsoft =====
+ * La conexión vive entre la plataforma del colegio y su proveedor de
+ * correo: no pasa por servidores de PlataformaEDU ni de terceros, y no
+ * depende de nadie más. Los ID de cliente son los de la aplicación de
+ * PlataformaEDU registrada una sola vez en Google y en Microsoft. */
+const GOOGLE_CLIENT_ID = ''; // App de PlataformaEDU en Google (se llena al registrarla).
+const MS_CLIENT_ID = '';     // App de PlataformaEDU en Microsoft (se llena al registrarla).
+let googleTokenClient = null, msalApp = null;
+
 function correoPuenteUrl(){ return ((DB.instituto && DB.instituto.correoPuenteUrl) || PUENTE_CORREO_URL || '').trim(); }
+function correoGoogleGuardado(){ try{ return JSON.parse(localStorage.getItem('correoGoogle') || 'null'); }catch(e){ return null; } }
+function correoProveedorActivo(){
+  const g = correoGoogleGuardado();
+  if(g && g.email) return 'google';
+  if(localStorage.getItem('correoMicrosoft')) return 'microsoft';
+  if(correoPuenteUrl()) return 'puente';
+  return '';
+}
+function correoConectado(){ return !!correoProveedorActivo(); }
 function pintarEstadoCorreo(){
-  const el = $('correo-estado'), ay = $('correo-ayuda'), btn = $('btn-correo-probar'); if(!el) return;
+  const el = $('correo-estado'), ay = $('correo-ayuda'), btn = $('btn-correo-probar'), desc = $('btn-correo-desconectar'); if(!el) return;
   const c = (DB.instituto && DB.instituto.correo) || '';
-  if(correoPuenteUrl()){
-    el.textContent = '🟢 Sincronizado'; el.className = 'sem v';
+  const prov = correoProveedorActivo();
+  if(prov){
+    const etiqueta = prov === 'google' ? 'Google' : prov === 'microsoft' ? 'Microsoft' : 'puente propio';
+    el.textContent = '🟢 Sincronizado (' + etiqueta + ')'; el.className = 'sem v';
     ay.textContent = 'Sincronizado: todos los correos que se envíen desde la plataforma salen desde ' + (c || 'el correo de la institución') + '.';
     if(btn) btn.disabled = false;
+    if(desc) desc.classList.remove('hidden');
   } else {
     el.textContent = '⚪ Sin sincronizar'; el.className = 'sem';
-    ay.textContent = 'Todavía no hay un puente de correo conectado: por ahora los correos se envían a mano desde el correo de quien los pulsa. Para sincronizar, instala el puente de correo en la cuenta de Google de la institución (guía de instalación de PlataformaEDU).';
+    ay.textContent = 'Todavía no hay un correo conectado en este equipo: pulsa «Conectar con Google» o «Conectar con Microsoft» según tu proveedor. Sin conexión, los avisos se envían a mano desde el correo de quien los pulsa.';
     if(btn) btn.disabled = true;
+    if(desc) desc.classList.add('hidden');
   }
+}
+async function cargarScript(src){
+  return new Promise((res, rej) => {
+    if(document.querySelector('script[src="' + src + '"]')) return res();
+    const sc = document.createElement('script'); sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error('No se pudo cargar ' + src));
+    document.head.appendChild(sc);
+  });
+}
+async function correoTokenGoogle(silencioso){
+  const g = correoGoogleGuardado();
+  if(g && g.token && g.exp > Date.now() + 60000) return g.token;
+  if(!GOOGLE_CLIENT_ID) throw new Error('La conexión con Google está en activación por PlataformaEDU.');
+  await cargarScript('https://accounts.google.com/gsi/client');
+  return new Promise((resolve, reject) => {
+    if(!googleTokenClient){
+      googleTokenClient = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email', callback: () => {} });
+    }
+    googleTokenClient.callback = async (resp) => {
+      if(resp.error) return reject(new Error('Google no autorizó el envío (' + resp.error + ').'));
+      try{
+        const info = await (await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + resp.access_token } })).json();
+        localStorage.setItem('correoGoogle', JSON.stringify({ email: info.email || '', token: resp.access_token, exp: Date.now() + (Number(resp.expires_in) || 3600) * 1000 }));
+        if(info.email){ DB.instituto.correo = info.email; const ic = $('inst-correo'); if(ic) ic.value = info.email; }
+        DB.instituto.correoProveedor = 'google'; guardar();
+        pintarEstadoCorreo();
+        resolve(resp.access_token);
+      }catch(e){ reject(e); }
+    };
+    googleTokenClient.requestAccessToken({ prompt: silencioso ? '' : 'consent' });
+  });
+}
+async function correoConectarGoogle(){
+  try{
+    await correoTokenGoogle(false);
+    const g = correoGoogleGuardado();
+    alert('✅ Correo de Google conectado: ' + ((g && g.email) || '') + '. La plataforma ya puede enviar desde esa cuenta en este equipo.');
+  }catch(e){ alert('No se pudo conectar con Google: ' + e.message); }
+}
+async function correoMsal(){
+  if(!MS_CLIENT_ID) throw new Error('La conexión con Microsoft está en activación por PlataformaEDU.');
+  await cargarScript('https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js');
+  if(!msalApp){
+    msalApp = new msal.PublicClientApplication({ auth: { clientId: MS_CLIENT_ID, authority: 'https://login.microsoftonline.com/common', redirectUri: location.origin + location.pathname }, cache: { cacheLocation: 'localStorage' } });
+    await msalApp.initialize();
+  }
+  return msalApp;
+}
+async function correoTokenMicrosoft(){
+  const app = await correoMsal();
+  const cuentas = app.getAllAccounts();
+  if(!cuentas.length) throw new Error('Primero pulsa «Conectar con Microsoft».');
+  try{
+    const r = await app.acquireTokenSilent({ scopes: ['Mail.Send', 'User.Read'], account: cuentas[0] });
+    return r.accessToken;
+  }catch(e){
+    const r = await app.acquireTokenPopup({ scopes: ['Mail.Send', 'User.Read'] });
+    return r.accessToken;
+  }
+}
+async function correoConectarMicrosoft(){
+  try{
+    const app = await correoMsal();
+    const r = await app.loginPopup({ scopes: ['Mail.Send', 'User.Read'] });
+    const email = (r.account && r.account.username) || '';
+    if(email){ localStorage.setItem('correoMicrosoft', email); DB.instituto.correo = email; const ic = $('inst-correo'); if(ic) ic.value = email; }
+    DB.instituto.correoProveedor = 'microsoft'; guardar();
+    pintarEstadoCorreo();
+    alert('✅ Correo de Microsoft conectado: ' + email + '. La plataforma ya puede enviar desde esa cuenta en este equipo.');
+  }catch(e){ alert('No se pudo conectar con Microsoft: ' + e.message); }
+}
+function correoDesconectar(){
+  localStorage.removeItem('correoGoogle');
+  localStorage.removeItem('correoMicrosoft');
+  if(DB.instituto){ DB.instituto.correoProveedor = ''; guardar(); }
+  pintarEstadoCorreo();
+  alert('Correo desconectado en este equipo. Puedes volver a conectarlo cuando quieras.');
+}
+function b64url(datos){
+  const bytes = new TextEncoder().encode(datos);
+  let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function correoEnviarGoogle(para, asunto, cuerpo, html){
+  const token = await correoTokenGoogle(true);
+  const asunto64 = btoa(unescape(encodeURIComponent(asunto)));
+  const cab = ['To: ' + para, 'Subject: =?UTF-8?B?' + asunto64 + '?=', 'MIME-Version: 1.0'];
+  let raw;
+  if(html){
+    const limite = '----=_PlataformaEDU_' + Date.now();
+    cab.push('Content-Type: multipart/alternative; boundary="' + limite + '"');
+    raw = cab.join('\r\n') + '\r\n\r\n--' + limite + '\r\nContent-Type: text/plain; charset="UTF-8"\r\n\r\n' + cuerpo + '\r\n--' + limite + '\r\nContent-Type: text/html; charset="UTF-8"\r\n\r\n' + html + '\r\n--' + limite + '--';
+  } else {
+    cab.push('Content-Type: text/plain; charset="UTF-8"');
+    raw = cab.join('\r\n') + '\r\n\r\n' + cuerpo;
+  }
+  const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ raw: b64url(raw) }) });
+  const d = await r.json().catch(() => null);
+  if(!r.ok || !d || !d.id) throw new Error('Gmail no envió el correo (' + ((d && d.error && d.error.message) || r.status) + ').');
+  const g = correoGoogleGuardado();
+  return { ok: true, desde: (g && g.email) || '' };
+}
+async function correoEnviarMicrosoft(para, asunto, cuerpo, html){
+  const token = await correoTokenMicrosoft();
+  const mensaje = { message: { subject: asunto, body: html ? { contentType: 'HTML', content: html } : { contentType: 'Text', content: cuerpo }, toRecipients: [{ emailAddress: { address: para } }] }, saveToSentItems: true };
+  const r = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(mensaje) });
+  if(r.status !== 202) throw new Error('Microsoft no envió el correo (' + r.status + ').');
+  return { ok: true, desde: localStorage.getItem('correoMicrosoft') || '' };
+}
+async function correoEnviarPlataforma(para, asunto, cuerpo, html){
+  const prov = correoProveedorActivo();
+  if(prov === 'google') return await correoEnviarGoogle(para, asunto, cuerpo, html);
+  if(prov === 'microsoft') return await correoEnviarMicrosoft(para, asunto, cuerpo, html);
+  if(prov === 'puente') return await correoLlamarPuente({ accion: 'correoEnviar', para: para, asunto: asunto, cuerpo: cuerpo, html: html || '' });
+  throw new Error('Primero conecta el correo institucional con los botones de Google o Microsoft.');
 }
 async function correoLlamarPuente(extra){
   const urlPuente = correoPuenteUrl();
@@ -3966,9 +4107,12 @@ async function correoLlamarPuente(extra){
 }
 async function correoProbarConexion(){
   try{
-    const resp = await correoLlamarPuente({ accion: 'correoProbar' });
-    if(resp && resp.ok) alert('✅ Correo sincronizado: la prueba se envió desde ' + (resp.desde || 'el correo institucional') + '. Revisa esa bandeja.');
-    else alert('El puente respondió: ' + ((resp && resp.error) || 'sin respuesta'));
+    const destino = (DB.instituto && DB.instituto.correo) || '';
+    if(!destino){ alert('Primero escribe el correo de la institución o conéctalo con Google/Microsoft.'); return; }
+    const inst = (DB.instituto && DB.instituto.nombre) || 'tu institución';
+    const resp = await correoEnviarPlataforma(destino, '✅ Correo sincronizado — ' + inst, 'Este es un correo de prueba: la plataforma ya puede enviar correos desde la cuenta institucional ' + destino + '.\n\nPlataformaEDU', '');
+    if(resp && resp.ok) alert('✅ Correo sincronizado: la prueba se envió desde ' + (resp.desde || destino) + '. Revisa esa bandeja.');
+    else alert('El envío respondió: ' + ((resp && resp.error) || 'sin respuesta'));
   }catch(err){ alert('No se pudo enviar la prueba: ' + err.message); }
 }
 async function matriAvisarCorreo(id){
@@ -3983,7 +4127,7 @@ async function matriAvisarCorreo(id){
   const desde = (DB.instituto && DB.instituto.correo) || 'el correo institucional';
   if(!confirm('Se enviará este correo DESDE ' + desde + ' a ' + para + ':\n\nAsunto: ' + aviso.asunto + '\n\n' + aviso.cuerpo + '\n\n¿Enviar ahora?')) return;
   try{
-    const resp = await correoLlamarPuente({ accion: 'correoEnviar', para: para, asunto: aviso.asunto, cuerpo: aviso.cuerpo, html: matriAvisoHTML(etapa, nombreEst, m.grado || '', inst) });
+    const resp = await correoEnviarPlataforma(para, aviso.asunto, aviso.cuerpo, matriAvisoHTML(etapa, nombreEst, m.grado || '', inst));
     if(!resp || !resp.ok) throw new Error((resp && resp.error) || 'El puente no respondió.');
     const marca = { etapa: etapa, ts: Date.now() };
     if(FB_DB) FB_DB.ref('matriculas2027/' + id).update({ avisoCorreoEtapa: marca });
