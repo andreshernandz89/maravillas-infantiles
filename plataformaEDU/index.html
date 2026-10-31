@@ -560,7 +560,6 @@ button.btn:hover{ background:var(--azul-osc); }
         </div>
         <div class="fila">
           <button class="btn" id="btn-google" onclick="correoConectarGoogle()">🔗 Conectar con Google</button>
-          <button class="btn" id="btn-microsoft" onclick="correoConectarMicrosoft()">🔗 Conectar con Microsoft</button>
           <button class="btn btn-sec hidden" id="btn-correo-desconectar" onclick="correoDesconectar()">Desconectar</button>
         </div>
         <p class="ayuda">Pulsa el botón de tu proveedor, inicia sesión con el correo de la institución y acepta el permiso de envío. La conexión queda guardada en este equipo y la plataforma enviará desde esa cuenta; si cambias de equipo, vuelves a pulsar el botón.</p>
@@ -4006,7 +4005,7 @@ function pintarEstadoCorreo(){
     if(desc) desc.classList.remove('hidden');
   } else {
     el.textContent = '⚪ Sin sincronizar'; el.className = 'sem';
-    ay.textContent = 'Todavía no hay un correo conectado en este equipo: pulsa «Conectar con Google» o «Conectar con Microsoft» según tu proveedor. Sin conexión, los avisos se envían a mano desde el correo de quien los pulsa.';
+    ay.textContent = 'Todavía no hay un correo conectado en este equipo: pulsa «Conectar con Google». Sin conexión, los avisos se envían a mano desde el correo de quien los pulsa.';
     if(btn) btn.disabled = true;
     if(desc) desc.classList.add('hidden');
   }
