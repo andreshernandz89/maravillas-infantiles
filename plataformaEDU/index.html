@@ -102,7 +102,10 @@
   .pipe-col{ background:var(--fondo); border:1px solid var(--borde); border-radius:12px; padding:10px; min-width:260px; }
   .pipe-col h3{ font-size:14px; color:var(--azul-osc); margin:0 0 10px; display:flex; align-items:center; gap:6px; }
   .pipe-vacio{ font-size:12.5px; color:#8494ad; text-align:center; padding:8px 4px; margin:0; }
-  .pipe-card{ background:#fff; border:1px solid var(--borde); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
+  .pipe-avatar{flex:0 0 auto;width:42px;height:42px;border-radius:50%;background:var(--primario);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;letter-spacing:.5px}
+.pipe-grado{background:var(--primario);color:#fff;font-weight:700;font-size:.78rem;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px}
+.pipe-doc{background:#e3ecfd;color:#16283f;font-weight:700;font-size:.8rem;padding:3px 10px;border-radius:20px}
+.pipe-card{ background:#fff; border:1px solid var(--borde); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
   .pipe-card:last-child{ margin-bottom:0; }
   @media (max-width:900px){ .pipe{ grid-template-columns:1fr; overflow-x:visible; } .pipe-col{ min-width:0; } }
   .asis-btns{ display:flex; gap:6px; }
@@ -1456,10 +1459,21 @@ function matriTarjetaHTML(m){
   const correoLimpio = String(e.correo || '').trim().replace(/["<>]/g, '');
   const correoHref = correoLimpio ? 'mailto:' + correoLimpio + '?subject=' + encodeURIComponent(aviso.asunto) + '&body=' + encodeURIComponent(aviso.cuerpo) : '';
   const waHref = tel ? 'https://wa.me/' + tel + '?text=' + encodeURIComponent(aviso.wa) : '';
+  const nombreCompleto = (((e.apellidos || '') + ' ' + (e.nombres || '')).trim()) || '—';
+  const iniciales = ((((e.nombres || ' ').trim().charAt(0)) + ((e.apellidos || ' ').trim().charAt(0))).toUpperCase()) || '•';
+  const docTxt = (((e.docTipo || '') + ' ' + (e.docNumero || '')).trim()) || 'Sin documento';
   let h = '<div class="pipe-card">' +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
-      '<strong style="font-size:.95rem">' + esc(((e.apellidos || '') + ' ' + (e.nombres || '')).trim() || '—') + '</strong>' +
-      '<span class="sem">' + esc(m.grado || '') + '</span>' +
+    '<div style="display:flex;gap:10px;align-items:flex-start">' +
+      '<div class="pipe-avatar">' + esc(iniciales) + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:1.08rem;font-weight:800;color:var(--tinta,#16283f);line-height:1.25">' + esc(nombreCompleto) + '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:5px">' +
+          '<span class="pipe-grado">' + esc(m.grado || 'Sin grado') + '</span>' +
+          '<span class="pipe-doc">🪪 ' + esc(docTxt) + '</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">' +
       '<span class="sem">' + (esAct ? '🔄 Actualización' : '🆕 Matrícula nueva') + '</span>' +
       (etapa === 'IMPORTADA' ? '<span class="sem v">' + (esAct ? 'Ficha actualizada' : 'Estudiante creado') + '</span>' : '') +
       (m.avisoCorreoInicial ? '<span class="sem v">📧 Correo inicial enviado</span>' : '') +
