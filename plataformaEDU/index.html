@@ -1468,6 +1468,7 @@ function matriTarjetaHTML(m){
   const nombreCompleto = (((e.apellidos || '') + ' ' + (e.nombres || '')).trim()) || '—';
   const iniciales = ((((e.nombres || ' ').trim().charAt(0)) + ((e.apellidos || ' ').trim().charAt(0))).toUpperCase()) || '•';
   const docTxt = (((e.docTipo || '') + ' ' + (e.docNumero || '')).trim()) || 'Sin documento';
+  const avisoEtapaOk = !!((m.avisoCorreoEtapa && m.avisoCorreoEtapa.etapa === etapa) || (etapa === 'NUEVA' && m.avisoCorreoInicial));
   let h = '<div class="pipe-card">' +
     '<div style="display:flex;gap:10px;align-items:flex-start">' +
       '<div class="pipe-avatar">' + esc(iniciales) + '</div>' +
@@ -1482,14 +1483,13 @@ function matriTarjetaHTML(m){
     '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">' +
       '<span class="sem">' + (esAct ? '🔄 Actualización' : '🆕 Matrícula nueva') + '</span>' +
       (etapa === 'IMPORTADA' ? '<span class="sem v">' + (esAct ? 'Ficha actualizada' : 'Estudiante creado') + '</span>' : '') +
-      (m.avisoCorreoInicial ? '<span class="sem v">📧 Correo inicial enviado</span>' : '') +
-      (m.avisoCorreoEtapa ? '<span class="sem v">📧 Aviso de etapa enviado</span>' : '') +
+      (avisoEtapaOk ? '<span class="sem v">📧 Aviso de etapa enviado</span>' : '') +
       '<span class="ayuda">' + matriFecha(m.ts) + '</span>' +
     '</div>' +
     '<div class="ayuda" style="margin:4px 0 8px">Acudiente: <strong>' + esc(a.nombre || '—') + '</strong> · CC ' + esc(a.cc || '—') + '<br>Tel. ' + esc(a.telefono || '—') + '</div>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
       (tel ? '<a class="btn btn-sec mini" style="text-decoration:none" target="_blank" rel="noopener" href="' + waHref + '">💬 WhatsApp</a>' : '') +
-      (correoHref ? (correoConectado() ? '<button class="btn btn-sec mini" onclick="matriAvisarCorreo(\'' + m.id + '\')">📧 Avisar por correo</button>' : '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>') : '') +
+      (correoHref && !avisoEtapaOk ? (correoConectado() ? '<button class="btn btn-sec mini" onclick="matriAvisarCorreo(\'' + m.id + '\')">📧 Avisar por correo</button>' : '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>') : '') +
       '<button class="btn btn-sec mini" onclick="matriVer(\'' + m.id + '\')">' + (MATRI_SEL === m.id ? 'Ocultar detalle' : 'Ver detalle') + '</button>';
   if(etapa !== 'IMPORTADA' && esAct){
     h += '<button class="btn mini" style="background:#0f47b8;color:#fff" onclick="matriActualizarFicha(\'' + m.id + '\')">✏️ Actualizar ficha</button>';
