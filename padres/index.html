@@ -376,7 +376,7 @@ function justifHistorial(){
 const AVISO_PUENTE_URL = '';
 function avisoColegio(tipo, sol, idSol, campos, revisar){
   if(AVISO_PUENTE_URL){
-    try{ fetch(AVISO_PUENTE_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ accion: 'avisoPadres', tipo: tipo, solicitudId: idSol || '' }) }).catch(function(){}); }catch(e){}
+    try{ fetch(AVISO_PUENTE_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ accion: 'avisoPadres', tipo: tipo, clave: (typeof CLAVE_ACTUAL !== 'undefined' ? CLAVE_ACTUAL : ''), campos: campos || {} }) }).catch(function(){}); }catch(e){}
     return;
   }
   const asuntos = { PAGO_PENSION: 'Pago de pensión reportado — ', JUSTIFICACION: 'Nueva justificación de falta — ', CERTIFICADO: 'Nueva solicitud de certificado — ' };
