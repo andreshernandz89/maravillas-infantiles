@@ -28,7 +28,7 @@
   input,select,textarea{width:100%;padding:13px;border:1.5px solid #b9c8e4;border-radius:12px;font-size:1.03rem;font-family:inherit;background:#fff;color:var(--tinta)}
   input:focus,select:focus,textarea:focus{outline:3px solid rgba(47,107,223,.25);border-color:var(--azul2)}
   button{font-family:inherit}
-  .btn-pri{background:linear-gradient(135deg,#1256c4,#2f6bdf);color:#fff;border:0;border-radius:999px;padding:14px 22px;font-size:1.05rem;font-weight:700;cursor:pointer;width:100%;margin-top:14px;box-shadow:0 6px 14px rgba(18,86,196,.28)}
+  .btn-pri{background:linear-gradient(135deg,#1256c4,#2f6bdf);color:#fff;border:0;border-radius:999px;padding:14px 22px;min-height:58px;font-size:1.05rem;font-weight:700;cursor:pointer;width:100%;margin-top:14px;box-shadow:0 6px 14px rgba(18,86,196,.28)}
   .btn-pri:disabled{opacity:.6;cursor:wait}
   button.sec{background:#e8eefb;color:var(--azul);border:0;border-radius:999px;padding:11px 18px;font-weight:700;cursor:pointer}
   .btn-link{background:none;border:0;color:var(--azul);font-weight:700;cursor:pointer;width:100%;margin-top:10px;padding:6px;text-decoration:underline;font-size:.95rem}
@@ -104,6 +104,21 @@
     .desp-cuerpo{font-size:1.02rem;line-height:1.5}
     .doc img{height:auto}
   }
+  .dia-card{background:linear-gradient(160deg,#fff 60%,#eef4ff);border:1.5px solid #c9dbfa}
+  .dia-fecha{font-size:1.02rem;color:var(--suave);font-weight:700;text-transform:capitalize;margin-bottom:4px}
+  .dia-linea{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-top:1px dashed #dbe7fd;font-size:1.06rem;line-height:1.45}
+  .dia-ico{font-size:1.55rem;line-height:1.2;flex:none}
+  .dia-linea strong{color:var(--azul)}
+  .btns-grandes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .btn-grande{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:92px;padding:14px 8px;border:0;border-radius:20px;background:linear-gradient(135deg,#1256c4,#2f6bdf);color:#fff;font-size:1.12rem;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(18,86,196,.25);font-family:inherit;text-align:center;line-height:1.25}
+  .btn-grande .bg-ico{font-size:2rem;line-height:1}
+  .btn-grande:active{transform:scale(.98)}
+  .btn-grande.verde{background:linear-gradient(135deg,#1e9e4a,#37b24d);box-shadow:0 8px 18px rgba(30,158,74,.25)}
+  .btn-grande.morado{background:linear-gradient(135deg,#6741c4,#845ef7);box-shadow:0 8px 18px rgba(103,65,196,.25)}
+  .btn-grande.naranja{background:linear-gradient(135deg,#e8590c,#f76707);box-shadow:0 8px 18px rgba(232,89,12,.25)}
+  @keyframes diaFlash{0%{box-shadow:0 0 0 4px rgba(47,107,223,.55)}100%{box-shadow:0 0 0 0 rgba(47,107,223,0)}}
+  .flash{animation:diaFlash 1.2s ease 2}
+  @media (max-width:420px){ .btns-grandes{gap:10px} .btn-grande{min-height:86px;font-size:1.05rem} }
 .credito-edu{ display:block; margin-top:16px; font-size:10px; font-weight:700; letter-spacing:.18em; color:#8494ab; text-transform:uppercase; }
 .logo-edu-pie{ width:168px; height:auto; margin-top:5px; }
 .copy-edu{ display:block; margin-top:6px; font-size:11px; color:#8494ab; }
@@ -226,6 +241,7 @@ async function consultar(){
   let h = '<div class="card"><div class="hero-top"><div class="avatar">' + esc(iniciales) + '</div><div><span class="alumno">' + esc(nombre) + '</span><div class="chips"><span class="grado">' + esc(datos.gradoActual||'') + '</span>' + (datos.anio ? '<span class="grado">Año ' + esc(datos.anio) + '</span>' : '') + (datos.pagos ? (bloqueado ? '<span class="chip chip-warn">⚠ Con deuda</span>' : '<span class="chip chip-ok">✔ Al día</span>') : '') + '</div></div></div>'
     + (stats ? '<div class="stats">' + stats + '</div>' : '')
     + '<p class="nota" style="margin:10px 0 0">Información del último año en que el estudiante estuvo matriculado.</p></div>';
+  h += diaHTML(datos, bloqueado) + botonesHTML(datos);
   if(bloqueado){
     h += '<div class="card"><h2><span class="ico">🔒</span> Información detallada no disponible</h2><p style="margin:0">Para ver las <strong>notas</strong> y la <strong>asistencia</strong> del estudiante, debe estar <strong>al día con los pagos</strong>. Abajo puedes consultar el estado de matrícula y pensiones.</p></div>';
   }
@@ -242,7 +258,7 @@ async function consultar(){
   }
   if(datos.tareas && datos.tareas.length){
     const hoyT = hoyISO();
-    h += '<div class="card"><h2><span class="ico">📌</span> Tareas y actividades</h2>'
+    h += '<div class="card" id="sec-tareas"><h2><span class="ico">📌</span> Tareas y actividades</h2>'
       + datos.tareas.map(t => {
           const venc = (t.fechaEntrega || '') < hoyT;
           const esHoy = (t.fechaEntrega || '') === hoyT;
@@ -262,7 +278,7 @@ async function consultar(){
       + '<p style="margin:0 0 10px">Ya están abiertas las matrículas del próximo año: el estudiante pasa a <strong>' + SIGUIENTE[gAct] + '</strong>. Llena el formulario con su información <strong>ya diligenciada</strong>; solo revisa y corrige lo que haya cambiado.</p>'
       + '<a href="/matricula2027/?doc=' + encodeURIComponent(datos.docNumero || '') + '&grado=' + encodeURIComponent(SIGUIENTE[gAct]) + '" style="display:block;text-align:center;text-decoration:none;background:#0f47b8;color:#fff;border-radius:12px;padding:14px;font-size:1.05rem;font-weight:700;box-shadow:0 4px 12px rgba(15,71,184,.3)">📝 Llenar el formulario de matrícula 2027</a></div>';
   }
-  h += '<div class="card"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">✉️</span> Justificar una falta</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">'
+  h += '<div class="card" id="sec-justificar"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">✉️</span> Justificar una falta</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">'
     + '<p class="nota" style="margin:0 0 4px">Si tu hijo(a) faltó o va a faltar, envía aquí la excusa: la docente la verá en la plataforma y podrá marcar la falta como justificada, sin necesidad de escribir por WhatsApp.</p>'
     + '<div id="just-historial">' + justifHistorial() + '</div>'
     + '<label for="just-fecha">Fecha de la falta</label><input type="date" id="just-fecha" value="' + hoyISO() + '" max="' + hoyISO() + '">'
@@ -272,7 +288,7 @@ async function consultar(){
     + '<div id="just-msg"></div></div></div>';
   if(datos.pagos){
     const p = datos.pagos;
-    h += '<div class="card"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">💰</span> Matrícula y pensiones</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">';
+    h += '<div class="card" id="sec-pagos"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">💰</span> Matrícula y pensiones</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">';
     h += '<p style="margin:0">Matrícula: ' + (p.matriculaOk ? '<strong>Pagada ✔</strong>' : '<strong>Pendiente</strong> (' + fmtP(p.tarifaMatricula) + ')') + '<br>Pensión mensual: ' + fmtP(p.tarifaPension) + ' · Meses pagados: <strong>' + p.mesesPagados + '</strong> de 10</p>' + barra((p.mesesPagados||0) * 10);
     if(p.deuda > 0){ h += '<p>Pendiente por pagar: <strong>' + fmtP(p.deuda) + '</strong>' + (p.pendientes && p.pendientes.length ? '<br>Meses pendientes: ' + p.pendientes.map(esc).join(', ') : '') + '</p><p class="nota">Las pensiones se pagan dentro de los primeros 10 días de cada mes. Si ya pagaste y aún aparece pendiente, escríbenos por WhatsApp al 302 285 2745.</p>'; }
     else { h += '<p style="margin:8px 0 0"><strong>✔ El estudiante se encuentra a paz y salvo.</strong></p>'; }
@@ -301,7 +317,7 @@ async function consultar(){
   const fmtC = v => '$' + Number(v || 0).toLocaleString('es-CO');
   const precioCert = datos.precioCert || 12000;
   const certsPre = datos.certificados ? Object.keys(datos.certificados) : [];
-  h += '<div class="card' + (certsPre.length ? ' abierta' : '') + '"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">📜</span> Certificados</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">';
+  h += '<div class="card' + (certsPre.length ? ' abierta' : '') + '" id="sec-certs"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">📜</span> Certificados</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">';
   if(bloqueado){
     h += '<p style="margin:0">Para descargar certificados, el estudiante debe estar <strong>al día con los pagos</strong>.</p>';
   } else {
@@ -347,6 +363,53 @@ async function consultar(){
   res.scrollIntoView({behavior:'smooth'});
 }
 
+
+function irSeccion(id){
+  const el = document.getElementById(id); if(!el) return;
+  const cab = el.querySelector('.desp-cab');
+  if(cab && !el.classList.contains('abierta')) cab.click();
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+function diaHTML(d, blq){
+  const hoyT = hoyISO();
+  const primerNombre = String(d.nombres || '').trim().split(/\s+/)[0] || '';
+  const fechaHoyTxt = new Date(hoyT + 'T12:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const lineas = [];
+  const estTxt = v => v === 'P' ? 'asistió ✅' : v === 'FJ' ? 'tuvo falta justificada 🟡' : v === 'F' ? 'no asistió ❌' : 'quedó registrado(a)';
+  if(d.fechaNacimiento && String(d.fechaNacimiento).slice(5) === hoyT.slice(5)) lineas.push('<div class="dia-linea"><span class="dia-ico">🎂</span><div>¡Hoy es el <strong>cumpleaños de ' + esc(primerNombre) + '</strong>! 🎉 En el colegio lo celebramos con mucho cariño.</div></div>');
+  if(!blq && d.asistencia){
+    const a = d.asistencia;
+    if(a.hoyEstado) lineas.push('<div class="dia-linea"><span class="dia-ico">🏫</span><div><strong>Hoy</strong> ' + esc(primerNombre) + ' ' + estTxt(a.hoyEstado) + ' al colegio.</div></div>');
+    else if(a.ultimoDia && a.ultimoDia.fecha) lineas.push('<div class="dia-linea"><span class="dia-ico">🏫</span><div>El <strong>' + esc(fmtFecha(a.ultimoDia.fecha)) + '</strong> (último día registrado) ' + esc(primerNombre) + ' ' + estTxt(a.ultimoDia.estado) + '.</div></div>');
+    const totA = (a.presentes||0) + (a.faltas||0) + (a.justificadas||0);
+    if(totA) lineas.push('<div class="dia-linea"><span class="dia-ico">📋</span><div>Asistencia del año: <strong>' + Math.round((a.presentes||0) / totA * 100) + '%</strong> · ' + (a.presentes||0) + ' días presente' + (((a.faltas||0) + (a.justificadas||0)) ? ' · ' + ((a.faltas||0) + (a.justificadas||0)) + ' faltas' : '') + '.</div></div>');
+  }
+  if(Array.isArray(d.tareas)){
+    const mt = new Date(hoyT + 'T12:00:00'); mt.setDate(mt.getDate() + 1);
+    const manana = mt.getFullYear() + '-' + String(mt.getMonth() + 1).padStart(2, '0') + '-' + String(mt.getDate()).padStart(2, '0');
+    const prox = d.tareas.filter(t => (t.fechaEntrega || '') >= hoyT).sort((x, y) => (x.fechaEntrega || '') < (y.fechaEntrega || '') ? -1 : 1)[0];
+    if(prox){
+      const cuando = prox.fechaEntrega === hoyT ? '¡Se entrega HOY!' : prox.fechaEntrega === manana ? 'Se entrega mañana' : 'Se entrega el ' + fmtFecha(prox.fechaEntrega);
+      lineas.push('<div class="dia-linea"><span class="dia-ico">📌</span><div><strong>' + esc(cuando) + ':</strong> ' + esc(prox.titulo) + (prox.asignatura ? ' · ' + esc(prox.asignatura) : '') + '</div></div>');
+    } else lineas.push('<div class="dia-linea"><span class="dia-ico">🎉</span><div><strong>Sin tareas pendientes.</strong> ¡A disfrutar en familia!</div></div>');
+  }
+  if(d.calendario && d.calendario.length){
+    const ev = d.calendario[0];
+    const cuandoEv = ev.fecha === hoyT ? '¡es HOY!' : ('el ' + fmtFecha(ev.fecha));
+    lineas.push('<div class="dia-linea"><span class="dia-ico">📅</span><div>Próximo evento: <strong>' + esc(ev.titulo) + '</strong> · ' + esc(cuandoEv) + '.</div></div>');
+  }
+  if(!lineas.length) return '';
+  return '<div class="card dia-card"><h2><span class="ico">🌞</span> El día de ' + esc(primerNombre) + '</h2><div class="dia-fecha">' + esc(fechaHoyTxt) + '</div>' + lineas.join('') + '</div>';
+}
+function botonesHTML(d){
+  const b = [];
+  if(Array.isArray(d.tareas)) b.push('<button class="btn-grande" onclick="irSeccion(\'sec-tareas\')"><span class="bg-ico">📌</span>Tareas</button>');
+  b.push('<button class="btn-grande verde" onclick="irSeccion(\'sec-justificar\')"><span class="bg-ico">✉️</span>Justificar una falta</button>');
+  if(d.pagos) b.push('<button class="btn-grande naranja" onclick="irSeccion(\'sec-pagos\')"><span class="bg-ico">💰</span>Pensiones y pagos</button>');
+  b.push('<button class="btn-grande morado" onclick="irSeccion(\'sec-certs\')"><span class="bg-ico">📜</span>Certificados</button>');
+  return '<div class="btns-grandes">' + b.join('') + '</div>';
+}
 
 const DIA_MS = 24 * 3600 * 1000;
 function avisosOcultos(){ try{ return JSON.parse(localStorage.getItem('avisosx_' + CLAVE_ACTUAL) || '[]'); }catch(e){ return []; } }

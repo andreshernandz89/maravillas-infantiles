@@ -1626,9 +1626,10 @@ function notasParaPadres(e){
 }
 function asistenciaParaPadres(e){
   const porCurso = (DB.asistencia || {})[e.cursoId] || {};
-  let P = 0, F = 0, FJ = 0;
-  Object.values(porCurso).forEach(dia => { const v = (dia || {})[e.id]; if(v === 'P') P++; else if(v === 'F') F++; else if(v === 'FJ') FJ++; });
-  return (P + F + FJ) ? { presentes: P, faltas: F, justificadas: FJ } : null;
+  let P = 0, F = 0, FJ = 0, ultFecha = '', ultEstado = '', hoyEstado = '';
+  const hoyF = fechaHoyISO();
+  Object.keys(porCurso).forEach(f => { const v = (porCurso[f] || {})[e.id]; if(v === 'P') P++; else if(v === 'F') F++; else if(v === 'FJ') FJ++; if(v){ if(f > ultFecha){ ultFecha = f; ultEstado = v; } if(f === hoyF) hoyEstado = v; } });
+  return (P + F + FJ) ? { presentes: P, faltas: F, justificadas: FJ, ultimoDia: ultFecha ? { fecha: ultFecha, estado: ultEstado } : null, hoyEstado: hoyEstado || null } : null;
 }
 function pagosParaPadres(e){
   const t = tarifaDe(e.cursoId); const r = regVista(e.id);
