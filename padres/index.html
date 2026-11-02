@@ -18,10 +18,10 @@
   .tabla-scroll .doc-tabla{margin:0}
   :root{--azul:#0f47b8;--azul2:#2f6bdf;--tinta:#1c2b3a;--suave:#4c5f7a}
   body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:linear-gradient(180deg,#dfeafc 0,#eef3fc 260px,#f2f6fd 100%);color:var(--tinta);min-height:100vh}
-  header{background:linear-gradient(135deg,#0b3a94,#1256c4 55%,#2f6bdf);color:#fff;text-align:center;padding:30px 16px;box-shadow:0 4px 18px rgba(11,58,148,.25)}
-  header img{width:92px;height:92px;object-fit:contain;background:#fff;border-radius:22px;padding:7px;box-shadow:0 6px 16px rgba(0,0,0,.18)}
-  header h1{margin:12px 0 2px;font-size:1.5rem}
-  header p{margin:0;opacity:.88;font-size:.98rem}
+  header{background:linear-gradient(135deg,#0b3a94,#1256c4 55%,#2f6bdf);color:#fff;text-align:center;padding:14px 12px;box-shadow:0 4px 18px rgba(11,58,148,.25)}
+  header img{width:56px;height:56px;object-fit:contain;background:#fff;border-radius:16px;padding:5px;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+  header h1{margin:8px 0 1px;font-size:1.22rem}
+  header p{margin:0;opacity:.88;font-size:.9rem}
   main{max-width:780px;margin:0 auto;padding:20px 14px 42px}
   .card{background:#fff;border:1px solid #e3ecfb;border-radius:18px;box-shadow:0 6px 24px rgba(15,71,184,.08);padding:22px;margin-bottom:16px}
   label{font-weight:700;display:block;margin:12px 0 6px}
@@ -135,7 +135,6 @@
 </header>
 <main>
   <div class="card buscador">
-    <p class="intro">Escribe el <strong>número de documento del estudiante</strong> para <strong>seguir el estado de su proceso de matrícula 2027</strong> y, si ya está matriculado, ver sus notas, su asistencia y el estado de pensiones, justificar una falta, pedir certificados y ver los próximos eventos del colegio. Solo se muestra la información de ese estudiante.</p>
     <label for="doc">Número de documento del estudiante</label>
     <input id="doc" inputmode="numeric" autocomplete="off" placeholder="Ej.: 1234567890">
     <button class="btn-pri" id="btn-consultar" onclick="consultar()">Consultar</button>
