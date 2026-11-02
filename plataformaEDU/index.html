@@ -313,7 +313,7 @@ button.btn:hover{ background:var(--azul-osc); }
   </nav>
 
   <main>
-    <div id="archivo-banner" class="hidden" style="background:#7c2d12;color:#fff;padding:10px 14px;border-radius:10px;margin-bottom:12px">📂 <span id="archivo-banner-txt"></span> <button class="btn" style="margin-left:10px" onclick="salirArchivo()">Volver al año actual</button> <button class="btn" id="btn-iniciar-anio" style="margin-left:10px;display:none" onclick="iniciarAnioDesdeFiltro()">🚀 Iniciar año</button></div>
+    <div id="archivo-banner" class="hidden" style="background:#7c2d12;color:#fff;padding:10px 14px;border-radius:10px;margin-bottom:12px">📂 <span id="archivo-banner-txt"></span> <button class="btn" style="margin-left:10px" onclick="salirArchivo()">Volver al año actual</button></div>
     <div id="sim-banner" class="hidden" style="background:#5b21b6;color:#fff;padding:10px 14px;border-radius:10px;margin-bottom:12px">👁 <span id="sim-banner-txt"></span> <button class="btn" style="margin-left:10px" onclick="salirSimulacion()">Volver a mi perfil (Owner)</button></div>
     <div id="demo-banner" class="aviso-demo hidden">📌 Estás viendo <strong>datos de ejemplo</strong> para conocer la página. Cuando lleguen los datos reales del colegio, se reemplazan desde la pestaña <strong>Instituto</strong> (Importar datos) o borrando el ejemplo.</div>
 
@@ -1016,9 +1016,6 @@ function renderArchivo(){
   const anioActual = anioDe(DB);
   $('archivo-resumen').innerHTML = '<span class="chip">Año lectivo actual: <strong>' + anioActual + '</strong></span>' + (MODO_ARCHIVO ? '<span class="chip">' + (MODO_PROXIMO ? '🔮 Vista previa del año ' + ANIO_VIENDO + ' (solo lectura)' : 'Viendo el archivo ' + ANIO_VIENDO + ' (solo lectura)') + '</span>' : '');
   const p = perfilActual();
-  const card = $('archivo-cambio-card'); if(card) card.style.display = (!MODO_ARCHIVO && p && p.rol==='owner') ? '' : 'none';
-  const txt = $('archivo-cambio-txt'); if(txt) txt.textContent = 'El año lectivo actual es ' + anioActual + '. Al iniciar el ' + (anioActual+1) + ', el año ' + anioActual + ' completo queda archivado aquí.';
-  const btn = $('archivo-cambio-btn'); if(btn) btn.textContent = '🚀 Iniciar año lectivo ' + (anioActual+1);
   cont.innerHTML = '<p class="ayuda">Cargando años archivados…</p>';
   if(!FB_DB){ cont.innerHTML = '<p class="ayuda">Sin conexión con la nube.</p>'; return; }
   FB_DB.ref('archivos').once('value').then(snap=>{
@@ -1036,7 +1033,6 @@ async function verArchivoAnio(anio){
     DB = datos; MODO_ARCHIVO = true; ANIO_VIENDO = anio; MODO_PROXIMO = false;
     $('archivo-banner-txt').textContent = 'Estás viendo el año lectivo ' + anio + ' en modo SOLO LECTURA: puedes consultar e imprimir los boletines y certificados de ese año, pero no modificar datos.';
     $('archivo-banner').classList.remove('hidden');
-    const btnIniA = $('btn-iniciar-anio'); if(btnIniA) btnIniA.style.display = 'none';
     if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio();
     verTab('panel');
   }catch(e){ alert('No se pudo abrir el archivo: ' + e.message); }
@@ -1044,7 +1040,6 @@ async function verArchivoAnio(anio){
 function salirArchivo(){
   const vivo = DB_VIVO; DB_VIVO = null; MODO_ARCHIVO = false; ANIO_VIENDO = null; MODO_PROXIMO = false;
   $('archivo-banner').classList.add('hidden');
-  const btnIniS = $('btn-iniciar-anio'); if(btnIniS) btnIniS.style.display = 'none';
   if(vivo) DB = vivo;
   if(FB_DB){ FB_DB.ref('cemiDB').once('value').then(s=>{ const d = s.val(); if(d) aplicarDatosNube(d); if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio(); verTab('panel'); }).catch(()=>{ if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio(); verTab('panel'); }); }
   else { if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio(); verTab('panel'); }
@@ -1091,53 +1086,10 @@ function verProximoAnio(){
   if(TABLA_PROX){ if(!copia.pagos) copia.pagos = { tarifas:{}, reg:{} }; if(!copia.pagos.tarifas) copia.pagos.tarifas = {}; (copia.cursos || []).forEach(c=>{ const tt = TABLA_PROX[normNombre(c.nombre)]; if(tt) copia.pagos.tarifas[c.id] = { matricula: tt.matricula, pension: tt.pension }; }); }
   if(!MODO_ARCHIVO) DB_VIVO = DB;
   DB = copia; MODO_ARCHIVO = true; MODO_PROXIMO = true; ANIO_VIENDO = nuevo;
-  $('archivo-banner-txt').textContent = '🔮 Estás viendo la VISTA PREVIA del año lectivo ' + nuevo + ': todavía SIN estudiantes (aún no hay nadie matriculado en ese año), con las tarifas oficiales del ' + nuevo + ' aplicadas y notas, asistencia y pagos en cero. Es solo lectura y NO reemplaza el inicio real del año: el dueño puede iniciarlo de verdad con el botón «Iniciar el año lectivo» de esta misma franja, cuando corresponda.';
+  $('archivo-banner-txt').textContent = '🔮 Estás viendo la VISTA PREVIA del año lectivo ' + nuevo + ': todavía SIN estudiantes (aún no hay nadie matriculado en ese año), con las tarifas oficiales del ' + nuevo + ' aplicadas y notas, asistencia y pagos en cero. Es solo una vista de consulta: la información de cada año siempre permanece guardada y nunca se borra.';
   $('archivo-banner').classList.remove('hidden');
-  const btnIni = $('btn-iniciar-anio'); if(btnIni){ const pp = perfilActual(); btnIni.style.display = (pp && pp.rol === 'owner') ? '' : 'none'; btnIni.textContent = '🚀 Iniciar el año lectivo ' + nuevo; }
   poblarFiltroAnio();
   verTab('panel');
-}
-
-async function iniciarAnioDesdeFiltro(){
-  const vivo = DB_VIVO; DB_VIVO = null; MODO_ARCHIVO = false; MODO_PROXIMO = false; ANIO_VIENDO = null;
-  $('archivo-banner').classList.add('hidden');
-  const bIni = $('btn-iniciar-anio'); if(bIni) bIni.style.display = 'none';
-  if(vivo) DB = vivo;
-  if(FB_DB){ try{ const s = await FB_DB.ref('cemiDB').once('value'); const d = s.val(); if(d) aplicarDatosNube(d); }catch(e){} }
-  if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio();
-  ejecutarCambioDeAnio();
-}
-
-async function ejecutarCambioDeAnio(){
-  const p = perfilActual(); if(!p || p.rol!=='owner'){ alert('Solo el dueño (Owner) puede ejecutar el cambio de año.'); return; }
-  if(MODO_ARCHIVO){ alert('Estás viendo un año archivado. Vuelve al año actual para ejecutar el cambio.'); return; }
-  if(!FB_DB){ alert('Sin conexión con la nube: el cambio de año necesita guardar el archivo en línea.'); return; }
-  const actual = anioDe(DB), nuevo = actual + 1;
-  if(!confirm('Vas a iniciar el año lectivo ' + nuevo + '.\n\n1) Se guardará una copia COMPLETA del año ' + actual + ' (no se borra nada; quedará consultable en el filtro de años del encabezado).\n2) Cada estudiante sube al grado siguiente; los de Quinto y los retirados salen de la lista activa (quedan en el archivo).\n3) Notas, asistencia, observadores, planeadores y pagos del ' + nuevo + ' arrancan en cero.\n\n¿Continuar?')) return;
-  try{
-    const copia = JSON.parse(JSON.stringify(dbParaNube()));
-    await FB_DB.ref('archivos/' + actual).set(copia);
-    const ORDEN = ['PARVULO','PRE-JARDIN','JARDIN','TRANSICION','PRIMERO','SEGUNDO','TERCERO','CUARTO','QUINTO'];
-    const porNombre = {}; DB.cursos.forEach(c=>{ porNombre[normNombre(c.nombre)] = c; });
-    const siguienteDe = (cursoId)=>{ const c = cursoDe(cursoId); if(!c) return null; const i = ORDEN.indexOf(normNombre(c.nombre)); if(i < 0 || i === ORDEN.length-1) return null; return porNombre[ORDEN[i+1]] || null; };
-    let promovidos = 0, salen = 0; const quedan = [];
-    DB.estudiantes.forEach(e=>{ if(estaRetirado(e)){ salen++; return; } const nc = siguienteDe(e.cursoId); if(!nc){ salen++; return; } e.cursoId = nc.id; promovidos++; quedan.push(e); });
-    DB.estudiantes = quedan;
-    DB.notas = {}; DB.parciales = {}; DB.extra = {}; DB.asistencia = {}; DB.planeadores = {}; DB.observadores = {}; DB.cierres = {};
-    if(DB.pagos) DB.pagos.reg = {};
-    if(DB.nomina) DB.nomina.pagos = {};
-    if(!DB.instituto) DB.instituto = {};
-    DB.instituto.anio = String(nuevo);
-    let tarifasNuevas = false;
-    const TABLA_NUEVA = (typeof TARIFAS_POR_ANIO !== 'undefined') ? TARIFAS_POR_ANIO[String(nuevo)] : null;
-    if(TABLA_NUEVA){ if(!DB.pagos) DB.pagos = { tarifas:{}, reg:{} }; if(!DB.pagos.tarifas) DB.pagos.tarifas = {}; DB.cursos.forEach(c=>{ const tt = TABLA_NUEVA[normNombre(c.nombre)]; if(tt) DB.pagos.tarifas[c.id] = { matricula: tt.matricula, pension: tt.pension }; }); tarifasNuevas = true; }
-    registrarCambio('Cambio de año lectivo: archivado el ' + actual + ' e iniciado el ' + nuevo + ' (' + promovidos + ' promovidos, ' + salen + ' salen de la lista activa)');
-    guardar();
-    if(typeof sincronizarConsulta2027 === 'function') sincronizarConsulta2027(true);
-    alert('✅ Año lectivo ' + nuevo + ' iniciado.\n\n· El archivo del ' + actual + ' quedó guardado y se consulta en el filtro de años del encabezado.\n· ' + promovidos + ' estudiantes promovidos al grado siguiente.\n· ' + salen + ' estudiantes salieron de la lista activa (están en el archivo).\n\n' + (tarifasNuevas ? 'Las tarifas de pagos ya quedaron en los valores oficiales del ' + nuevo + '.' : 'Las tarifas de pagos quedaron en los valores del ' + actual + '; si cambian para el ' + nuevo + ', ajústalas en el módulo de pagos.') + '');
-    renderArchivo();
-    if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio();
-  }catch(e){ alert('El cambio de año se detuvo: ' + e.message + '\nRecarga la página para volver al último estado guardado.'); }
 }
 
 var SIMULANDO = false, PERFIL_REAL_ID = null;
@@ -2427,6 +2379,7 @@ function guardarInstituto(){
   setTimeout(()=>$('inst-ok').textContent='', 2000);
 }
 function exportarDatos(){
+  if(typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO){ alert('Estás en una vista de solo lectura (año archivado o vista previa). Vuelve al año actual para exportar los datos.'); return; }
   if(!esOwner()){ alert('Solo el dueño (owner) puede hacer respaldos de seguridad.'); return; }
   const copiaRespaldo = JSON.parse(JSON.stringify(DB)); (copiaRespaldo.perfiles || []).forEach(p => { delete p.clave; });
   const blob = new Blob([JSON.stringify(copiaRespaldo, null, 2)], {type:'application/json'});
@@ -2436,6 +2389,7 @@ function exportarDatos(){
   alert('Respaldo descargado. OJO: contiene los datos personales de los estudiantes — guárdalo en un lugar seguro y no lo compartas por canales inseguros. Las contraseñas del personal NO se incluyen en el archivo.');
 }
 function importarDatos(input){
+  if(typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO){ alert('Estás en una vista de solo lectura (año archivado o vista previa). Vuelve al año actual para importar datos.'); input.value = ''; return; }
   if(!esOwner()){ alert('Solo el dueño (owner) puede restaurar respaldos de seguridad.'); input.value = ''; return; }
   const f = input.files[0]; if(!f) return;
   const r = new FileReader();
