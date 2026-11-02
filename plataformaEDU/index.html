@@ -1034,15 +1034,15 @@ async function verArchivoAnio(anio){
     $('archivo-banner-txt').textContent = 'Estás viendo el año lectivo ' + anio + ' en modo SOLO LECTURA: puedes consultar e imprimir los boletines y certificados de ese año, pero no modificar datos.';
     $('archivo-banner').classList.remove('hidden');
     if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio();
-    verTab('panel');
+    if(typeof refrescarSelectsCursos === 'function') refrescarSelectsCursos(); verTab('panel');
   }catch(e){ alert('No se pudo abrir el archivo: ' + e.message); }
 }
 function salirArchivo(){
   const vivo = DB_VIVO; DB_VIVO = null; MODO_ARCHIVO = false; ANIO_VIENDO = null; MODO_PROXIMO = false;
   $('archivo-banner').classList.add('hidden');
   if(vivo) DB = vivo;
-  if(FB_DB){ FB_DB.ref('cemiDB').once('value').then(s=>{ const d = s.val(); if(d) aplicarDatosNube(d); if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio(); verTab('panel'); }).catch(()=>{ if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio(); verTab('panel'); }); }
-  else { if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio(); verTab('panel'); }
+  if(FB_DB){ FB_DB.ref('cemiDB').once('value').then(s=>{ const d = s.val(); if(d) aplicarDatosNube(d); if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio(); if(typeof refrescarSelectsCursos === 'function') refrescarSelectsCursos(); verTab('panel'); }).catch(()=>{ if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio(); if(typeof refrescarSelectsCursos === 'function') refrescarSelectsCursos(); verTab('panel'); }); }
+  else { if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio(); if(typeof refrescarSelectsCursos === 'function') refrescarSelectsCursos(); verTab('panel'); }
 }
 /* ================= FILTRO DE AÑO EN EL ENCABEZADO ================= */
 function anioVigenteReal(){ return anioDe(DB_VIVO || DB); }
@@ -1089,7 +1089,7 @@ function verProximoAnio(){
   $('archivo-banner-txt').textContent = '🔮 Estás viendo la VISTA PREVIA del año lectivo ' + nuevo + ': todavía SIN estudiantes (aún no hay nadie matriculado en ese año), con las tarifas oficiales del ' + nuevo + ' aplicadas y notas, asistencia y pagos en cero. Es solo una vista de consulta: la información de cada año siempre permanece guardada y nunca se borra.';
   $('archivo-banner').classList.remove('hidden');
   poblarFiltroAnio();
-  verTab('panel');
+  if(typeof refrescarSelectsCursos === 'function') refrescarSelectsCursos(); verTab('panel');
 }
 
 var SIMULANDO = false, PERFIL_REAL_ID = null;
