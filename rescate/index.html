@@ -58,6 +58,17 @@ document.getElementById('btn-restaurar').addEventListener('click', async () => {
     out.textContent = 'RESTAURADO Y VERIFICADO EN LA NUBE: año ' + ((sInst.val()||{}).anio || '—') + ' · ' + (Array.isArray(est) ? est.length : Object.keys(est).length) + ' estudiantes · ' + Object.keys(reg).length + ' registros de pago.';
   }catch(e){ out.textContent = 'ERROR al restaurar: ' + e.message; btn.disabled = false; }
 });
+const bNov = document.createElement('button'); bNov.id = 'btn-respaldo-nov'; bNov.textContent = '🛟 Reescribir el respaldo 2026-11 con los datos actuales (ya restaurados)';
+bNov.onclick = async () => {
+  try{
+    const s = await DB.ref('cemiDB').once('value');
+    await DB.ref('archivos/respaldos/2026-11').set({ ts: Date.now(), por: 'Andrés Hernández', datos: s.val() });
+    const chk = await DB.ref('archivos/respaldos/2026-11/datos').once('value');
+    const d = chk.val() || {};
+    bNov.textContent = '✔ Respaldo 2026-11 actualizado: año ' + ((d.instituto||{}).anio || '—') + ' · ' + ((d.estudiantes||[]).length) + ' estudiantes';
+  }catch(e){ bNov.textContent = 'Error: ' + e.message; }
+};
+document.getElementById('botones').appendChild(bNov);
 firebase.auth().onAuthStateChanged(async user => {
   const est = document.getElementById('estado'), info = document.getElementById('info'), btns = document.getElementById('botones');
   if(!user){ est.textContent = 'SIN SESIÓN: primero abre la plataforma en este mismo navegador e inicia sesión como dueño, luego vuelve a esta página.'; info.textContent=''; return; }
