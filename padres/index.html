@@ -278,7 +278,7 @@ async function consultar(){
       + '<p style="margin:0 0 10px">Ya están abiertas las matrículas del próximo año: el estudiante pasa a <strong>' + SIGUIENTE[gAct] + '</strong>. Llena el formulario con su información <strong>ya diligenciada</strong>; solo revisa y corrige lo que haya cambiado.</p>'
       + '<a href="/matricula2027/?doc=' + encodeURIComponent(datos.docNumero || '') + '&grado=' + encodeURIComponent(SIGUIENTE[gAct]) + '" style="display:block;text-align:center;text-decoration:none;background:#0f47b8;color:#fff;border-radius:12px;padding:14px;font-size:1.05rem;font-weight:700;box-shadow:0 4px 12px rgba(15,71,184,.3)">📝 Llenar el formulario de matrícula 2027</a></div>';
   }
-  h += '<div class="card" id="sec-justificar"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">✉️</span> Justificar una falta</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">'
+  h += '<div class="card abierta" id="sec-justificar"><div class="desp-cab"><h2><span class="ico">✉️</span> Justificar una falta</h2></div><div class="desp-cuerpo">'
     + '<p class="nota" style="margin:0 0 4px">Si tu hijo(a) faltó o va a faltar, envía aquí la excusa: la docente la verá en la plataforma y podrá marcar la falta como justificada, sin necesidad de escribir por WhatsApp.</p>'
     + '<div id="just-historial">' + justifHistorial() + '</div>'
     + '<label for="just-fecha">Fecha de la falta</label><input type="date" id="just-fecha" value="' + hoyISO() + '" max="' + hoyISO() + '">'
@@ -288,7 +288,7 @@ async function consultar(){
     + '<div id="just-msg"></div></div></div>';
   if(datos.pagos){
     const p = datos.pagos;
-    h += '<div class="card" id="sec-pagos"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">💰</span> Matrícula y pensiones</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">';
+    h += '<div class="card abierta" id="sec-pagos"><div class="desp-cab"><h2><span class="ico">💰</span> Matrícula y pensiones</h2></div><div class="desp-cuerpo">';
     h += '<p style="margin:0">Matrícula: ' + (p.matriculaOk ? '<strong>Pagada ✔</strong>' : '<strong>Pendiente</strong> (' + fmtP(p.tarifaMatricula) + ')') + '<br>Pensión mensual: ' + fmtP(p.tarifaPension) + ' · Meses pagados: <strong>' + p.mesesPagados + '</strong> de 10</p>' + barra((p.mesesPagados||0) * 10);
     if(p.deuda > 0){ h += '<p>Pendiente por pagar: <strong>' + fmtP(p.deuda) + '</strong>' + (p.pendientes && p.pendientes.length ? '<br>Meses pendientes: ' + p.pendientes.map(esc).join(', ') : '') + '</p><p class="nota">Las pensiones se pagan dentro de los primeros 10 días de cada mes. Si ya pagaste y aún aparece pendiente, escríbenos por WhatsApp al 302 285 2745.</p>'; }
     else { h += '<p style="margin:8px 0 0"><strong>✔ El estudiante se encuentra a paz y salvo.</strong></p>'; }
@@ -317,7 +317,7 @@ async function consultar(){
   const fmtC = v => '$' + Number(v || 0).toLocaleString('es-CO');
   const precioCert = datos.precioCert || 12000;
   const certsPre = datos.certificados ? Object.keys(datos.certificados) : [];
-  h += '<div class="card' + (certsPre.length ? ' abierta' : '') + '" id="sec-certs"><div class="desp-cab" onclick="altDesp(this)"><h2><span class="ico">📜</span> Certificados</h2><span class="desp-flecha">▾</span></div><div class="desp-cuerpo">';
+  h += '<div class="card abierta" id="sec-certs"><div class="desp-cab"><h2><span class="ico">📜</span> Certificados</h2></div><div class="desp-cuerpo">';
   if(bloqueado){
     h += '<p style="margin:0">Para descargar certificados, el estudiante debe estar <strong>al día con los pagos</strong>.</p>';
   } else {
