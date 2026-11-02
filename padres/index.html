@@ -355,9 +355,9 @@ async function consultar(){
   h += '</div></div>';
   if(datos.calendario && datos.calendario.length){
     const fmtF = iso => new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
-    h += '<div class="card"><div class="desp-cab" onclick="altDesp(this)"><h2>📅 Próximos eventos del colegio <a class="pdf-dl" href="/documentos/planeacion-institucional-2026.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar planeación</a></h2><span class="desp-flecha">\u25BE</span></div><div class="desp-cuerpo">' + datos.calendario.map(ev => '<p style="margin:6px 0"><strong>' + esc(fmtF(ev.fecha)) + '</strong> · ' + esc(ev.titulo) + (detVisible(ev.detalle) ? ' <span class="nota">(' + esc(detVisible(ev.detalle)) + ')</span>' : '') + '</p>').join('') + '</div></div>';
+    h += '<div class="card abierta"><div class="desp-cab"><h2>📅 Próximos eventos del colegio <a class="pdf-dl" href="/documentos/planeacion-institucional-2026.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar planeación</a></h2></div><div class="desp-cuerpo">' + datos.calendario.map(ev => '<p style="margin:6px 0"><strong>' + esc(fmtF(ev.fecha)) + '</strong> · ' + esc(ev.titulo) + (detVisible(ev.detalle) ? ' <span class="nota">(' + esc(detVisible(ev.detalle)) + ')</span>' : '') + '</p>').join('') + '</div></div>';
   }
-  h += '<div class="card doc"><div class="desp-cab" onclick="altDesp(this)"><h2>📘 Manual de Convivencia <a class="pdf-dl" href="/documentos/manual-convivencia.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar</a></h2><span class="desp-flecha">\u25BE</span></div><div class="desp-cuerpo">' + (datos.manualHtml || '<p class="nota">El manual aún no está publicado en este espacio.</p>') + '</div></div>';
+  h += '<div class="card doc abierta"><div class="desp-cab"><h2>📘 Manual de Convivencia <a class="pdf-dl" href="/documentos/manual-convivencia.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar</a></h2></div><div class="desp-cuerpo">' + (datos.manualHtml || '<p class="nota">El manual aún no está publicado en este espacio.</p>') + '</div></div>';
 
   res.innerHTML = (proceso ? procesoHTML(proceso) : '') + h;
   res.scrollIntoView({behavior:'smooth'});
