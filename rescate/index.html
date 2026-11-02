@@ -1,6 +1,48 @@
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="utf-8"><title>Uso interno</title></head>
-<body style="font-family:system-ui,Arial,sans-serif;margin:24px;color:#0f2a52">
-<h1>🛟 Página interna retirada</h1>
-<p>Esta página temporal ya cumplió su función y fue desactivada el 2026-11-01.</p>
+<html lang="es"><head><meta charset="utf-8"><title>Uso interno</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body style="font-family:system-ui,Arial,sans-serif;margin:24px;color:#0f2a52;max-width:560px">
+<h1>Subir año archivado</h1>
+<p>Página temporal de uso interno. Ingresa con el usuario dueño, escribe el año, adjunta su JSON y pulsa el botón. Además del año, copia los perfiles actuales a ese año.</p>
+<label>Usuario<br><input id="usu" value="andres" style="width:100%;padding:8px;margin:4px 0 12px"></label>
+<label>Clave<br><input id="cla" type="password" style="width:100%;padding:8px;margin:4px 0 12px"></label>
+<label>Año (ej. 2024)<br><input id="anio" style="width:100%;padding:8px;margin:4px 0 12px"></label>
+<label>Archivo JSON del año<br><input id="arc" type="file" accept=".json,application/json" style="margin:4px 0 16px"></label>
+<button id="btn" style="background:#1d4ed8;color:#fff;border:0;border-radius:8px;padding:12px 18px;font-size:16px;width:100%">Ingresar y subir año</button>
+<p id="estado" style="font-size:18px;font-weight:600;margin-top:18px">Listo para empezar.</p>
+<script>
+const FB_CONFIG = { apiKey: "AIzaSyD8JESH5rhMkgmSjy-0h6p-zObQg-XAzQ0", authDomain: "plataforma-cemi.firebaseapp.com", databaseURL: "https://plataforma-cemi-default-rtdb.firebaseio.com", projectId: "plataforma-cemi", storageBucket: "plataforma-cemi.firebasestorage.app", messagingSenderId: "59598932057", appId: "1:59598932057:web:24cb8ee45a831374a4c948" };
+firebase.initializeApp(FB_CONFIG);
+const db = firebase.database(), auth = firebase.auth(), est = document.getElementById('estado');
+function decir(t){ est.textContent = t; document.title = t; }
+document.getElementById('btn').onclick = async () => {
+  try{
+    const usu = document.getElementById('usu').value.trim().toLowerCase();
+    const cla = document.getElementById('cla').value;
+    const anio = document.getElementById('anio').value.trim();
+    const f = document.getElementById('arc').files[0];
+    if(!/^\d{4}$/.test(anio)){ decir('Escribe el año con 4 dígitos.'); return; }
+    if(!f){ decir('Falta adjuntar el archivo JSON.'); return; }
+    const obj = JSON.parse(await f.text());
+    if(!obj.estudiantes || !obj.instituto){ decir('El archivo no tiene la forma esperada.'); return; }
+    decir('Buscando el correo del usuario...');
+    const s = await db.ref('loginMap/' + usu).once('value');
+    const correo = s.val(); if(!correo){ decir('Usuario no encontrado en loginMap.'); return; }
+    decir('Ingresando...');
+    if(!auth.currentUser) await auth.signInWithEmailAndPassword(correo, cla);
+    decir('Subiendo ' + obj.estudiantes.length + ' estudiantes a /archivos/' + anio + '...');
+    await db.ref('archivos/' + anio).set(obj);
+    decir('Copiando los perfiles actuales al año ' + anio + '...');
+    const pv = await db.ref('cemiDB/perfiles').once('value');
+    const perfiles = pv.val() || [];
+    await db.ref('archivos/' + anio + '/perfiles').set(perfiles);
+    const v = (await db.ref('archivos/' + anio).once('value')).val();
+    const ne = (v.estudiantes || []).length, nc = (v.cursos || []).length, np = (v.perfiles || []).length;
+    decir('LISTO ' + anio + ': guardado y verificado. Estudiantes: ' + ne + ' · Cursos: ' + nc + ' · Perfiles: ' + np + '.');
+  }catch(e){ decir('ERROR: ' + (e && e.message ? e.message : e)); }
+};
+</script>
 </body></html>
