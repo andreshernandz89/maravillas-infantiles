@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rescate de datos · uso interno</title>
+<style>body{font-family:system-ui,Arial,sans-serif;margin:24px;color:#0f2a52}button{display:block;margin:10px 0;padding:14px 18px;font-size:1.05rem;border-radius:12px;border:0;background:#1256c4;color:#fff;cursor:pointer}pre{background:#f1f5fb;padding:14px;border-radius:12px;white-space:pre-wrap;font-size:.95rem}</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head><body>
+<h1>🛟 Rescate de datos (uso interno)</h1>
+<p id="estado">Conectando…</p>
+<pre id="info">Cargando…</pre>
+<div id="botones"></div>
+<script>
+const FB_CONFIG = { apiKey: "AIzaSyD8JESH5rhMkgmSjy-0h6p-zObQg-XAzQ0", authDomain: "plataforma-cemi.firebaseapp.com", databaseURL: "https://plataforma-cemi-default-rtdb.firebaseio.com", projectId: "plataforma-cemi", storageBucket: "plataforma-cemi.firebasestorage.app", messagingSenderId: "59598932057", appId: "1:59598932057:web:24cb8ee45a831374a4c948" };
+firebase.initializeApp(FB_CONFIG);
+const DB = firebase.database();
+let RESPALDOS = {};
+function descargar(nombre, obj){
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+}
+function resumen(d){ if(!d) return 'vacío'; return 'año ' + ((d.instituto||{}).anio || '—') + ' · ' + ((d.estudiantes||[]).length) + ' estudiantes · ' + ((d.cursos||[]).length) + ' cursos · pagos: ' + ((d.pagos && d.pagos.reg) ? Object.keys(d.pagos.reg).length : 0) + ' registros'; }
+firebase.auth().onAuthStateChanged(async user => {
+  const est = document.getElementById('estado'), info = document.getElementById('info'), btns = document.getElementById('botones');
+  if(!user){ est.textContent = 'SIN SESIÓN: primero abre la plataforma en este mismo navegador e inicia sesión como dueño, luego vuelve a esta página.'; info.textContent=''; return; }
+  est.textContent = 'Sesión activa: ' + (user.email || user.uid);
+  try{
+    const lineas = [];
+    const sInst = await DB.ref('cemiDB/instituto').once('value');
+    const sEst = await DB.ref('cemiDB/estudiantes').once('value');
+    const estArr = sEst.val() || [];
+    lineas.push('DATOS VIVOS (cemiDB): año ' + ((sInst.val()||{}).anio || '—') + ' · ' + (Array.isArray(estArr) ? estArr.length : Object.keys(estArr).length) + ' estudiantes');
+    const b1 = document.createElement('button'); b1.textContent = '⬇ Descargar datos vivos completos (cemiDB)';
+    b1.onclick = async ()=>{ const s = await DB.ref('cemiDB').once('value'); descargar('cemiDB-vivo.json', s.val()); };
+    btns.appendChild(b1);
+    const sArc = await DB.ref('archivos').once('value');
+    const arc = sArc.val() || {};
+    const anios = Object.keys(arc).filter(k => /^\d{4}$/.test(k));
+    lineas.push('AÑOS ARCHIVADOS: ' + (anios.length ? anios.join(', ') : 'ninguno'));
+    RESPALDOS = (arc.respaldos) || {};
+    const meses = Object.keys(RESPALDOS).filter(k => /^\d{4}-\d{2}$/.test(k)).sort();
+    lineas.push('RESPALDOS MENSUALES: ' + (meses.length ? meses.join(', ') : 'ninguno'));
+    meses.forEach(mes => {
+      const r = RESPALDOS[mes] || {};
+      const fecha = r.ts ? new Date(r.ts).toLocaleString('es-CO', { timeZone:'America/Bogota' }) : '—';
+      lineas.push('· ' + mes + ' — guardado: ' + fecha + ' — por: ' + (r.por || '—') + ' — contenido: ' + resumen(r.datos));
+      const b = document.createElement('button'); b.textContent = '⬇ Descargar respaldo ' + mes;
+      b.onclick = ()=>descargar('respaldo-' + mes + '.json', RESPALDOS[mes].datos);
+      btns.appendChild(b);
+    });
+    info.textContent = lineas.join('\n');
+  }catch(e){ info.textContent = 'Error leyendo: ' + e.message; }
+});
+</script>
+</body></html>
