@@ -117,6 +117,8 @@
   .btn-grande.verde{background:linear-gradient(135deg,#1e9e4a,#37b24d);box-shadow:0 8px 18px rgba(30,158,74,.25)}
   .btn-grande.morado{background:linear-gradient(135deg,#6741c4,#845ef7);box-shadow:0 8px 18px rgba(103,65,196,.25)}
   .btn-grande.naranja{background:linear-gradient(135deg,#e8590c,#f76707);box-shadow:0 8px 18px rgba(232,89,12,.25)}
+  .btn-grande.celeste{background:linear-gradient(135deg,#0b7ea8,#22a6d8);box-shadow:0 8px 18px rgba(11,126,168,.25)}
+  .btn-grande.cafe{background:linear-gradient(135deg,#a06a1c,#c98f2e);box-shadow:0 8px 18px rgba(160,106,28,.25)}
   @keyframes diaFlash{0%{box-shadow:0 0 0 4px rgba(47,107,223,.55)}100%{box-shadow:0 0 0 0 rgba(47,107,223,0)}}
   .flash{animation:diaFlash 1.2s ease 2}
   @media (max-width:420px){ .btns-grandes{gap:10px} .btn-grande{min-height:86px;font-size:1.05rem} }
@@ -361,6 +363,8 @@ async function consultar(){
   h += '<div class="card doc abierta" id="sec-manual"><div class="desp-cab"><h2>📘 Manual de Convivencia <a class="pdf-dl" href="/documentos/manual-convivencia.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar</a></h2></div><div class="desp-cuerpo">' + (datos.manualHtml || '<p class="nota">El manual aún no está publicado en este espacio.</p>') + '</div></div>';
 
   res.innerHTML = (proceso ? procesoHTML(proceso) : '') + h;
+  MOD_ACTIVO = null;
+  MODULOS.forEach(m => { const n = document.getElementById(m); if(n) n.style.display = 'none'; });
   res.scrollIntoView({behavior:'smooth'});
 }
 
@@ -371,9 +375,9 @@ function irSeccion(id){
   const el = document.getElementById(id); if(!el) return;
   if(MOD_ACTIVO === id){
     MOD_ACTIVO = null;
-    MODULOS.forEach(m => { const n = document.getElementById(m); if(n) n.style.display = ''; });
+    MODULOS.forEach(m => { const n = document.getElementById(m); if(n) n.style.display = 'none'; });
     document.querySelectorAll('.btn-grande').forEach(b => b.classList.remove('activa'));
-    el.scrollIntoView({behavior:'smooth', block:'start'});
+    const bg = document.querySelector('.btns-grandes'); if(bg) bg.scrollIntoView({behavior:'smooth', block:'center'});
     return;
   }
   MOD_ACTIVO = id;
@@ -419,6 +423,8 @@ function botonesHTML(d){
   b.push('<button class="btn-grande verde" onclick="irSeccion(\'sec-justificar\')"><span class="bg-ico">✉️</span>Justificar una falta</button>');
   if(d.pagos) b.push('<button class="btn-grande naranja" onclick="irSeccion(\'sec-pagos\')"><span class="bg-ico">💰</span>Pensiones y pagos</button>');
   b.push('<button class="btn-grande morado" onclick="irSeccion(\'sec-certs\')"><span class="bg-ico">📜</span>Certificados</button>');
+  if(d.calendario && d.calendario.length) b.push('<button class="btn-grande celeste" onclick="irSeccion(\'sec-eventos\')"><span class="bg-ico">📅</span>Eventos</button>');
+  b.push('<button class="btn-grande cafe" onclick="irSeccion(\'sec-manual\')"><span class="bg-ico">📘</span>Manual de convivencia</button>');
   return '<div class="btns-grandes">' + b.join('') + '</div>';
 }
 
