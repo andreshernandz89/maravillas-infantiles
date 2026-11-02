@@ -1030,7 +1030,7 @@ async function verArchivoAnio(anio){
     const snap = await FB_DB.ref('archivos/' + anio).once('value');
     const datos = snap.val(); if(!datos){ alert('No se encontró el archivo del año ' + anio + '.'); return; }
     if(!MODO_ARCHIVO) DB_VIVO = DB;
-    DB = datos; MODO_ARCHIVO = true; ANIO_VIENDO = anio; MODO_PROXIMO = false;
+    DB = datos; if(!Array.isArray(DB.tareas)) DB.tareas = []; if(typeof saneamientoNube === 'function') saneamientoNube(); MODO_ARCHIVO = true; ANIO_VIENDO = anio; MODO_PROXIMO = false;
     $('archivo-banner-txt').textContent = 'Estás viendo el año lectivo ' + anio + ' en modo SOLO LECTURA: puedes consultar e imprimir los boletines y certificados de ese año, pero no modificar datos.';
     $('archivo-banner').classList.remove('hidden');
     if(typeof poblarFiltroAnio === 'function') poblarFiltroAnio();
