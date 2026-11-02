@@ -218,7 +218,7 @@ button.btn:hover{ background:var(--azul-osc); }
   #btn-menu{ display:inline-flex; }
   #menu-fondo{ display:block; position:fixed; inset:0; background:rgba(6,17,38,.52); z-index:1100; opacity:0; pointer-events:none; transition:opacity .26s ease; }
   body.menu-abierto #menu-fondo{ opacity:1; pointer-events:auto; }
-  nav.tabs.menu-lateral{ position:fixed; top:0; left:0; width:274px; max-width:85vw; height:100dvh; max-height:none; flex-direction:column; flex-wrap:nowrap; align-items:stretch; overflow-y:auto; z-index:1200; border-radius:0 18px 18px 0; transform:translateX(-107%); transition:transform .26s ease; }
+  nav.tabs.menu-lateral{ position:fixed; top:0; left:0; width:274px; max-width:85vw; height:100dvh; max-height:none; flex-direction:column; flex-wrap:nowrap; align-items:stretch; overflow-y:auto; z-index:1200; border-radius:0 18px 18px 0; transform:translateX(-107%); transition:transform .26s ease; padding-bottom:calc(104px + env(safe-area-inset-bottom)); }
   body.menu-abierto nav.tabs.menu-lateral{ transform:translateX(0); }
   nav.tabs.menu-lateral .menu-grupo{ flex-direction:column; flex-wrap:nowrap; align-items:stretch; }
   nav.tabs.menu-lateral .menu-titulo{ width:auto; }
