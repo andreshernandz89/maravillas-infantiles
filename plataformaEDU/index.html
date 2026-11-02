@@ -1525,9 +1525,11 @@ async function sincronizarProceso2027(){
       const k = normDocMatricula(m.estudiante.docNumero);
       if(vistos[k]) return false; vistos[k] = true; return true;
     });
+    const clavesVigentes = {};
     await Promise.all(lista.map(async m => {
       const e = m.estudiante || {};
       const clave = await sha256Hex(normDocMatricula(e.docNumero));
+      clavesVigentes[clave] = true;
       await FB_DB.ref('proceso2027/' + clave).set({
         nombre: ((e.nombres || '') + ' ' + (e.apellidos || '')).trim(),
         grado: m.grado || '',
@@ -1537,6 +1539,14 @@ async function sincronizarProceso2027(){
         actualizado: Date.now()
       });
     }));
+    if(lista.length){
+      try{
+        const snapP = await FB_DB.ref('proceso2027').once('value');
+        const proc = snapP.val() || {};
+        const borrar = Object.keys(proc).filter(k => !clavesVigentes[k]);
+        await Promise.all(borrar.map(k => FB_DB.ref('proceso2027/' + k).remove()));
+      }catch(e2){ /* limpieza de recibos sin tarjeta: opcional */ }
+    }
   }catch(err){ console.error('sincronizarProceso2027:', err); }
 }
 let CONSULTA_SYNC = false;
@@ -2052,7 +2062,7 @@ function matriEliminar(id){
   const m = MATRI[id]; if(!m) return;
   if(!confirm('¿Eliminar esta respuesta del formulario? Esta acción no se puede deshacer.')) return;
   FB_DB.ref('matriculas2027/' + id).remove()
-    .then(() => { registrarCambio('Respuesta de matrícula 2027 eliminada (' + (((m.estudiante || {}).apellidos) || '') + ')'); guardar(); })
+    .then(() => { const docM = normDocMatricula((m.estudiante || {}).docNumero || ''); if(docM){ sha256Hex(docM).then(clave => FB_DB.ref('proceso2027/' + clave).remove()).catch(() => {}); } registrarCambio('Respuesta de matrícula 2027 eliminada (' + (((m.estudiante || {}).apellidos) || '') + ')'); guardar(); })
     .catch(err => alert('No se pudo eliminar: ' + err.message));
 }
 function matriCrearEstudiante(id){
