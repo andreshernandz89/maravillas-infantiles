@@ -1,6 +1,42 @@
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="utf-8"><title>Uso interno</title></head>
-<body style="font-family:system-ui,Arial,sans-serif;margin:24px;color:#0f2a52">
-<h1>🛟 Página interna retirada</h1>
-<p>Esta página temporal ya cumplió su función y fue desactivada el 2026-11-01.</p>
+<html lang="es"><head><meta charset="utf-8"><title>Uso interno</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body style="font-family:system-ui,Arial,sans-serif;margin:24px;color:#0f2a52;max-width:560px">
+<h1>Subir año archivado 2025</h1>
+<p>Página temporal de uso interno. Ingresa con el usuario dueño, adjunta el archivo JSON del año y pulsa el botón.</p>
+<label>Usuario<br><input id="usu" value="andres" style="width:100%;padding:8px;margin:4px 0 12px"></label>
+<label>Clave<br><input id="cla" type="password" style="width:100%;padding:8px;margin:4px 0 12px"></label>
+<label>Archivo JSON del año<br><input id="arc" type="file" accept=".json,application/json" style="margin:4px 0 16px"></label>
+<button id="btn" style="background:#1d4ed8;color:#fff;border:0;border-radius:8px;padding:12px 18px;font-size:16px;width:100%">Ingresar y subir a /archivos/2025</button>
+<p id="estado" style="font-size:18px;font-weight:600;margin-top:18px">Listo para empezar.</p>
+<script>
+const FB_CONFIG = { apiKey: "AIzaSyD8JESH5rhMkgmSjy-0h6p-zObQg-XAzQ0", authDomain: "plataforma-cemi.firebaseapp.com", databaseURL: "https://plataforma-cemi-default-rtdb.firebaseio.com", projectId: "plataforma-cemi", storageBucket: "plataforma-cemi.firebasestorage.app", messagingSenderId: "59598932057", appId: "1:59598932057:web:24cb8ee45a831374a4c948" };
+firebase.initializeApp(FB_CONFIG);
+const db = firebase.database(), auth = firebase.auth(), est = document.getElementById('estado');
+function decir(t){ est.textContent = t; document.title = t; }
+document.getElementById('btn').onclick = async () => {
+  try{
+    const usu = document.getElementById('usu').value.trim().toLowerCase();
+    const cla = document.getElementById('cla').value;
+    const f = document.getElementById('arc').files[0];
+    if(!f){ decir('Falta adjuntar el archivo JSON.'); return; }
+    decir('Leyendo el archivo...');
+    const obj = JSON.parse(await f.text());
+    if(!obj.estudiantes || !obj.instituto){ decir('El archivo no tiene la forma esperada.'); return; }
+    decir('Buscando el correo del usuario...');
+    const s = await db.ref('loginMap/' + usu).once('value');
+    const correo = s.val(); if(!correo){ decir('Usuario no encontrado en loginMap.'); return; }
+    decir('Ingresando...');
+    await auth.signInWithEmailAndPassword(correo, cla);
+    decir('Subiendo ' + obj.estudiantes.length + ' estudiantes a /archivos/2025...');
+    await db.ref('archivos/2025').set(obj);
+    const v = await db.ref('archivos/2025/estudiantes').once('value');
+    const n = (v.val() || []).length;
+    decir('LISTO: /archivos/2025 guardado y verificado con ' + n + ' estudiantes.');
+  }catch(e){ decir('ERROR: ' + (e && e.message ? e.message : e)); }
+};
+</script>
 </body></html>
