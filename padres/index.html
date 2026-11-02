@@ -110,6 +110,7 @@
   .dia-ico{font-size:1.55rem;line-height:1.2;flex:none}
   .dia-linea strong{color:var(--azul)}
   .btns-grandes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .btn-grande.activa{box-shadow:0 0 0 3px #ffffff,0 0 0 7px #1256c4,0 10px 22px rgba(18,86,196,.35);filter:brightness(1.08)}
   .btn-grande{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:92px;padding:14px 8px;border:0;border-radius:20px;background:linear-gradient(135deg,#1256c4,#2f6bdf);color:#fff;font-size:1.12rem;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(18,86,196,.25);font-family:inherit;text-align:center;line-height:1.25}
   .btn-grande .bg-ico{font-size:2rem;line-height:1}
   .btn-grande:active{transform:scale(.98)}
@@ -355,19 +356,29 @@ async function consultar(){
   h += '</div></div>';
   if(datos.calendario && datos.calendario.length){
     const fmtF = iso => new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
-    h += '<div class="card abierta"><div class="desp-cab"><h2>📅 Próximos eventos del colegio <a class="pdf-dl" href="/documentos/planeacion-institucional-2026.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar planeación</a></h2></div><div class="desp-cuerpo">' + datos.calendario.map(ev => '<p style="margin:6px 0"><strong>' + esc(fmtF(ev.fecha)) + '</strong> · ' + esc(ev.titulo) + (detVisible(ev.detalle) ? ' <span class="nota">(' + esc(detVisible(ev.detalle)) + ')</span>' : '') + '</p>').join('') + '</div></div>';
+    h += '<div class="card abierta" id="sec-eventos"><div class="desp-cab"><h2>📅 Próximos eventos del colegio <a class="pdf-dl" href="/documentos/planeacion-institucional-2026.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar planeación</a></h2></div><div class="desp-cuerpo">' + datos.calendario.map(ev => '<p style="margin:6px 0"><strong>' + esc(fmtF(ev.fecha)) + '</strong> · ' + esc(ev.titulo) + (detVisible(ev.detalle) ? ' <span class="nota">(' + esc(detVisible(ev.detalle)) + ')</span>' : '') + '</p>').join('') + '</div></div>';
   }
-  h += '<div class="card doc abierta"><div class="desp-cab"><h2>📘 Manual de Convivencia <a class="pdf-dl" href="/documentos/manual-convivencia.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar</a></h2></div><div class="desp-cuerpo">' + (datos.manualHtml || '<p class="nota">El manual aún no está publicado en este espacio.</p>') + '</div></div>';
+  h += '<div class="card doc abierta" id="sec-manual"><div class="desp-cab"><h2>📘 Manual de Convivencia <a class="pdf-dl" href="/documentos/manual-convivencia.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar</a></h2></div><div class="desp-cuerpo">' + (datos.manualHtml || '<p class="nota">El manual aún no está publicado en este espacio.</p>') + '</div></div>';
 
   res.innerHTML = (proceso ? procesoHTML(proceso) : '') + h;
   res.scrollIntoView({behavior:'smooth'});
 }
 
 
+const MODULOS = ['sec-tareas', 'sec-justificar', 'sec-pagos', 'sec-certs', 'sec-eventos', 'sec-manual'];
+let MOD_ACTIVO = null;
 function irSeccion(id){
   const el = document.getElementById(id); if(!el) return;
-  const cab = el.querySelector('.desp-cab');
-  if(cab && !el.classList.contains('abierta')) cab.click();
+  if(MOD_ACTIVO === id){
+    MOD_ACTIVO = null;
+    MODULOS.forEach(m => { const n = document.getElementById(m); if(n) n.style.display = ''; });
+    document.querySelectorAll('.btn-grande').forEach(b => b.classList.remove('activa'));
+    el.scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
+  MOD_ACTIVO = id;
+  MODULOS.forEach(m => { const n = document.getElementById(m); if(n) n.style.display = (m === id ? '' : 'none'); });
+  document.querySelectorAll('.btn-grande').forEach(b => b.classList.toggle('activa', (b.getAttribute('onclick') || '').indexOf(id) >= 0));
   el.scrollIntoView({behavior:'smooth', block:'start'});
   el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
 }
