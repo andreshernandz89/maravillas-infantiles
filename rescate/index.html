@@ -1,6 +1,87 @@
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="utf-8"><title>Uso interno</title></head>
-<body style="font-family:system-ui,Arial,sans-serif;margin:24px;color:#0f2a52">
-<h1>🛟 Página interna retirada</h1>
-<p>Esta página temporal ya cumplió su función y fue desactivada el 2026-11-01.</p>
-</body></html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Limpieza de recibo — uso interno</title>
+<style>
+  body{ font-family:system-ui,Arial,sans-serif; background:#0b162c; color:#eaf1ff; margin:0; padding:22px; }
+  .caja{ max-width:720px; margin:0 auto; background:#13213F; border:1px solid #2c4a7c; border-radius:14px; padding:20px; }
+  h1{ font-size:19px; margin:0 0 6px; } p{ color:#b9c9e8; font-size:14px; line-height:1.5; }
+  label{ display:block; font-size:13px; color:#b9c9e8; margin:12px 0 4px; }
+  input{ width:100%; box-sizing:border-box; padding:11px 12px; border-radius:10px; border:1px solid #2c4a7c; background:#0b162c; color:#fff; font-size:15px; }
+  button{ background:#0792FE; color:#fff; border:none; border-radius:10px; padding:12px 18px; font-size:15px; font-weight:700; cursor:pointer; margin:14px 8px 0 0; }
+  button:disabled{ opacity:.45; cursor:default; } button.rojo{ background:#c0392b; }
+  #salida{ white-space:pre-wrap; background:#0b162c; border:1px solid #2c4a7c; border-radius:10px; padding:14px; margin-top:14px; font-size:13.5px; line-height:1.55; min-height:60px; }
+</style>
+</head>
+<body>
+<div class="caja">
+  <h1>🧹 Limpieza de recibo de matrícula</h1>
+  <p>Uso interno. Ingresa con el usuario y la clave del dueño (igual que en la plataforma) para borrar el recibo público de una tarjeta ya eliminada de la bandeja.</p>
+  <form id="form-login" autocomplete="on">
+    <label for="usuario">Usuario</label>
+    <input id="usuario" name="username" type="text" value="andres" autocomplete="username">
+    <label for="clave">Clave</label>
+    <input id="clave" name="password" type="password" autocomplete="current-password">
+    <button type="submit" id="btn-login">Ingresar</button>
+  </form>
+  <p id="auth">Sesión: verificando…</p>
+  <button id="btn-limpiar" class="rojo" disabled>🗑 Borrar el recibo huérfano (doc 1048096482)</button>
+  <div id="salida">Sin ejecutar todavía.</div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyB4p-YXLS4wa7f8hX2BHfCQReHHsLxOHdE",
+  authDomain: "plataforma-cemi.firebaseapp.com",
+  databaseURL: "https://plataforma-cemi-default-rtdb.firebaseio.com",
+  projectId: "plataforma-cemi"
+});
+const DB = firebase.database();
+const CLAVE_RECIBO = '5c5eb41baa7309613ab2e366263a81f8c721a6a300cd2db25c9866197ddfcd7e';
+function out(t){ document.getElementById('salida').textContent = t; }
+firebase.auth().onAuthStateChanged(u => {
+  document.getElementById('auth').textContent = 'Sesión: ' + (u ? ('activa (' + (u.email || u.uid) + ')') : 'sin sesión');
+  document.getElementById('btn-limpiar').disabled = !u;
+});
+document.getElementById('form-login').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const usu = document.getElementById('usuario').value.trim().toLowerCase().replace(/\s+/g, '');
+  const pass = document.getElementById('clave').value;
+  out('Buscando el correo del usuario «' + usu + '»…');
+  try{
+    const s = await DB.ref('loginMap/' + usu).once('value');
+    const correo = s.val();
+    if(!correo){ out('Ese usuario no tiene correo de ingreso registrado.'); return; }
+    await firebase.auth().signInWithEmailAndPassword(correo, pass);
+    out('Ingreso correcto como ' + correo + '. Ya puedes borrar el recibo.');
+  }catch(e){ out('No se pudo ingresar: ' + (e && e.message ? e.message : e)); }
+});
+document.getElementById('btn-limpiar').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-limpiar'); btn.disabled = true;
+  let log = [];
+  try{
+    const antes = await DB.ref('proceso2027/' + CLAVE_RECIBO).once('value');
+    log.push('Recibo antes: ' + JSON.stringify(antes.val()));
+  }catch(e){ log.push('Lectura previa: ' + (e && e.message ? e.message : e)); }
+  try{
+    const lista = await DB.ref('proceso2027').once('value');
+    const v = lista.val() || {};
+    log.push('Lectura de la lista de recibos: OK (' + Object.keys(v).length + ' recibos).');
+  }catch(e){ log.push('Lectura de la lista de recibos: FALLÓ (' + (e && e.message ? e.message : e) + ').'); }
+  try{
+    await DB.ref('proceso2027/' + CLAVE_RECIBO).remove();
+    log.push('Borrado ejecutado.');
+  }catch(e){ log.push('Borrado FALLÓ: ' + (e && e.message ? e.message : e)); }
+  try{
+    const despues = await DB.ref('proceso2027/' + CLAVE_RECIBO).once('value');
+    log.push('Recibo después: ' + JSON.stringify(despues.val()) + (despues.val() === null ? ' ✅ ya no existe' : ' ⚠️ sigue existiendo'));
+  }catch(e){ log.push('Lectura posterior: ' + (e && e.message ? e.message : e)); }
+  out(log.join('\n'));
+});
+</script>
+</body>
+</html>
