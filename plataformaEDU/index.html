@@ -18,6 +18,7 @@
   .gate-card input{ width:100%; padding:12px 14px; border:1.5px solid var(--borde); border-radius:10px; font-size:15px; margin-bottom:12px; }
   .gate-card button{ width:100%; padding:12px; background:var(--azul); color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; }
   .gate-card button:hover{ background:var(--azul-osc); }
+  .gate-card button:disabled{ opacity:.55; cursor:wait; }
   #gate-error{ color:#c62828; font-size:13px; min-height:18px; margin-top:8px; }
   header.app-head{ background:var(--azul); color:#fff; padding:12px 20px; display:flex; align-items:center; gap:14px; }
   header.app-head img{ width:44px; height:44px; object-fit:contain; background:#fff; border-radius:8px; padding:2px; }
@@ -2275,6 +2276,7 @@ async function entrar(){
   const usu = normNombre($('gate-user').value).toLowerCase().replace(/\s+/g,'');
   const pass = $('gate-pass').value;
   if(!usu || !pass){ $('gate-error').textContent = 'Escribe tu usuario y tu contraseña.'; return; }
+  { let _h = 0; try{ _h = parseInt(localStorage.getItem('gate_espera_hasta') || '0', 10) || 0; }catch(e){} if(_h > Date.now()){ $('gate-error').textContent = 'Demasiados intentos seguidos: por seguridad, el ingreso se pausó unos minutos. Espera el tiempo que marca el botón y vuelve a intentarlo.'; pintarEsperaIngreso(); return; } }
   if(!FB_AUTH){ $('gate-error').textContent = 'Sin conexión con el servidor. Revisa tu internet e inténtalo de nuevo.'; return; }
   $('gate-error').textContent = 'Ingresando…';
   const btnEntrar = $('gate-btn'); if(btnEntrar) btnEntrar.disabled = true;
@@ -2286,9 +2288,35 @@ async function entrar(){
     console.error(err);
     window._ultimaClave = null;
     if(btnEntrar) btnEntrar.disabled = false;
-    $('gate-error').textContent = (err && err.code === 'auth/too-many-requests') ? 'Demasiados intentos seguidos: por seguridad, el ingreso se pausó unos minutos. Espera un momento y vuelve a intentarlo.' : ((err && ['auth/wrong-password','auth/user-not-found','auth/invalid-credential','auth/invalid-email'].includes(err.code)) ? 'Usuario o contraseña incorrectos.' : 'No se pudo ingresar. Revisa tu conexión e inténtalo de nuevo.');
+    $('gate-error').textContent = (err && err.code === 'auth/too-many-requests') ? 'Demasiados intentos seguidos: por seguridad, el ingreso se pausó unos minutos. Espera el tiempo que marca el botón y vuelve a intentarlo.' : ((err && ['auth/wrong-password','auth/user-not-found','auth/invalid-credential','auth/invalid-email'].includes(err.code)) ? 'Usuario o contraseña incorrectos.' : 'No se pudo ingresar. Revisa tu conexión e inténtalo de nuevo.');
+    if(err && err.code === 'auth/too-many-requests') iniciarEsperaIngreso();
   }
 }
+let _esperaIngresoTimer = null;
+function iniciarEsperaIngreso(){
+  let nivel = 0; try{ nivel = parseInt(localStorage.getItem('gate_espera_nivel') || '0', 10) || 0; }catch(e){}
+  const segs = nivel >= 1 ? 900 : 300;
+  try{ localStorage.setItem('gate_espera_nivel', String(nivel + 1)); localStorage.setItem('gate_espera_hasta', String(Date.now() + segs * 1000)); }catch(e){}
+  pintarEsperaIngreso();
+}
+function pintarEsperaIngreso(){
+  const btn = $('gate-btn'); if(!btn) return;
+  let hasta = 0; try{ hasta = parseInt(localStorage.getItem('gate_espera_hasta') || '0', 10) || 0; }catch(e){}
+  const quedan = Math.round((hasta - Date.now()) / 1000);
+  if(quedan <= 0){
+    if(_esperaIngresoTimer){ clearInterval(_esperaIngresoTimer); _esperaIngresoTimer = null; }
+    try{ localStorage.removeItem('gate_espera_hasta'); }catch(e){}
+    btn.disabled = false;
+    if(btn.textContent !== 'Entrar') btn.textContent = 'Entrar';
+    return;
+  }
+  btn.disabled = true;
+  const mm = Math.floor(quedan / 60), ss = String(quedan % 60).padStart(2, '0');
+  btn.textContent = 'Espera ' + mm + ':' + ss + ' para intentarlo de nuevo';
+  if(!_esperaIngresoTimer) _esperaIngresoTimer = setInterval(pintarEsperaIngreso, 500);
+}
+function limpiarEsperaIngreso(){ try{ localStorage.removeItem('gate_espera_hasta'); localStorage.removeItem('gate_espera_nivel'); }catch(e){} }
+pintarEsperaIngreso();
 async function olvideClave(e){
   if(e) e.preventDefault();
   const usu = normNombre($('gate-user').value).toLowerCase().replace(/\s+/g,'');
@@ -2325,7 +2353,7 @@ function aplicarPermisos(){
   $('sel-curso-nivel').disabled = docente;
   ajustarPeriodosDocente();
 }
-function mostrarApp(){ if (typeof detectarSimulacion === 'function') detectarSimulacion(); if (typeof aplicarEstadoMenu === 'function') aplicarEstadoMenu();
+function mostrarApp(){ limpiarEsperaIngreso(); if (typeof detectarSimulacion === 'function') detectarSimulacion(); if (typeof aplicarEstadoMenu === 'function') aplicarEstadoMenu();
   $('gate').classList.add('hidden'); $('app').classList.remove('hidden');
   ['/plataformaCEMI/membrete.png','/plataformaCEMI/firma-secretaria.png'].forEach(src => { const im = new Image(); im.src = src; });
   cargarInstitutoEnForm(); initInstitutoDesplegables(); refrescarSelectsCursos(); aplicarPermisos(); renderTodo(); actualizarBannerDemo();
