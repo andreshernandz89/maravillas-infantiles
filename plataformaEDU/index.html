@@ -3047,7 +3047,8 @@ function renderPanelDocente(){
   const fechas = Object.keys(DB.asistencia[c.id] || {}).sort();
   const ultima = fechas[fechas.length-1] || '';
   const alDia = !!ultima && ultima >= ultClaseISO;
-  const planOk = !!((DB.planeadores[c.id] || {})[lunesISO]);
+  const planReg = (DB.planeadores[c.id] || {})[lunesISO];
+    const planOk = !!(planReg && (planReg.filas || []).some(f => (f.asignatura || '').trim()));
   let conObs = 0;
   ests.forEach(e=>{ const o = (DB.observadores[e.id] || {})[String(P)]; if(o && (o.desempeno || o.seguimiento || o.resultados)) conObs++; });
   const pctO = ests.length ? Math.round(conObs/ests.length*100) : 0;
@@ -3097,7 +3098,8 @@ function renderPanel(){
     const fechas = Object.keys(DB.asistencia[c.id] || {}).sort();
     const ultima = fechas[fechas.length-1] || '';
     const alDia = !!ultima && ultima >= ultClaseISO;
-    const planOk = !!((DB.planeadores[c.id] || {})[lunesISO]);
+    const planReg = (DB.planeadores[c.id] || {})[lunesISO];
+    const planOk = !!(planReg && (planReg.filas || []).some(f => (f.asignatura || '').trim()));
     let conObs = 0;
     ests.forEach(e=>{ const o = (DB.observadores[e.id] || {})[String(P)]; if(o && (o.desempeno || o.seguimiento || o.resultados)) conObs++; });
     const pctO = ests.length ? Math.round(conObs/ests.length*100) : 0;
