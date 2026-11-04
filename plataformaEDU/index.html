@@ -3059,10 +3059,10 @@ function renderPanelDocente(){
   const pctO = ests.length ? Math.round(conObs/ests.length*100) : 0;
   const fila = (nombre, chip, detalle) => '<tr><td><strong>' + nombre + '</strong></td><td>' + chip + '</td><td style="font-size:12px">' + detalle + '</td></tr>';
   htmlCumplimiento += '<p class="ayuda">Semáforo de seguimiento de <strong>' + esc(c.nombre) + '</strong> · Periodo ' + P + '</p><div class="scroll"><table><thead><tr><th>Pendiente</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>'
-    + fila('Notas del periodo ' + P, semChip(pctN), conNota + '/' + ests.length + ' estudiantes con todas sus notas')
-    + fila('Asistencia diaria', alDia ? '<span class="sem v">Al día</span>' : (ultima ? '<span class="sem a">Atrasada</span>' : '<span class="sem r">Sin registros</span>'), ultima ? 'Último registro: ' + esc(ultima) : 'Aún no registras asistencia')
+    + fila('Notas del periodo ' + P, '<span style="cursor:pointer" title="Ver las notas" onclick="irANotas(\'' + c.id + '\', ' + P + ')">' + semChip(pctN) + '</span>', conNota + '/' + ests.length + ' estudiantes con todas sus notas')
+    + fila('Asistencia diaria', '<span style="cursor:pointer" title="Ver la asistencia" onclick="irAAsistencia(\'' + c.id + '\', \'' + ultima + '\')">' + (alDia ? '<span class="sem v">Al día</span>' : (ultima ? '<span class="sem a">Atrasada</span>' : '<span class="sem r">Sin registros</span>')) + '</span>', ultima ? 'Último registro: ' + esc(ultima) : 'Aún no registras asistencia')
     + fila('Planeador de esta semana', planPct >= 100 ? '<span class="sem v" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Cargado · 100%</span>' : (planPct > 0 ? '<span class="sem a" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Parcial · ' + planPct + '%</span>' : '<span class="sem r" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Pendiente · 0%</span>'), planOk ? 'Semana del ' + lunesISO : 'Falta el planeador de la semana del ' + lunesISO)
-    + fila('Observadores del periodo ' + P, semChip(pctO), conObs + '/' + ests.length + ' estudiantes con observador')
+    + fila('Observadores del periodo ' + P, '<span style="cursor:pointer" title="Ver los observadores" onclick="irAObservador(\'' + c.id + '\', ' + P + ')">' + semChip(pctO) + '</span>', conObs + '/' + ests.length + ' estudiantes con observador')
     + '</tbody></table></div>';
   const mes = hoy.getMonth()+1, anio = hoy.getFullYear();
   const datosFecha = f => { if(!f) return null; let q = String(f).split('-'); if(q.length===3) return { y:+q[0], m:+q[1], d:+q[2] }; q = String(f).split('/'); if(q.length===3) return { y:+q[2], m:+q[1], d:+q[0] }; return null; };
@@ -3115,10 +3115,10 @@ function renderPanel(){
     const pctO = ests.length ? Math.round(conObs/ests.length*100) : 0;
     const doc = perfiles().find(p=>p.rol==='docente' && esCursoDelDocente(p, c.nombre));
     return '<tr><td><strong>' + esc(c.nombre) + '</strong></td><td>' + esc(doc ? doc.nombre : '—') + '</td>' +
-      '<td>' + semChip(pctN) + ' <span style="font-size:12px">' + conNota + '/' + ests.length + ' estudiantes completos</span></td>' +
-      '<td>' + (alDia ? '<span class="sem v">Al día</span>' : (ultima ? '<span class="sem a">Última: ' + esc(ultima) + '</span>' : '<span class="sem r">Sin registros</span>')) + '</td>' +
+      '<td><span style="cursor:pointer" title="Ver las notas de este curso" onclick="irANotas(\'' + c.id + '\', ' + P + ')">' + semChip(pctN) + ' <span style="font-size:12px">' + conNota + '/' + ests.length + ' estudiantes completos</span></span></td>' +
+      '<td><span style="cursor:pointer" title="Ver la asistencia de este curso" onclick="irAAsistencia(\'' + c.id + '\', \'' + ultima + '\')">' + (alDia ? '<span class="sem v">Al día</span>' : (ultima ? '<span class="sem a">Última: ' + esc(ultima) + '</span>' : '<span class="sem r">Sin registros</span>')) + '</span></td>' +
       '<td>' + (planPct >= 100 ? '<span class="sem v" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Cargado · 100%</span>' : (planPct > 0 ? '<span class="sem a" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Parcial · ' + planPct + '%</span>' : '<span class="sem r" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Pendiente · 0%</span>')) + '</td>' +
-      '<td>' + semChip(pctO) + ' <span style="font-size:12px">' + conObs + '/' + ests.length + '</span></td></tr>';
+      '<td><span style="cursor:pointer" title="Ver los observadores de este curso" onclick="irAObservador(\'' + c.id + '\', ' + P + ')">' + semChip(pctO) + ' <span style="font-size:12px">' + conObs + '/' + ests.length + '</span></span></td></tr>';
   }).join('');
   $('panel-cumplimiento').innerHTML = '<div class="scroll"><table><thead><tr><th>Curso</th><th>Docente</th><th>Notas P' + P + '</th><th>Asistencia</th><th>Planeador de esta semana</th><th>Observadores P' + P + '</th></tr></thead><tbody>' + (filasC || '<tr><td colspan="6">Sin cursos.</td></tr>') + '</tbody></table></div>';
   const riesgo = [];
@@ -3913,6 +3913,25 @@ function irAlPlaneador(cursoId, lunesISO){
   const selP = $('plan-curso'); if(selP) selP.value = cursoId;
   const iniP = $('plan-inicio'); if(iniP && lunesISO) iniP.value = lunesISO;
   renderPlaneador();
+}
+function irANotas(cursoId, periodo){
+  verTab('notas');
+  const selN = $('notas-curso'); if(selN) selN.value = cursoId;
+  const perN = $('notas-periodo'); if(perN && periodo) perN.value = String(periodo);
+  try{ PARCIALES_EXTRA = 0; }catch(e){}
+  renderNotas();
+}
+function irAAsistencia(cursoId, fechaISO){
+  verTab('asistencia');
+  const selA = $('asis-curso'); if(selA) selA.value = cursoId;
+  const fecA = $('asis-fecha'); if(fecA) fecA.value = fechaISO || fechaHoyISO();
+  renderAsistencia();
+}
+function irAObservador(cursoId, periodo){
+  verTab('observador');
+  const selO = $('obs-curso'); if(selO) selO.value = cursoId;
+  const perO = $('obs-periodo'); if(perO && periodo) perO.value = String(periodo);
+  renderObservador(true);
 }
 function planeadorActual(){
   const cursoId = $('plan-curso').value, inicio = $('plan-inicio').value;
