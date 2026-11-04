@@ -3061,7 +3061,7 @@ function renderPanelDocente(){
   htmlCumplimiento += '<p class="ayuda">Semáforo de seguimiento de <strong>' + esc(c.nombre) + '</strong> · Periodo ' + P + '</p><div class="scroll"><table><thead><tr><th>Pendiente</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>'
     + fila('Notas del periodo ' + P, semChip(pctN), conNota + '/' + ests.length + ' estudiantes con todas sus notas')
     + fila('Asistencia diaria', alDia ? '<span class="sem v">Al día</span>' : (ultima ? '<span class="sem a">Atrasada</span>' : '<span class="sem r">Sin registros</span>'), ultima ? 'Último registro: ' + esc(ultima) : 'Aún no registras asistencia')
-    + fila('Planeador de esta semana', planPct >= 100 ? '<span class="sem v">Cargado · 100%</span>' : (planPct > 0 ? '<span class="sem a">Parcial · ' + planPct + '%</span>' : '<span class="sem r">Pendiente · 0%</span>'), planOk ? 'Semana del ' + lunesISO : 'Falta el planeador de la semana del ' + lunesISO)
+    + fila('Planeador de esta semana', planPct >= 100 ? '<span class="sem v" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Cargado · 100%</span>' : (planPct > 0 ? '<span class="sem a" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Parcial · ' + planPct + '%</span>' : '<span class="sem r" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Pendiente · 0%</span>'), planOk ? 'Semana del ' + lunesISO : 'Falta el planeador de la semana del ' + lunesISO)
     + fila('Observadores del periodo ' + P, semChip(pctO), conObs + '/' + ests.length + ' estudiantes con observador')
     + '</tbody></table></div>';
   const mes = hoy.getMonth()+1, anio = hoy.getFullYear();
@@ -3117,7 +3117,7 @@ function renderPanel(){
     return '<tr><td><strong>' + esc(c.nombre) + '</strong></td><td>' + esc(doc ? doc.nombre : '—') + '</td>' +
       '<td>' + semChip(pctN) + ' <span style="font-size:12px">' + conNota + '/' + ests.length + ' estudiantes completos</span></td>' +
       '<td>' + (alDia ? '<span class="sem v">Al día</span>' : (ultima ? '<span class="sem a">Última: ' + esc(ultima) + '</span>' : '<span class="sem r">Sin registros</span>')) + '</td>' +
-      '<td>' + (planPct >= 100 ? '<span class="sem v">Cargado · 100%</span>' : (planPct > 0 ? '<span class="sem a">Parcial · ' + planPct + '%</span>' : '<span class="sem r">Pendiente · 0%</span>')) + '</td>' +
+      '<td>' + (planPct >= 100 ? '<span class="sem v" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Cargado · 100%</span>' : (planPct > 0 ? '<span class="sem a" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Parcial · ' + planPct + '%</span>' : '<span class="sem r" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Pendiente · 0%</span>')) + '</td>' +
       '<td>' + semChip(pctO) + ' <span style="font-size:12px">' + conObs + '/' + ests.length + '</span></td></tr>';
   }).join('');
   $('panel-cumplimiento').innerHTML = '<div class="scroll"><table><thead><tr><th>Curso</th><th>Docente</th><th>Notas P' + P + '</th><th>Asistencia</th><th>Planeador de esta semana</th><th>Observadores P' + P + '</th></tr></thead><tbody>' + (filasC || '<tr><td colspan="6">Sin cursos.</td></tr>') + '</tbody></table></div>';
@@ -3908,6 +3908,12 @@ async function pagoRechazar(id){
 function lunesDeEstaSemana(){ const d = new Date(); const diff = (d.getDay()+6)%7; d.setDate(d.getDate()-diff); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function sumarDiasISO(iso, n){ const d = new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function docenteDeCurso(curso){ const pf = perfiles().find(x=>x.rol==='docente' && esCursoDelDocente(x, curso.nombre)); return pf ? pf.nombre : ''; }
+function irAlPlaneador(cursoId, lunesISO){
+  verTab('planeador');
+  const selP = $('plan-curso'); if(selP) selP.value = cursoId;
+  const iniP = $('plan-inicio'); if(iniP && lunesISO) iniP.value = lunesISO;
+  renderPlaneador();
+}
 function planeadorActual(){
   const cursoId = $('plan-curso').value, inicio = $('plan-inicio').value;
   if(!cursoId || !inicio) return null;
