@@ -181,7 +181,7 @@
 /* ===== Sistema de diseño de marca (2026-10-27) =====
    Menú oscuro con la identidad de la institución siempre visible,
    paleta azul de la marca y micro-efectos al pasar el cursor. */
-:root{ --marino:#13213F; --acento:#0792FE; --turquesa:#14B8A6; }
+:root{ --marino:#13213F; --acento:#0792FE; }
 #gate{ background:linear-gradient(160deg, #13213F 0%, #0a2a5e 62%, #0792FE 135%); }
 .gate-card img.gate-marca{ width:272px; height:auto; margin-bottom:14px; }
 .gate-card img.gate-escudo{ width:74px; height:auto; margin-bottom:8px; }
@@ -4896,7 +4896,7 @@ nav.tabs.menu-lateral button{ display:flex; align-items:center; }
 
 /* ---------- Ingreso (vitrina) ---------- */
 .gate-card{ border-radius:20px; box-shadow:var(--sombra-alta); padding:38px 34px 30px; position:relative; overflow:hidden; }
-.gate-card::before{ content:''; position:absolute; top:0; left:0; right:0; height:5px; background:linear-gradient(90deg, var(--acento), var(--turquesa)); }
+.gate-card::before{ content:''; position:absolute; top:0; left:0; right:0; height:5px; background:linear-gradient(90deg, var(--acento), var(--acento)); }
 .gate-card input{ min-height:48px; font-size:15.5px; border-radius:10px; }
 .gate-card input:focus{ border-color:var(--acento); box-shadow:0 0 0 3px color-mix(in srgb, var(--acento) 25%, transparent); }
 .gate-card > button{ min-height:48px; border-radius:10px; font-size:15.5px; background:linear-gradient(90deg, var(--acento), #0b5ed7); box-shadow:0 6px 16px rgba(7,146,254,.35); transition:filter .15s ease, transform .1s ease; }
@@ -4920,7 +4920,7 @@ nav.tabs.menu-lateral button{ display:flex; align-items:center; }
 /* ---------- Indicador de sincronización ---------- */
 #sync-dot{ display:none; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:#cfe3ff; white-space:nowrap; }
 #sync-dot.activo{ display:inline-flex; }
-#sync-dot .sync-punto{ width:9px; height:9px; border-radius:50%; background:var(--turquesa); animation:syncPulso 1s ease-in-out infinite; }
+#sync-dot .sync-punto{ width:9px; height:9px; border-radius:50%; background:var(--acento); animation:syncPulso 1s ease-in-out infinite; }
 @keyframes syncPulso{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.55); opacity:.55; } }
 
 /* ---------- Avisos (toasts) ---------- */
