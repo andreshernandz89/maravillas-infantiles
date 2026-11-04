@@ -3048,7 +3048,7 @@ function renderPanelDocente(){
   const ultima = fechas[fechas.length-1] || '';
   const alDia = !!ultima && ultima >= ultClaseISO;
   const planReg = (DB.planeadores[c.id] || {})[lunesISO];
-    const planOk = !!(planReg && (planReg.filas || []).some(f => (f.asignatura || '').trim()));
+    const planOk = !!(planReg && (planReg.filas || []).some(f => (f.temas || '').trim() || (f.metodologicas || '').trim() || (f.evaluativas || '').trim() || (f.recursos || '').trim()));
   let conObs = 0;
   ests.forEach(e=>{ const o = (DB.observadores[e.id] || {})[String(P)]; if(o && (o.desempeno || o.seguimiento || o.resultados)) conObs++; });
   const pctO = ests.length ? Math.round(conObs/ests.length*100) : 0;
@@ -3099,7 +3099,7 @@ function renderPanel(){
     const ultima = fechas[fechas.length-1] || '';
     const alDia = !!ultima && ultima >= ultClaseISO;
     const planReg = (DB.planeadores[c.id] || {})[lunesISO];
-    const planOk = !!(planReg && (planReg.filas || []).some(f => (f.asignatura || '').trim()));
+    const planOk = !!(planReg && (planReg.filas || []).some(f => (f.temas || '').trim() || (f.metodologicas || '').trim() || (f.evaluativas || '').trim() || (f.recursos || '').trim()));
     let conObs = 0;
     ests.forEach(e=>{ const o = (DB.observadores[e.id] || {})[String(P)]; if(o && (o.desempeno || o.seguimiento || o.resultados)) conObs++; });
     const pctO = ests.length ? Math.round(conObs/ests.length*100) : 0;
@@ -3920,7 +3920,11 @@ function renderPlaneador(){
     $('plan-periodo').value = String(r.periodo || '1');
     if(!r.cierre) r.cierre = sumarDiasISO(r.inicio, 4);
     $('plan-cierre').value = r.cierre || '';
-    if(!r.filas.length) r.filas.push({ asignatura:'', temas:'', metodologicas:'', evaluativas:'', recursos:'' });
+    const sinTrabajo = !(r.filas || []).some(f => (f.asignatura || '').trim() || (f.temas || '').trim() || (f.metodologicas || '').trim() || (f.evaluativas || '').trim() || (f.recursos || '').trim());
+    if(sinTrabajo){
+      const asigsPlan = curso ? asignaturasDe(curso) : [];
+      r.filas = asigsPlan.length ? asigsPlan.map(a => ({ asignatura: a.nombre, temas: '', metodologicas: '', evaluativas: '', recursos: '' })) : [{ asignatura: '', temas: '', metodologicas: '', evaluativas: '', recursos: '' }];
+    }
   }
   const doc = curso ? docenteDeCurso(curso) : '';
   $('plan-encabezado').textContent = curso ? ('Grado: ' + curso.nombre + (doc ? ' · Docente: ' + doc : '')) : '';
@@ -3938,7 +3942,7 @@ function renderSemanasPlan(){
   const el = $('plan-semanas'); if(!el) return;
   const cursoId = $('plan-curso').value, periodo = $('plan-periodo').value;
   const regs = (DB.planeadores||{})[cursoId] || {};
-  const inicios = Object.keys(regs).filter(k=>String(regs[k].periodo)===String(periodo) && (regs[k].filas||[]).some(f=>(f.asignatura||'').trim())).sort();
+  const inicios = Object.keys(regs).filter(k=>String(regs[k].periodo)===String(periodo) && (regs[k].filas||[]).some(f=>(f.temas||'').trim() || (f.metodologicas||'').trim() || (f.evaluativas||'').trim() || (f.recursos||'').trim())).sort();
   el.innerHTML = inicios.length
     ? 'Semanas con planeador en este periodo: ' + inicios.map(k=>`<button class="btn btn-sec mini" onclick="planIrA('${k}')">${k} → ${esc(regs[k].cierre||'')}</button>`).join(' ')
     : 'Todavía no hay semanas con planeador en este periodo para este curso.';
