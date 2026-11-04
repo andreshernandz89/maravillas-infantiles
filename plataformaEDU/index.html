@@ -3048,7 +3048,12 @@ function renderPanelDocente(){
   const ultima = fechas[fechas.length-1] || '';
   const alDia = !!ultima && ultima >= ultClaseISO;
   const planReg = (DB.planeadores[c.id] || {})[lunesISO];
-    const planOk = !!(planReg && (planReg.filas || []).some(f => (f.temas || '').trim() || (f.metodologicas || '').trim() || (f.evaluativas || '').trim() || (f.recursos || '').trim()));
+    const planFilas = (planReg && planReg.filas) || [];
+    const planConContenido = f => (f.temas || '').trim() || (f.metodologicas || '').trim() || (f.evaluativas || '').trim() || (f.recursos || '').trim();
+    const planOk = planFilas.some(planConContenido);
+    const planAsigs = asignaturasDe(c).map(a => (a.nombre || '').trim().toUpperCase()).filter(Boolean);
+    const planCubiertas = new Set(planFilas.filter(planConContenido).map(f => (f.asignatura || '').trim().toUpperCase()).filter(n => planAsigs.includes(n))).size;
+    const planPct = planAsigs.length ? Math.min(100, Math.round(planCubiertas / planAsigs.length * 100)) : (planOk ? 100 : 0);
   let conObs = 0;
   ests.forEach(e=>{ const o = (DB.observadores[e.id] || {})[String(P)]; if(o && (o.desempeno || o.seguimiento || o.resultados)) conObs++; });
   const pctO = ests.length ? Math.round(conObs/ests.length*100) : 0;
@@ -3056,7 +3061,7 @@ function renderPanelDocente(){
   htmlCumplimiento += '<p class="ayuda">Semáforo de seguimiento de <strong>' + esc(c.nombre) + '</strong> · Periodo ' + P + '</p><div class="scroll"><table><thead><tr><th>Pendiente</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>'
     + fila('Notas del periodo ' + P, semChip(pctN), conNota + '/' + ests.length + ' estudiantes con todas sus notas')
     + fila('Asistencia diaria', alDia ? '<span class="sem v">Al día</span>' : (ultima ? '<span class="sem a">Atrasada</span>' : '<span class="sem r">Sin registros</span>'), ultima ? 'Último registro: ' + esc(ultima) : 'Aún no registras asistencia')
-    + fila('Planeador de esta semana', planOk ? '<span class="sem v">Cargado</span>' : '<span class="sem r">Pendiente</span>', planOk ? 'Semana del ' + lunesISO : 'Falta el planeador de la semana del ' + lunesISO)
+    + fila('Planeador de esta semana', planPct >= 100 ? '<span class="sem v">Cargado · 100%</span>' : (planPct > 0 ? '<span class="sem a">Parcial · ' + planPct + '%</span>' : '<span class="sem r">Pendiente · 0%</span>'), planOk ? 'Semana del ' + lunesISO : 'Falta el planeador de la semana del ' + lunesISO)
     + fila('Observadores del periodo ' + P, semChip(pctO), conObs + '/' + ests.length + ' estudiantes con observador')
     + '</tbody></table></div>';
   const mes = hoy.getMonth()+1, anio = hoy.getFullYear();
@@ -3099,7 +3104,12 @@ function renderPanel(){
     const ultima = fechas[fechas.length-1] || '';
     const alDia = !!ultima && ultima >= ultClaseISO;
     const planReg = (DB.planeadores[c.id] || {})[lunesISO];
-    const planOk = !!(planReg && (planReg.filas || []).some(f => (f.temas || '').trim() || (f.metodologicas || '').trim() || (f.evaluativas || '').trim() || (f.recursos || '').trim()));
+    const planFilas = (planReg && planReg.filas) || [];
+    const planConContenido = f => (f.temas || '').trim() || (f.metodologicas || '').trim() || (f.evaluativas || '').trim() || (f.recursos || '').trim();
+    const planOk = planFilas.some(planConContenido);
+    const planAsigs = asignaturasDe(c).map(a => (a.nombre || '').trim().toUpperCase()).filter(Boolean);
+    const planCubiertas = new Set(planFilas.filter(planConContenido).map(f => (f.asignatura || '').trim().toUpperCase()).filter(n => planAsigs.includes(n))).size;
+    const planPct = planAsigs.length ? Math.min(100, Math.round(planCubiertas / planAsigs.length * 100)) : (planOk ? 100 : 0);
     let conObs = 0;
     ests.forEach(e=>{ const o = (DB.observadores[e.id] || {})[String(P)]; if(o && (o.desempeno || o.seguimiento || o.resultados)) conObs++; });
     const pctO = ests.length ? Math.round(conObs/ests.length*100) : 0;
@@ -3107,7 +3117,7 @@ function renderPanel(){
     return '<tr><td><strong>' + esc(c.nombre) + '</strong></td><td>' + esc(doc ? doc.nombre : '—') + '</td>' +
       '<td>' + semChip(pctN) + ' <span style="font-size:12px">' + conNota + '/' + ests.length + ' estudiantes completos</span></td>' +
       '<td>' + (alDia ? '<span class="sem v">Al día</span>' : (ultima ? '<span class="sem a">Última: ' + esc(ultima) + '</span>' : '<span class="sem r">Sin registros</span>')) + '</td>' +
-      '<td>' + (planOk ? '<span class="sem v">Cargado</span>' : '<span class="sem r">Pendiente</span>') + '</td>' +
+      '<td>' + (planPct >= 100 ? '<span class="sem v">Cargado · 100%</span>' : (planPct > 0 ? '<span class="sem a">Parcial · ' + planPct + '%</span>' : '<span class="sem r">Pendiente · 0%</span>')) + '</td>' +
       '<td>' + semChip(pctO) + ' <span style="font-size:12px">' + conObs + '/' + ests.length + '</span></td></tr>';
   }).join('');
   $('panel-cumplimiento').innerHTML = '<div class="scroll"><table><thead><tr><th>Curso</th><th>Docente</th><th>Notas P' + P + '</th><th>Asistencia</th><th>Planeador de esta semana</th><th>Observadores P' + P + '</th></tr></thead><tbody>' + (filasC || '<tr><td colspan="6">Sin cursos.</td></tr>') + '</tbody></table></div>';
@@ -3920,11 +3930,17 @@ function renderPlaneador(){
     $('plan-periodo').value = String(r.periodo || '1');
     if(!r.cierre) r.cierre = sumarDiasISO(r.inicio, 4);
     $('plan-cierre').value = r.cierre || '';
-    const sinTrabajo = !(r.filas || []).some(f => (f.asignatura || '').trim() || (f.temas || '').trim() || (f.metodologicas || '').trim() || (f.evaluativas || '').trim() || (f.recursos || '').trim());
-    if(sinTrabajo){
-      const asigsPlan = curso ? asignaturasDe(curso) : [];
-      r.filas = asigsPlan.length ? asigsPlan.map(a => ({ asignatura: a.nombre, temas: '', metodologicas: '', evaluativas: '', recursos: '' })) : [{ asignatura: '', temas: '', metodologicas: '', evaluativas: '', recursos: '' }];
-    }
+    const presentesPlan = new Set((r.filas || []).map(f => (f.asignatura || '').trim().toUpperCase()).filter(Boolean));
+    const asigsPlan = curso ? asignaturasDe(curso) : [];
+    asigsPlan.forEach(a => {
+      const clavePlan = (a.nombre || '').trim().toUpperCase();
+      if(!clavePlan || presentesPlan.has(clavePlan)) return;
+      const librePlan = (r.filas || []).find(f => !(f.asignatura || '').trim() && !(f.temas || '').trim() && !(f.metodologicas || '').trim() && !(f.evaluativas || '').trim() && !(f.recursos || '').trim());
+      if(librePlan) librePlan.asignatura = a.nombre;
+      else r.filas.push({ asignatura: a.nombre, temas: '', metodologicas: '', evaluativas: '', recursos: '' });
+      presentesPlan.add(clavePlan);
+    });
+    if(!r.filas.length) r.filas.push({ asignatura: '', temas: '', metodologicas: '', evaluativas: '', recursos: '' });
   }
   const doc = curso ? docenteDeCurso(curso) : '';
   $('plan-encabezado').textContent = curso ? ('Grado: ' + curso.nombre + (doc ? ' · Docente: ' + doc : '')) : '';
