@@ -629,7 +629,6 @@ button.btn:hover{ background:var(--azul-osc); }
           <div style="flex:1;min-width:220px"><label>Nombre del estudiante</label><input type="text" id="nuevo-estudiante" placeholder="APELLIDOS, NOMBRES"></div>
           <button class="btn" onclick="agregarEstudiante()">+ Agregar estudiante</button>
         </div>
-        <p class="ayuda" id="nota-solo-owner">El dueño (owner) y el perfil administrativo pueden crear estudiantes; eliminar estudiantes es solo del dueño. El botón «Perfil» abre la ficha de cada estudiante.</p>
         <div class="scroll"><table>
           <thead><tr><th style="width:50px">#</th><th>Estudiante</th><th style="width:190px">Acción</th></tr></thead>
           <tbody id="lista-estudiantes"></tbody>
@@ -2346,7 +2345,6 @@ function aplicarPermisos(){
   else{ $('card-apis').classList.remove('hidden'); }
   const puedeEst = puedeCrearEstudiantes();
   $('fila-add-estudiante').classList.toggle('hidden', !puedeEst);
-  $('nota-solo-owner').classList.toggle('hidden', !puedeEst);
   const docente = esDocente();
   $('btn-imprimir-bol').classList.toggle('hidden', docente);
   $('fila-add-curso').classList.toggle('hidden', docente);
