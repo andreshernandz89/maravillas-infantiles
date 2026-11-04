@@ -4818,7 +4818,7 @@ else{ sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perf
 </script>
 <script>
 window.__ocultarSplash = function(){ var s = document.getElementById('splash'); if(!s || s.dataset.fuera) return; s.dataset.fuera = '1'; s.classList.add('oculto'); setTimeout(function(){ s.style.display = 'none'; }, 400); };
-(function(){ var app = document.getElementById('app'); if(app && 'MutationObserver' in window){ var mo = new MutationObserver(function(){ if(!app.classList.contains('hidden')){ window.__ocultarSplash(); mo.disconnect(); } }); mo.observe(app, { attributes:true, attributeFilter:['class'] }); } setTimeout(window.__ocultarSplash, 7000); })();
+(function(){ var app = document.getElementById('app'); if(app && 'MutationObserver' in window){ var mo = new MutationObserver(function(){ if(!app.classList.contains('hidden')){ window.__ocultarSplash(); mo.disconnect(); } }); mo.observe(app, { attributes:true, attributeFilter:['class'] }); } setTimeout(window.__ocultarSplash, 20000); })();
 </script>
 
 <script>
