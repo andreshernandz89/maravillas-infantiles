@@ -629,7 +629,7 @@ button.btn:hover{ background:var(--azul-osc); }
           <div style="flex:1;min-width:220px"><label>Nombre del estudiante</label><input type="text" id="nuevo-estudiante" placeholder="APELLIDOS, NOMBRES"></div>
           <button class="btn" onclick="agregarEstudiante()">+ Agregar estudiante</button>
         </div>
-        <p class="ayuda" id="nota-solo-owner">Solo el dueño (owner) puede crear o eliminar estudiantes. El botón «Perfil» abre la ficha de cada estudiante.</p>
+        <p class="ayuda" id="nota-solo-owner">El dueño (owner) y el perfil administrativo pueden crear estudiantes; eliminar estudiantes es solo del dueño. El botón «Perfil» abre la ficha de cada estudiante.</p>
         <div class="scroll"><table>
           <thead><tr><th style="width:50px">#</th><th>Estudiante</th><th style="width:190px">Acción</th></tr></thead>
           <tbody id="lista-estudiantes"></tbody>
@@ -2234,6 +2234,7 @@ function extraDe(estId, periodo){ const x = (DB.extra[estId]||{})[String(periodo
 function perfiles(){ return DB.perfiles || []; }
 function perfilActual(){ const id = sessionStorage.getItem('bol_perfil'); return perfiles().find(p=>p.id===id) || null; }
 function esOwner(){ const p = perfilActual(); return !!(p && p.rol==='owner'); }
+function puedeCrearEstudiantes(){ const p = perfilActual(); return !!(p && (p.rol==='owner' || p.rol==='admin')); }
 function esDocente(){ const p = perfilActual(); return !!(p && p.rol==='docente'); }
 function puedeEditarFicha(){ const p = perfilActual(); return !!(p && ['owner','coord','admin'].includes(p.rol)); }
 function perfilCompleto(p){ if(!p) return true; const i = p.info || {}; return !!((p.nombre||'').trim() && (i.cc||'').trim() && (i.direccion||'').trim() && (i.telefono||'').trim() && (i.correo||'').trim() && (i.nacimiento||'').trim()); }
@@ -2341,8 +2342,11 @@ function aplicarPermisos(){
     b.classList.toggle('hidden', (t==='miperfil' ? false : !puedeModulo(t)) || (!completo && t!=='miperfil'));
   });
   document.querySelectorAll('.menu-grupo').forEach(g=>{ const alguno = Array.from(g.querySelectorAll('button')).some(b=>!b.classList.contains('hidden')); g.classList.toggle('hidden', !alguno); });
-  if(!esOwner()){ $('card-peligro').classList.add('hidden'); $('card-apis').classList.add('hidden'); $('fila-add-estudiante').classList.add('hidden'); $('nota-solo-owner').classList.add('hidden'); }
-  else{ $('card-apis').classList.remove('hidden'); $('fila-add-estudiante').classList.remove('hidden'); $('nota-solo-owner').classList.remove('hidden'); }
+  if(!esOwner()){ $('card-peligro').classList.add('hidden'); $('card-apis').classList.add('hidden'); }
+  else{ $('card-apis').classList.remove('hidden'); }
+  const puedeEst = puedeCrearEstudiantes();
+  $('fila-add-estudiante').classList.toggle('hidden', !puedeEst);
+  $('nota-solo-owner').classList.toggle('hidden', !puedeEst);
   const docente = esDocente();
   $('btn-imprimir-bol').classList.toggle('hidden', docente);
   $('fila-add-curso').classList.toggle('hidden', docente);
@@ -2479,7 +2483,7 @@ function cambiarNivelCurso(){
   c.nivel = $('sel-curso-nivel').value; guardar();
 }
 function agregarEstudiante(){
-  if(!esOwner()){ alert('Solo el dueño (owner) puede crear estudiantes.'); return; }
+  if(!puedeCrearEstudiantes()){ alert('Solo el dueño (owner) o el perfil administrativo pueden crear estudiantes.'); return; }
   const cursoId = $('sel-curso').value; const n = $('nuevo-estudiante').value.trim();
   if(!cursoId){ alert('Primero crea un curso.'); return; } if(!n) return;
   DB.estudiantes.push({id: uid(), cursoId, nombre: n.toUpperCase()}); $('nuevo-estudiante').value=''; guardar(); renderEstudiantes(); refrescarSelectsEstudiantes();
