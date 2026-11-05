@@ -636,7 +636,17 @@ button.btn:hover{ background:var(--azul-osc); }
       </div>
       <div class="card hidden" id="card-ficha">
         <h2>Perfil del estudiante</h2>
-        <p class="ayuda"><strong id="ficha-nombre"></strong> — datos del estudiante y de su acudiente. Se guardan en la plataforma.<span id="ficha-modo"></span></p>
+                <p class="ayuda"><strong id="ficha-nombre"></strong> — datos del estudiante y de su acudiente. Se guardan en la plataforma.<span id="ficha-modo"></span></p>
+        <div class="fila" style="align-items:center">
+          <img id="ficha-foto-img" alt="Foto del estudiante" style="width:88px;height:88px;object-fit:cover;border-radius:14px;border:1px solid #d5dce8;display:none">
+          <span id="ficha-foto-vacia" class="ayuda" style="width:88px;height:88px;display:inline-flex;align-items:center;justify-content:center;border:1px dashed #c3cede;border-radius:14px;text-align:center;margin:0">Sin foto</span>
+          <div>
+            <label>Foto del estudiante</label><br>
+            <input type="file" id="ficha-foto-input" accept="image/*" onchange="fichaSubirFoto(this)">
+            <button class="btn btn-sec mini" id="ficha-foto-quitar" onclick="fichaQuitarFoto()">Quitar foto</button>
+            <p class="ayuda" style="margin:4px 0 0">La foto queda guardada en el perfil del estudiante.</p>
+          </div>
+        </div>
         <div class="fila">
           <div><label>Tipo de documento</label>
             <select id="ficha-doctipo"><option value="">—</option><option value="TI">TI — Tarjeta de Identidad</option><option value="RC">RC — Registro Civil</option></select></div>
@@ -716,6 +726,22 @@ button.btn:hover{ background:var(--azul-osc); }
           <button class="btn btn-sec mini" onclick="imprimirConstancia('matricula')">📄 Constancia de matrícula</button>
           <button class="btn btn-sec mini" onclick="imprimirConstancia('pazysalvo')">📄 Paz y salvo</button>
           <button class="btn btn-sec mini" onclick="pedirConvivencia()">📄 Certificado de convivencia</button>
+        </div>
+        <div id="ficha-documentos" style="margin-top:16px;border-top:1px solid #e3e9f4;padding-top:12px">
+          <h3 style="margin:0 0 4px">📁 Documentos del estudiante</h3>
+          <p class="ayuda">La lista de documentos requeridos depende del nivel del estudiante (preescolar: 4 · primaria: 8) y cada uno se sube en su propia ranura. Abajo puedes agregar otros documentos fuera de la lista. Todo queda en su perfil para consultarlo cuando se necesite.</p>
+          <div id="ficha-docs-cargar">
+            <div class="fila">
+              <div><label>Tipo de documento</label>
+                <select id="ficha-doc-tipo"><option value="Tarjeta de identidad">Tarjeta de identidad</option><option value="Documento del acudiente">Documento del acudiente</option><option value="Foto">Foto</option><option value="Otro">Otro</option></select></div>
+              <div style="flex:1;min-width:220px"><label>Archivos (puedes elegir varios a la vez)</label><input type="file" id="ficha-doc-files" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"></div>
+              <div style="align-self:flex-end"><button class="btn" onclick="fichaSubirDocumentos()">⬆ Subir documentos</button></div>
+            </div>
+            <p class="ayuda">Máximo 2 MB por archivo (las fotos se comprimen solas) y hasta 20 documentos por estudiante. Los acudientes también pueden enviar documentos desde su Consulta para padres: llegan a esta misma ficha para que los guardes en el perfil.</p>
+            <p class="ayuda" id="ficha-docs-msg" style="font-weight:600"></p>
+          </div>
+          <div id="ficha-docs-lista"></div>
+          <div id="ficha-docs-padres"></div>
         </div>
       </div>
     </section>
@@ -1205,6 +1231,8 @@ function iniciarCertSolicitudes(){
   if(CERTSOL_ACTIVO || !FB_DB) return; CERTSOL_ACTIVO = true;
   FB_DB.ref('solicitudesCert').on('value', snap => {
     CERTSOL = snap.val() || {};
+    const cficha = $('card-ficha');
+    if(cficha && !cficha.classList.contains('hidden') && typeof FICHA_ID !== 'undefined' && FICHA_ID && typeof renderFichaDocumentos === 'function') renderFichaDocumentos();
     const sec = $('tab-certpadres');
     if(sec && !sec.classList.contains('hidden')) renderCertSolicitudes();
     const secA = $('tab-asistencia');
@@ -1224,7 +1252,7 @@ function certPayload(sol, nivel, codigo, hoy){
 function renderCertSolicitudes(){
   if(typeof iniciarCertSolicitudes === 'function') iniciarCertSolicitudes();
   const cont = $('certsol-lista'); if(!cont) return;
-  const items = Object.keys(CERTSOL).map(id => Object.assign({ id: id }, CERTSOL[id])).filter(x => x.tipoSolicitud !== 'JUSTIFICACION' && x.tipoSolicitud !== 'PAGO_PENSION').sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const items = Object.keys(CERTSOL).map(id => Object.assign({ id: id }, CERTSOL[id])).filter(x => x.tipoSolicitud !== 'JUSTIFICACION' && x.tipoSolicitud !== 'PAGO_PENSION' && x.tipoSolicitud !== 'DOCUMENTO').sort((a, b) => (b.ts || 0) - (a.ts || 0));
   const pend = items.filter(x => x.estado === 'PENDIENTE').length;
   const res = $('certsol-resumen'); if(res) res.textContent = items.length ? (pend + ' pendiente(s) de revisión · ' + items.length + ' en total.') : '';
   if(!items.length){ cont.innerHTML = '<p class="ayuda">Todavía no hay solicitudes de certificados de los padres.</p>'; return; }
@@ -1976,6 +2004,7 @@ async function sincronizarConsulta2027(forzar){
           anio: String((DB.instituto || {}).anio || ''),
           notas: blqE ? null : notasParaPadres(e), asistencia: blqE ? null : asistenciaParaPadres(e), pagos: pgE, bloqueado: blqE, calendario: calendarioParaPadres(),
           manualHtml: MANUAL_CONVIVENCIA_HTML, genero: e.datos.genero || '', nequiCert: (DB.instituto || {}).nequiCert || '', precioCert: precioCertificado(),
+          foto: e.foto || '', documentos: documentosParaPadres(e), enviosDocs: enviosDocsParaPadres(e), docsRequeridos: docsRequeridosDe(e),
           utiles: null
         };
       }));
@@ -2001,6 +2030,7 @@ async function sincronizarConsulta2027(forzar){
               gradoActual: cSnap.nombre || '', anio: String(ult),
               notas: blqS ? null : notasParaPadresSnap(e, snap), asistencia: blqS ? null : asistenciaParaPadresSnap(e, snap), pagos: pgS, bloqueado: blqS, calendario: calendarioParaPadres(),
               manualHtml: MANUAL_CONVIVENCIA_HTML, genero: e.datos.genero || '', nequiCert: (DB.instituto || {}).nequiCert || '', precioCert: precioCertificado(),
+              foto: e.foto || '', documentos: documentosParaPadres(e), enviosDocs: [], docsRequeridos: (function(){ const nivel = nivelPorNombreCurso(cSnap.nombre); const lista = nivel === 'PRIMARIA' ? DOCS_REQ_PRIMARIA : (nivel === 'PREESCOLAR' ? DOCS_REQ_PREESCOLAR : []); const ds = Array.isArray(e.documentos) ? e.documentos : []; return lista.map(nombre => ({ nombre: nombre, ok: ds.some(d => d.categoria === nombre) })); })(),
               utiles: null
             };
           }
@@ -2016,6 +2046,16 @@ async function sincronizarConsulta2027(forzar){
     const el = $('matri-sync-info');
     if(el) el.textContent = 'Datos de consulta sincronizados: ' + Object.keys(mapa).length + ' estudiantes pueden consultar su información (' + new Date().toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' }) + ').';
   }catch(err){ CONSULTA_SYNC = false; const el = $('matri-sync-info'); if(el) el.textContent = '⚠ No se pudieron sincronizar los datos de consulta: ' + err.message; }
+}
+function documentosParaPadres(e){
+  return (Array.isArray(e.documentos) ? e.documentos : []).map(d => ({ nombre: d.nombre || 'documento', tipo: d.tipo || '', b64: d.b64 || '', categoria: d.categoria || 'Otro', fecha: d.fecha || '' }));
+}
+function enviosDocsParaPadres(e){
+  const docNum = String((e.datos || {}).docNumero || '').trim(); if(!docNum) return [];
+  return Object.keys(CERTSOL || {}).map(id => Object.assign({ id: id }, CERTSOL[id]))
+    .filter(s => s.tipoSolicitud === 'DOCUMENTO' && String(s.docNumero || '').trim() === docNum)
+    .sort((a, b) => (a.ts || 0) - (b.ts || 0))
+    .map(s => ({ ts: s.ts || 0, estado: s.estado || 'PENDIENTE', categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') }));
 }
 function matriActualizarFicha(id){
   if(MODO_ARCHIVO || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('Estás en una vista de solo lectura (año anterior o simulación de perfil). Vuelve a tu vista normal para hacer cambios.'); return; }
@@ -2536,6 +2576,8 @@ function verFicha(id){
   ['ficha-doctipo','ficha-docnum','ficha-nacimiento','ficha-genero','ficha-direccion','ficha-acudiente','ficha-tel','ficha-correo','ficha-retirado','ficha-fecha-retiro','ficha-doctipo-acud','ficha-docnum-acud','ficha-sim-depto-nac','ficha-sim-muni-nac','ficha-sim-depto-res','ficha-sim-muni-res','ficha-sim-zona','ficha-sim-estrato','ficha-sim-sisben','ficha-sim-etnia','ficha-sim-resguardo','ficha-sim-eps','ficha-sim-regimen','ficha-sim-discapacidad','ficha-sim-tipodisc','ficha-sim-victima','ficha-sim-capacidades'].forEach(id=>{ $(id).disabled = soloLectura; });
   $('btn-guardar-ficha').classList.toggle('hidden', soloLectura);
   $('ficha-constancias').classList.toggle('hidden', soloLectura);
+  if(typeof iniciarCertSolicitudes === 'function') iniciarCertSolicitudes();
+  pintarFichaFoto(); renderFichaDocumentos();
   $('ficha-modo').textContent = soloLectura ? ' Modo solo lectura: puedes consultar estos datos, pero no modificarlos.' : '';
   $('card-ficha').classList.remove('hidden');
   $('card-ficha').scrollIntoView({behavior:'smooth', block:'start'});
@@ -2561,13 +2603,209 @@ function guardarFicha(){
   guardar(); alert('Perfil de ' + e.nombre + ' guardado.');
 }
 function cerrarFicha(){ $('card-ficha').classList.add('hidden'); FICHA_ID = null; }
+/* ---- Foto y documentos del estudiante ---- */
+const DOC_MAX_BYTES = 2 * 1024 * 1024;
+const DOC_MAX_N = 20;
+function sincronizarConsultaTrasDocs(){ if(typeof sincronizarConsulta2027 === 'function'){ try{ sincronizarConsulta2027(true); }catch(e){} } }
+const DOCS_REQ_PREESCOLAR = ['Certificado EPS', 'Certificado de vacunas', 'Registro civil', 'Cédula de ciudadanía del padre y la madre'];
+const DOCS_REQ_PRIMARIA = DOCS_REQ_PREESCOLAR.concat(['Retiro SIMAT', 'Último boletín cursado', 'Observador del estudiante', 'Certificado de convivencia']);
+function nivelPorNombreCurso(nombre){
+  const n = normNombre(nombre || '');
+  if(n === 'PARVULO' || n === 'PRE-JARDIN' || n === 'PRE JARDIN' || n === 'JARDIN' || n === 'TRANSICION') return 'PREESCOLAR';
+  if(n === 'PRIMERO' || n === 'SEGUNDO' || n === 'TERCERO' || n === 'CUARTO' || n === 'QUINTO') return 'PRIMARIA';
+  return '';
+}
+function docsRequeridosDe(e){
+  const nivel = nivelPorNombreCurso((cursoDe(e.cursoId) || {}).nombre);
+  const lista = nivel === 'PRIMARIA' ? DOCS_REQ_PRIMARIA : (nivel === 'PREESCOLAR' ? DOCS_REQ_PREESCOLAR : []);
+  const docs = Array.isArray(e.documentos) ? e.documentos : [];
+  return lista.map(nombre => ({ nombre: nombre, ok: docs.some(d => d.categoria === nombre) }));
+}
+function docsCompletitud(e){
+  const req = docsRequeridosDe(e); if(!req.length) return null;
+  return { n: req.filter(r => r.ok).length, total: req.length };
+}
+async function fichaSubirASlot(idx, input){
+  if(!puedeEditarFicha()){ alert('Tu perfil solo puede consultar la ficha; no puede subir documentos.'); input.value = ''; return; }
+  const e = DB.estudiantes.find(x=>x.id===FICHA_ID); if(!e){ input.value = ''; return; }
+  const req = docsRequeridosDe(e); const slot = req[idx] && req[idx].nombre;
+  const files = Array.prototype.slice.call(input.files || []); input.value = '';
+  if(!slot || !files.length) return;
+  if(!Array.isArray(e.documentos)) e.documentos = [];
+  const yo = (perfilActual() || {}).nombre || '';
+  let okN = 0; const errores = [];
+  for(const f of files){
+    if(e.documentos.length >= DOC_MAX_N){ errores.push(f.name + ' (límite de ' + DOC_MAX_N + ' documentos por estudiante)'); break; }
+    const esImg = f.type && f.type.indexOf('image/') === 0;
+    if(!esImg && f.size > DOC_MAX_BYTES){ errores.push(f.name + ' (supera los 2 MB)'); continue; }
+    try{
+      const d = await leerDocumentoB64(f);
+      e.documentos.push({ id: 'doc' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36), nombre: d.nombre, tipo: d.tipo, b64: d.b64, categoria: slot, fecha: hoyISO(), por: yo, origen: 'Plataforma' });
+      okN++;
+    }catch(err){ errores.push(f.name + ' (no se pudo leer)'); }
+  }
+  if(okN){ guardar(); sincronizarConsultaTrasDocs(); }
+  renderFichaDocumentos();
+  const msg2 = $('ficha-docs-msg');
+  if(msg2) msg2.textContent = (okN ? ('✔ Se guardó «' + slot + '». ') : '') + (errores.length ? ('No se subieron: ' + errores.join('; ') + '.') : '');
+}
+function fmtTamDoc(b64){ const b = Math.round((String(b64 || '').length * 3) / 4); if(b < 1024) return b + ' B'; if(b < 1048576) return Math.round(b / 1024) + ' KB'; return (b / 1048576).toFixed(1).replace('.', ',') + ' MB'; }
+function pintarFichaFoto(){
+  const e = DB.estudiantes.find(x=>x.id===FICHA_ID); if(!e) return;
+  const img = $('ficha-foto-img'), vacia = $('ficha-foto-vacia'), input = $('ficha-foto-input'), quitar = $('ficha-foto-quitar');
+  const edita = puedeEditarFicha();
+  if(img){ img.style.display = e.foto ? 'block' : 'none'; if(e.foto) img.src = e.foto; }
+  if(vacia) vacia.style.display = e.foto ? 'none' : 'inline-flex';
+  if(input) input.classList.toggle('hidden', !edita);
+  if(quitar) quitar.classList.toggle('hidden', !edita || !e.foto);
+}
+function fichaSubirFoto(input){
+  if(!puedeEditarFicha()){ alert('Tu perfil solo puede consultar la ficha; no puede cambiar la foto.'); input.value = ''; return; }
+  const e = DB.estudiantes.find(x=>x.id===FICHA_ID); const file = input.files && input.files[0]; input.value = '';
+  if(!e || !file) return;
+  const url = URL.createObjectURL(file); const img = new Image();
+  img.onload = ()=>{
+    const max = 320; let w = img.width, h = img.height;
+    if(w > max || h > max){ const k = max / Math.max(w, h); w = Math.round(w * k); h = Math.round(h * k); }
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    cv.getContext('2d').drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    e.foto = cv.toDataURL('image/jpeg', 0.85);
+    guardar(); pintarFichaFoto(); sincronizarConsultaTrasDocs();
+  };
+  img.onerror = ()=>{ URL.revokeObjectURL(url); alert('No se pudo leer esa imagen.'); };
+  img.src = url;
+}
+function fichaQuitarFoto(){ const e = DB.estudiantes.find(x=>x.id===FICHA_ID); if(!e) return; delete e.foto; guardar(); pintarFichaFoto(); sincronizarConsultaTrasDocs(); }
+function leerDocumentoB64(file){
+  return new Promise((res, rej) => {
+    if(file.type && file.type.indexOf('image/') === 0){
+      const url = URL.createObjectURL(file); const img = new Image();
+      img.onload = ()=>{
+        try{
+          const max = 1400; const k = Math.min(1, max / Math.max(img.width, img.height));
+          const cv = document.createElement('canvas'); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          URL.revokeObjectURL(url);
+          const base = (file.name || 'documento').replace(/\.[^.]+$/, '');
+          res({ nombre: base + '.jpg', tipo: 'image/jpeg', b64: cv.toDataURL('image/jpeg', 0.8).split(',')[1] });
+        }catch(err){ rej(err); }
+      };
+      img.onerror = rej; img.src = url;
+    } else {
+      const r = new FileReader();
+      r.onload = ()=> res({ nombre: file.name || 'documento', tipo: file.type || '', b64: String(r.result || '').split(',')[1] || '' });
+      r.onerror = rej; r.readAsDataURL(file);
+    }
+  });
+}
+async function fichaSubirDocumentos(){
+  if(!puedeEditarFicha()){ alert('Tu perfil solo puede consultar la ficha; no puede subir documentos.'); return; }
+  const e = DB.estudiantes.find(x=>x.id===FICHA_ID); if(!e) return;
+  const input = $('ficha-doc-files'); const msg = $('ficha-docs-msg');
+  const files = input && input.files ? Array.prototype.slice.call(input.files) : [];
+  if(!files.length){ alert('Elige primero uno o varios archivos.'); return; }
+  if(!Array.isArray(e.documentos)) e.documentos = [];
+  const cat = ($('ficha-doc-tipo') || {}).value || 'Otro';
+  const yo = (perfilActual() || {}).nombre || '';
+  let okN = 0; const errores = [];
+  for(const f of files){
+    if(e.documentos.length >= DOC_MAX_N){ errores.push(f.name + ' (límite de ' + DOC_MAX_N + ' documentos por estudiante)'); break; }
+    const esImg = f.type && f.type.indexOf('image/') === 0;
+    if(!esImg && f.size > DOC_MAX_BYTES){ errores.push(f.name + ' (supera los 2 MB)'); continue; }
+    try{
+      const d = await leerDocumentoB64(f);
+      e.documentos.push({ id: 'doc' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36), nombre: d.nombre, tipo: d.tipo, b64: d.b64, categoria: cat, fecha: hoyISO(), por: yo, origen: 'Plataforma' });
+      okN++;
+    }catch(err){ errores.push(f.name + ' (no se pudo leer)'); }
+  }
+  if(input) input.value = '';
+  if(okN){ guardar(); sincronizarConsultaTrasDocs(); }
+  renderFichaDocumentos();
+  const msg2 = $('ficha-docs-msg');
+  if(msg2) msg2.textContent = (okN ? ('✔ Se subieron ' + okN + ' documento(s). ') : '') + (errores.length ? ('No se subieron: ' + errores.join('; ') + '.') : '');
+}
+function docsPadresDe(e){
+  const docNum = String((e.datos || {}).docNumero || '').trim(); if(!docNum) return [];
+  return Object.keys(CERTSOL || {}).map(id => Object.assign({ id: id }, CERTSOL[id]))
+    .filter(s => s.tipoSolicitud === 'DOCUMENTO' && s.estado === 'PENDIENTE' && String(s.docNumero || '').trim() === docNum)
+    .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+}
+function renderFichaDocumentos(){
+  const cont = $('ficha-docs-lista'), contP = $('ficha-docs-padres'), cargar = $('ficha-docs-cargar');
+  if(!cont) return;
+  const e = DB.estudiantes.find(x=>x.id===FICHA_ID);
+  const edita = puedeEditarFicha();
+  if(cargar) cargar.classList.toggle('hidden', !edita);
+  if(!e){ cont.innerHTML = ''; if(contP) contP.innerHTML = ''; return; }
+  const docs = Array.isArray(e.documentos) ? e.documentos : [];
+  const req = docsRequeridosDe(e);
+  const nombresReq = req.map(r => r.nombre);
+  const filaDoc = d => '<tr><td>' + (String(d.tipo || '').indexOf('image/') === 0 ? '🖼 ' : '📄 ') + esc(d.nombre || 'documento') + '</td><td>' + esc(d.categoria || 'Otro') + '</td><td>' + fmtTamDoc(d.b64) + '</td><td>' + esc(d.fecha || '') + (d.por ? '<br><span class="ayuda" style="margin:0">' + esc(d.por) + (d.origen === 'Padres' ? ' · enviado por el acudiente' : '') + '</span>' : '') + '</td><td><button class="btn btn-sec mini" onclick="fichaVerDocumento(\'' + d.id + '\')">Ver</button>' + (edita ? ' <button class="btn rojo mini" onclick="fichaEliminarDocumento(\'' + d.id + '\')">Eliminar</button>' : '') + '</td></tr>';
+  let h = '';
+  if(req.length){
+    const nOk = req.filter(r => r.ok).length;
+    h += '<p style="margin:2px 0 6px"><strong>📋 Documentos requeridos: ' + nOk + ' de ' + req.length + '</strong> <span class="ayuda" style="margin:0">(según el nivel del estudiante; cada documento se sube en su ranura)</span></p>';
+    h += '<div class="scroll"><table><thead><tr><th>Documento requerido</th><th>Estado</th><th>Archivo(s)</th><th style="width:130px">Acción</th></tr></thead><tbody>' + req.map((r, idx) => {
+      const ds = docs.filter(d => d.categoria === r.nombre);
+      return '<tr><td>' + esc(r.nombre) + '</td><td>' + (r.ok ? '<strong style="color:#1a8f3c">✔ CARGADO</strong>' : '<strong style="color:#b97d10">PENDIENTE</strong>') + '</td><td>' + (ds.length ? ds.map(d => (String(d.tipo || '').indexOf('image/') === 0 ? '🖼 ' : '📄 ') + '<a href="#" onclick="fichaVerDocumento(\'' + d.id + '\');return false">' + esc(d.nombre || 'documento') + '</a> (' + fmtTamDoc(d.b64) + ')' + (edita ? ' <button class="btn rojo mini" onclick="fichaEliminarDocumento(\'' + d.id + '\')" title="Quitar este archivo">✕</button>' : '')).join('<br>') : '—') + '</td><td>' + (edita ? '<input type="file" id="slot-file-' + idx + '" class="hidden" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" onchange="fichaSubirASlot(' + idx + ', this)"><button class="btn mini" onclick="document.getElementById(\'slot-file-' + idx + '\').click()">' + (r.ok ? 'Agregar otro' : '⬆ Subir') + '</button>' : '') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+  }
+  const extras = docs.filter(d => nombresReq.indexOf(d.categoria || '') < 0);
+  h += '<p style="margin:12px 0 6px"><strong>📁 Otros documentos</strong> <span class="ayuda" style="margin:0">(fuera de la lista requerida; se agregan con el formulario de abajo)</span></p>'
+    + (extras.length ? '<div class="scroll"><table><thead><tr><th>Documento</th><th>Tipo</th><th>Tamaño</th><th>Subido</th><th style="width:170px">Acción</th></tr></thead><tbody>' + extras.map(filaDoc).join('') + '</tbody></table></div>' : '<p class="ayuda">Sin otros documentos por ahora.</p>');
+  cont.innerHTML = h;
+  if(contP){
+    const envios = docsPadresDe(e);
+    contP.innerHTML = envios.length ? ('<div style="background:#fff7e6;border:1px solid #f0d9a0;border-radius:10px;padding:10px 12px;margin-top:12px"><strong>📥 Documentos que el acudiente envió desde su consulta (' + envios.length + ' envío(s) por revisar):</strong>' + envios.map(s =>
+      '<div style="margin-top:8px"><div>' + esc(s.categoria || 'Documentos') + ' · ' + new Date(s.ts || Date.now()).toLocaleDateString('es-CO') + ' · ' + (s.adjuntos || []).length + ' archivo(s): ' + (s.adjuntos || []).map((a, i) => '<a href="#" onclick="fichaVerDocPadre(\'' + s.id + '\',' + i + ');return false">' + esc(a.nombre || ('archivo ' + (i + 1))) + '</a>').join(', ') + '</div>'
+      + (edita ? '<div style="margin-top:4px"><button class="btn mini" onclick="fichaGuardarDocsPadres(\'' + s.id + '\')">Guardar en el perfil</button> <button class="btn btn-sec mini" onclick="fichaDescartarDocsPadres(\'' + s.id + '\')">Descartar envío</button></div>' : '<p class="ayuda" style="margin:2px 0 0">Tu perfil puede verlos; guardarlos en el perfil lo hace un perfil con permiso de edición.</p>')
+      + '</div>').join('') + '</div>') : '';
+  }
+}
+function fichaVerDocumento(id){
+  const e = DB.estudiantes.find(x=>x.id===FICHA_ID); if(!e) return;
+  const d = (e.documentos || []).find(x=>x.id===id); if(d) abrirB64(d.nombre || 'documento', d.tipo || '', d.b64);
+}
+function fichaVerDocPadre(solId, idx){
+  const s = CERTSOL[solId]; const a = s && s.adjuntos && s.adjuntos[idx];
+  if(a) abrirB64(a.nombre || 'documento', a.tipo || '', a.b64);
+}
+function fichaEliminarDocumento(id){
+  if(!puedeEditarFicha()){ alert('Tu perfil no puede eliminar documentos.'); return; }
+  const e = DB.estudiantes.find(x=>x.id===FICHA_ID); if(!e || !Array.isArray(e.documentos)) return;
+  const d = e.documentos.find(x=>x.id===id); if(!d) return;
+  if(!confirm('¿Eliminar el documento «' + (d.nombre || '') + '» del perfil de ' + e.nombre + '?')) return;
+  e.documentos = e.documentos.filter(x=>x.id!==id);
+  guardar(); sincronizarConsultaTrasDocs(); renderFichaDocumentos();
+}
+async function fichaGuardarDocsPadres(solId){
+  if(!puedeEditarFicha()){ alert('Tu perfil no puede guardar documentos.'); return; }
+  const e = DB.estudiantes.find(x=>x.id===FICHA_ID); const s = CERTSOL[solId]; if(!e || !s) return;
+  if(!Array.isArray(e.documentos)) e.documentos = [];
+  (s.adjuntos || []).forEach(a => { if(e.documentos.length < DOC_MAX_N) e.documentos.push({ id: 'doc' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36), nombre: a.nombre || 'documento', tipo: a.tipo || '', b64: a.b64 || '', categoria: s.categoria || 'Otro', fecha: hoyISO(), por: 'Acudiente', origen: 'Padres' }); });
+  guardar();
+  try{ await FB_DB.ref('solicitudesCert/' + solId).update({ estado: 'ATENDIDA', por: (perfilActual() || {}).nombre || '', tsResolucion: Date.now() }); }catch(err){}
+  if(CERTSOL[solId]) CERTSOL[solId].estado = 'ATENDIDA';
+  sincronizarConsultaTrasDocs();
+  renderFichaDocumentos();
+  alert('Documentos guardados en el perfil de ' + e.nombre + '.');
+}
+async function fichaDescartarDocsPadres(solId){
+  if(!puedeEditarFicha()){ alert('Tu perfil no puede descartar envíos.'); return; }
+  if(!confirm('¿Descartar este envío del acudiente? Los archivos no se guardarán en el perfil.')) return;
+  try{ await FB_DB.ref('solicitudesCert/' + solId).update({ estado: 'DESCARTADO', por: (perfilActual() || {}).nombre || '', tsResolucion: Date.now() }); }catch(err){}
+  if(CERTSOL[solId]) CERTSOL[solId].estado = 'DESCARTADO';
+  sincronizarConsultaTrasDocs();
+  renderFichaDocumentos();
+}
 function renderEstudiantes(){
   const cursoId = $('sel-curso').value;
   const cursoSel = cursoDe(cursoId);
   if(cursoSel) $('sel-curso-nivel').value = nivelDe(cursoSel);
   $('sel-curso-nivel').disabled = esDocente();
   const lista = estudiantesDe(cursoId);
-  $('lista-estudiantes').innerHTML = lista.map((e,i)=>`<tr><td class="num">${i+1}</td><td>${esc(e.nombre)}${estaRetirado(e) ? ' <span class="sem r">RETIRADO ' + esc((e.retiro||{}).fecha || '') + '</span>' : ((e.retiro && e.retiro.activo) ? ' <span class="sem a">Retiro: ' + esc(e.retiro.fecha || '') + '</span>' : '')}</td><td><button class="btn btn-sec mini" onclick="verFicha('${e.id}')">Perfil</button>${esOwner()?` <button class="btn rojo mini" onclick="eliminarEstudiante('${e.id}')">Eliminar</button>`:''}</td></tr>`).join('') || '<tr><td colspan="3">Este curso aún no tiene estudiantes.</td></tr>';
+  $('lista-estudiantes').innerHTML = lista.map((e,i)=>`<tr><td class="num">${i+1}</td><td>${esc(e.nombre)}${(function(){ const c = docsCompletitud(e); return c ? ' <span class="ayuda" style="margin:0" title="Documentos requeridos cargados">📁 ' + c.n + '/' + c.total + '</span>' : ''; })()}${estaRetirado(e) ? ' <span class="sem r">RETIRADO ' + esc((e.retiro||{}).fecha || '') + '</span>' : ((e.retiro && e.retiro.activo) ? ' <span class="sem a">Retiro: ' + esc(e.retiro.fecha || '') + '</span>' : '')}</td><td><button class="btn btn-sec mini" onclick="verFicha('${e.id}')">Perfil</button>${esOwner()?` <button class="btn rojo mini" onclick="eliminarEstudiante('${e.id}')">Eliminar</button>`:''}</td></tr>`).join('') || '<tr><td colspan="3">Este curso aún no tiene estudiantes.</td></tr>';
   const sel = $('sel-curso');
   const viejo = sel.parentElement.querySelector('.btn-curso-del'); if(viejo) viejo.remove();
 }
@@ -3792,6 +4030,9 @@ function renderPanelNotificaciones(){
     if(x.tipoSolicitud === 'PAGO_PENSION'){
       items.push({ ts: x.ts || 0, icono: '💳', tab: 'pagos',
         texto: '<strong>Pago reportado por un padre</strong> · ' + esc(x.estudiante || '') + (x.grado ? ' (' + esc(x.grado) + ')' : '') + ' · ' + fmtPesos(x.valor || 0) + (x.meses ? ' · ' + esc(x.meses) : '') });
+    } else if(x.tipoSolicitud === 'DOCUMENTO'){
+      items.push({ ts: x.ts || 0, icono: '📁', tab: 'cursos',
+        texto: '<strong>Documentos enviados por un padre</strong> · ' + esc(x.estudiante || '') + (x.grado ? ' (' + esc(x.grado) + ')' : '') + ' · ' + ((x.adjuntos || []).length) + ' archivo(s): abre su perfil en Cursos y estudiantes para guardarlos' });
     } else if(x.tipoSolicitud !== 'JUSTIFICACION'){
       items.push({ ts: x.ts || 0, icono: '📜', tab: 'certpadres',
         texto: '<strong>Solicitud de certificado</strong> · ' + esc(x.estudiante || '') + (x.grado ? ' (' + esc(x.grado) + ')' : '') + (x.tipo ? ' · ' + esc(x.tipo) : '') });

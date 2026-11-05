@@ -240,7 +240,7 @@ async function consultar(){
   if(!bloqueado && datos.asistencia){ const a = datos.asistencia; const tot = (a.presentes||0) + (a.faltas||0) + (a.justificadas||0); const pc = tot ? Math.round((a.presentes||0) / tot * 100) : 100; stats += stat('Asistencia', pc + '%', (a.presentes||0) + ' presentes · ' + ((a.faltas||0) + (a.justificadas||0)) + ' faltas', pc); }
   if(datos.pagos){ const p = datos.pagos; stats += stat('Pensiones', (p.mesesPagados||0) + ' de 10', p.deuda > 0 ? ('Pendiente: ' + fmtP(p.deuda)) : 'A paz y salvo ✔', (p.mesesPagados||0) * 10); }
   if(!bloqueado && datos.notas && datos.notas.promedio != null && !datos.notas.preescolar){ const n = datos.notas; stats += stat('Promedio · Periodo ' + n.periodo, Number(n.promedio).toFixed(2).replace('.', ','), n.puesto ? ('Puesto ' + n.puesto + ' en el curso') : 'Primaria', Number(n.promedio) / 5 * 100); }
-  let h = '<div class="card"><div class="hero-top"><div class="avatar">' + esc(iniciales) + '</div><div><span class="alumno">' + esc(nombre) + '</span><div class="chips"><span class="grado">' + esc(datos.gradoActual||'') + '</span>' + (datos.anio ? '<span class="grado">Año ' + esc(datos.anio) + '</span>' : '') + (datos.pagos ? (bloqueado ? '<span class="chip chip-warn">⚠ Con deuda</span>' : '<span class="chip chip-ok">✔ Al día</span>') : '') + '</div></div></div>'
+  let h = '<div class="card"><div class="hero-top">' + (datos.foto ? '<img src="' + datos.foto + '" alt="Foto del estudiante" style="width:58px;height:58px;flex:none;border-radius:50%;object-fit:cover;box-shadow:0 4px 10px rgba(18,86,196,.3)">' : '<div class="avatar">' + esc(iniciales) + '</div>') + '<div><span class="alumno">' + esc(nombre) + '</span><div class="chips"><span class="grado">' + esc(datos.gradoActual||'') + '</span>' + (datos.anio ? '<span class="grado">Año ' + esc(datos.anio) + '</span>' : '') + (datos.pagos ? (bloqueado ? '<span class="chip chip-warn">⚠ Con deuda</span>' : '<span class="chip chip-ok">✔ Al día</span>') : '') + '</div></div></div>'
     + (stats ? '<div class="stats">' + stats + '</div>' : '')
     + '<p class="nota" style="margin:10px 0 0">Información del último año en que el estudiante estuvo matriculado.</p></div>';
   h += diaHTML(datos, bloqueado) + botonesHTML(datos);
@@ -361,6 +361,14 @@ async function consultar(){
   }
   h += '<div class="card doc abierta" id="sec-manual"><div class="desp-cab"><h2>📘 Manual de Convivencia <a class="pdf-dl" href="/documentos/manual-convivencia.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar</a></h2></div><div class="desp-cuerpo">' + (datos.manualHtml || '<p class="nota">El manual aún no está publicado en este espacio.</p>') + '</div></div>';
 
+  h += '<div class="card abierta" id="sec-documentos"><div class="desp-cab"><h2><span class="ico">📁</span> Documentos del estudiante</h2></div><div class="desp-cuerpo">'
+    + documentosConsultaHTML(datos)
+    + '<p class="nota" style="margin:0 0 8px">Si el colegio te pidió documentos de <strong>' + esc(nombre) + '</strong> (registro civil, tarjeta de identidad, tu documento de identidad, la EPS u otros), envíalos por aquí: el colegio los recibe y los guarda en el perfil del estudiante. Puedes elegir <strong>varios archivos a la vez</strong> (foto o PDF, máximo 2 MB cada uno).</p>'
+    + '<label for="docs-tipo">Tipo de documento</label><select id="docs-tipo" style="width:100%;padding:12px;border:1.5px solid #b9c8e4;border-radius:10px;font-size:1.02rem"><option value="Certificado EPS">Certificado EPS</option><option value="Certificado de vacunas">Certificado de vacunas</option><option value="Registro civil">Registro civil</option><option value="Cédula de ciudadanía del padre y la madre">Cédula de ciudadanía del padre y la madre</option><option value="Retiro SIMAT">Retiro SIMAT</option><option value="Último boletín cursado">Último boletín cursado</option><option value="Observador del estudiante">Observador del estudiante</option><option value="Certificado de convivencia">Certificado de convivencia</option><option value="Tarjeta de identidad">Tarjeta de identidad</option><option value="Documento del acudiente">Documento del acudiente</option><option value="Foto">Foto</option><option value="Otro">Otro</option></select>'
+    + '<label for="docs-files">Archivos</label><input type="file" id="docs-files" multiple accept="image/*,.pdf">'
+    + '<button class="btn-pri" onclick="enviarDocumentos()">Enviar documentos</button><div id="docs-msg"></div><input type="file" id="docs-files-ranura" style="display:none" multiple accept="image/*,.pdf" onchange="enviarArchivosRanura(this)">'
+    + '</div></div>';
+
   res.innerHTML = (proceso ? procesoHTML(proceso) : '') + h;
   MOD_ACTIVO = null;
   MODULOS.forEach(m => { const n = document.getElementById(m); if(n) n.style.display = 'none'; });
@@ -368,7 +376,7 @@ async function consultar(){
 }
 
 
-const MODULOS = ['sec-tareas', 'sec-justificar', 'sec-pagos', 'sec-certs', 'sec-eventos', 'sec-manual'];
+const MODULOS = ['sec-tareas', 'sec-justificar', 'sec-pagos', 'sec-certs', 'sec-eventos', 'sec-manual', 'sec-documentos'];
 let MOD_ACTIVO = null;
 function irSeccion(id){
   const el = document.getElementById(id); if(!el) return;
@@ -424,6 +432,7 @@ function botonesHTML(d){
   b.push('<button class="btn-grande morado" onclick="irSeccion(\'sec-certs\')"><span class="bg-ico">📜</span>Certificados</button>');
   if(d.calendario && d.calendario.length) b.push('<button class="btn-grande celeste" onclick="irSeccion(\'sec-eventos\')"><span class="bg-ico">📅</span>Eventos</button>');
   b.push('<button class="btn-grande cafe" onclick="irSeccion(\'sec-manual\')"><span class="bg-ico">📘</span>Manual de convivencia</button>');
+  b.push('<button class="btn-grande" onclick="irSeccion(\'sec-documentos\')"><span class="bg-ico">📁</span>Documentos</button>');
   return '<div class="btns-grandes">' + b.join('') + '</div>';
 }
 
@@ -562,6 +571,110 @@ function leerComprobante(f){
       r.readAsDataURL(f);
     }
   });
+}
+function leerDocumentoPadre(f){
+  return new Promise((res, rej) => {
+    if(f.type && f.type.indexOf('image/') === 0){
+      const url = URL.createObjectURL(f);
+      const img = new Image();
+      img.onload = () => {
+        try{
+          const max = 1400; const sc = Math.min(1, max / Math.max(img.width, img.height));
+          const cv = document.createElement('canvas'); cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          URL.revokeObjectURL(url);
+          const base = (f.name || 'documento').replace(/\.[^.]+$/, '');
+          res({ nombre: base + '.jpg', tipo: 'image/jpeg', b64: cv.toDataURL('image/jpeg', 0.8).split(',')[1] });
+        }catch(e){ rej(e); }
+      };
+      img.onerror = rej;
+      img.src = url;
+    } else {
+      const r = new FileReader();
+      r.onload = () => res({ nombre: f.name || 'documento', tipo: f.type || '', b64: String(r.result || '').split(',')[1] || '' });
+      r.onerror = rej;
+      r.readAsDataURL(f);
+    }
+  });
+}
+function documentosConsultaHTML(d){
+  let s = '';
+  const docs = Array.isArray(d.documentos) ? d.documentos : [];
+  const req = Array.isArray(d.docsRequeridos) ? d.docsRequeridos : [];
+  const env = Array.isArray(d.enviosDocs) ? d.enviosDocs : [];
+  const verBtn = doc => { const i = docs.indexOf(doc); return ' <button class="btn-pri" style="width:auto;padding:5px 14px;font-size:.9rem" onclick="verDocumentoConsulta(' + i + ')">Ver</button>'; };
+  if(req.length){
+    const nOk = req.filter(r => r.ok).length;
+    s += '<p style="margin:0 0 4px"><strong>📋 Documentos requeridos: ' + nOk + ' de ' + req.length + '</strong></p>';
+    s += req.map((r, i) => {
+      const doc = docs.find(x => (x.categoria || '') === r.nombre);
+      const pend = !r.ok && env.some(x => x.estado === 'PENDIENTE' && (x.categoria || '') === r.nombre);
+      let linea = '<p style="margin:5px 0">' + (r.ok ? '✔' : (pend ? '🕐' : '⬜')) + ' ' + esc(r.nombre) + ' — ' + (r.ok ? '<strong>Guardado</strong>' : (pend ? '<strong>En revisión</strong>' : '<strong>Pendiente</strong>'));
+      if(r.ok && doc) linea += verBtn(doc);
+      else if(!r.ok && !pend) linea += ' <button class="btn-pri" style="width:auto;padding:5px 14px;font-size:.9rem" onclick="enviarDocRanura(' + i + ')">Enviar</button>';
+      return linea + '</p>';
+    }).join('');
+  }
+  const nombresReq = req.map(r => r.nombre);
+  const extras = docs.filter(x => nombresReq.indexOf(x.categoria || '') < 0);
+  if(extras.length){
+    s += '<p style="margin:10px 0 4px"><strong>📂 Otros documentos en el perfil:</strong></p>' + extras.map(doc => '<p style="margin:5px 0">' + (String(doc.tipo || '').indexOf('image/') === 0 ? '🖼' : '📄') + ' ' + esc(doc.nombre || 'documento') + (doc.categoria ? ' <span class="nota">(' + esc(doc.categoria) + ')</span>' : '') + verBtn(doc) + '</p>').join('');
+  }
+  if(env.length){
+    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + env.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Guardado en el perfil</strong>' : (x.estado === 'DESCARTADO' ? '✖ <strong>No guardado</strong> — escríbenos por WhatsApp si tienes dudas' : '🕐 <strong>En revisión</strong> por el colegio')) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
+  }
+  if(s) s += '<hr style="border:none;border-top:1px solid #e3ecfb;margin:12px 0">';
+  return s;
+}
+function verDocumentoConsulta(i){
+  const d = DATOS_ACTUAL; const doc = d && Array.isArray(d.documentos) ? d.documentos[i] : null; if(!doc || !doc.b64) return;
+  try{
+    const bin = atob(doc.b64); const arr = new Uint8Array(bin.length);
+    for(let k = 0; k < bin.length; k++) arr[k] = bin.charCodeAt(k);
+    const url = URL.createObjectURL(new Blob([arr], { type: doc.tipo || 'application/octet-stream' }));
+    const esWord = (doc.tipo && doc.tipo.indexOf('application/vnd') === 0) || /\.docx?$/i.test(doc.nombre || '');
+    if(esWord){ const a = document.createElement('a'); a.href = url; a.download = doc.nombre || 'documento'; document.body.appendChild(a); a.click(); a.remove(); }
+    else window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }catch(e){}
+}
+async function enviarDocumentosLista(files, categoria){
+  const msg = document.getElementById('docs-msg');
+  const pon = t => { msg.innerHTML = '<div class="error">' + t + '</div>'; };
+  const d = DATOS_ACTUAL; if(!d){ pon('Vuelve a consultar el documento del estudiante e inténtalo de nuevo.'); return; }
+  if(!files.length){ pon('Elige primero uno o varios archivos.'); return; }
+  if(files.length > 5){ pon('Puedes enviar hasta 5 archivos por vez.'); return; }
+  for(const f of files){ const esImg = f.type && f.type.indexOf('image/') === 0; if(!esImg && f.size > 2 * 1024 * 1024){ pon('El archivo «' + f.name + '» supera los 2 MB.'); return; } }
+  msg.innerHTML = '<p class="nota">Enviando tus documentos…</p>';
+  try{
+    const adjuntos = [];
+    for(const f of files) adjuntos.push(await leerDocumentoPadre(f));
+    const sol = { ts: Date.now(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: (((d.apellidos || '') + ' ' + (d.nombres || '')).trim()), grado: d.gradoActual || '', docTipo: d.docTipo || '', docNumero: d.docNumero || '', genero: d.genero || '', tipo: 'DOCUMENTO', valor: 0, categoria: categoria || 'Otro', adjuntos: adjuntos };
+    const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    msg.innerHTML = '<p class="aviso-ok">✔ Documentos enviados (' + (categoria || 'Otro') + '). El colegio los revisará y los guardará en el perfil del estudiante.</p>';
+  }catch(e){
+    pon('No pudimos enviar tus documentos en este momento. Escríbenos por WhatsApp al 302 285 2745 y te ayudamos.');
+  }
+}
+async function enviarDocumentos(){
+  const inp = document.getElementById('docs-files');
+  const files = inp && inp.files ? Array.prototype.slice.call(inp.files) : [];
+  const cat = (document.getElementById('docs-tipo') || {}).value || 'Otro';
+  await enviarDocumentosLista(files, cat);
+  if(inp) inp.value = '';
+}
+let RANURA_ACTUAL = '';
+function enviarDocRanura(i){
+  const d = DATOS_ACTUAL; const r = d && Array.isArray(d.docsRequeridos) ? d.docsRequeridos[i] : null; if(!r) return;
+  RANURA_ACTUAL = r.nombre;
+  const inp = document.getElementById('docs-files-ranura'); if(inp){ inp.value = ''; inp.click(); }
+}
+async function enviarArchivosRanura(inp){
+  const files = inp && inp.files ? Array.prototype.slice.call(inp.files) : [];
+  const cat = RANURA_ACTUAL; RANURA_ACTUAL = '';
+  if(!files.length || !cat) return;
+  await enviarDocumentosLista(files, cat);
 }
 async function enviarSolicitudCert(){
   const msg = document.getElementById('cert-sol-msg');
