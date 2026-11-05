@@ -308,6 +308,7 @@ button.btn:hover{ background:var(--azul-osc); }
       <div class="menu-titulo" onclick="alternarMenuGrupo(this)">Administración</div>
       <button data-tab="rector" onclick="verTab('rector')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4L2 9l10 5 10-5-10-5z"/><path d="M6 11.5V16c0 1.6 2.7 3 6 3s6-1.4 6-3v-4.5"/><path d="M22 9v5"/></svg> Panel del rector</button>
       <button data-tab="instituto" onclick="verTab('instituto')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V9.5L12 4l8 5.5V21"/><path d="M2.5 21h19"/><path d="M10 21v-3.8a2 2 0 014 0V21"/><path d="M8 11.5h.01"/><path d="M16 11.5h.01"/></svg> Instituto</button>
+      <button data-tab="documentos" onclick="verTab('documentos')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Documentos</button>
       <button data-tab="perfiles" onclick="verTab('perfiles')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M4.3 20c.6-3.2 2.8-5 5.7-5 1.1 0 2.2.3 3 .8"/><path d="M18.6 14.8v6"/><path d="M15.6 17.8h6"/></svg> Perfiles</button>
       <button data-tab="matriculas" onclick="verTab('matriculas')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13.5L6.2 5h11.6L20 13.5V19a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 19z"/><path d="M4 13.5h4.8l1.4 2.2h3.6l1.4-2.2H20"/></svg> Matrículas 2027</button>
     </div>
@@ -533,6 +534,20 @@ button.btn:hover{ background:var(--azul-osc); }
       </div>
     </section>
 
+    <section id="tab-documentos" class="hidden">
+      <div class="card">
+        <h2>📁 Documentos de los estudiantes</h2>
+        <p class="ayuda">Control de la carpeta de documentos de cada estudiante del <strong id="docsmod-anio-txt">año en pantalla</strong>: aquí se ve, por estudiante, qué documentos requeridos ya están cargados en su perfil y cuáles faltan. La lista de requeridos depende del nivel: Preescolar (4 documentos) y Primaria (8 documentos). No incluye estudiantes retirados. En el año actual, el botón <strong>Perfil</strong> abre la ficha del estudiante para cargar los documentos que falten; en los años archivados la vista es de solo lectura.</p>
+        <div id="docsmod-resumen" style="margin:10px 0"></div>
+        <div class="fila">
+          <div><label>Buscar estudiante</label><input type="text" id="docsmod-q" placeholder="Nombre…" oninput="DOCSMOD.q=this.value;docsmodPintarTabla()"></div>
+          <div><label>Grado</label><select id="docsmod-curso" onchange="DOCSMOD.cursoId=this.value;docsmodPintarTabla()"></select></div>
+          <div style="align-self:flex-end"><label class="check-mod"><input type="checkbox" id="docsmod-solo" onchange="DOCSMOD.soloFaltantes=this.checked;docsmodPintarTabla()"> Solo con faltantes</label></div>
+          <div style="align-self:flex-end"><button class="btn" onclick="imprimirDocsFaltantes()">🖨 Imprimir lista de faltantes</button></div>
+        </div>
+        <div id="docsmod-tabla" style="margin-top:12px"></div>
+      </div>
+    </section>
     <section id="tab-instituto" class="hidden">
       <div class="card">
         <h2>Datos del instituto</h2>
@@ -636,7 +651,7 @@ button.btn:hover{ background:var(--azul-osc); }
       </div>
       <div class="card hidden" id="card-ficha">
         <h2>Perfil del estudiante</h2>
-                <p class="ayuda"><strong id="ficha-nombre"></strong> — datos del estudiante y de su acudiente. Se guardan en la plataforma.<span id="ficha-modo"></span></p>
+                <p class="ayuda"><input id="ficha-nombre" type="text" autocomplete="off" style="font-weight:700;font-size:15px;color:#13213F;border:1px solid #cbd5e1;border-radius:8px;padding:5px 9px;width:min(340px,85vw)"> — datos del estudiante y de su acudiente. Se guardan en la plataforma.<span id="ficha-modo"></span></p>
         <div class="fila" style="align-items:center">
           <img id="ficha-foto-img" alt="Foto del estudiante" style="width:88px;height:88px;object-fit:cover;border-radius:14px;border:1px solid #d5dce8;display:none">
           <span id="ficha-foto-vacia" class="ayuda" style="width:88px;height:88px;display:inline-flex;align-items:center;justify-content:center;border:1px dashed #c3cede;border-radius:14px;text-align:center;margin:0">Sin foto</span>
@@ -1006,7 +1021,7 @@ button.btn:hover{ background:var(--azul-osc); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 /* ================= CONFIGURACIÓN ================= */
-const MODULOS = [ ['panel','Panel de control'], ['rector','Panel del rector'], ['instituto','Instituto'], ['cursos','Cursos y estudiantes'], ['asignaturas','Asignaturas y logros'], ['notas','Registro de notas'], ['boletines','Boletines'], ['final','Informe final'], ['asistencia','Asistencia diaria'], ['planeador','Planeador semanal'], ['observador','Observador'], ['tareas','Tareas y actividades'], ['certificados','Certificados'], ['pagos','Matrículas y pensiones'], ['facturacion','Facturación electrónica'], ['nomina','Nómina'], ['transacciones','Transacciones (Wallet)'], ['matriculas','Matrículas 2027'], ['perfiles','Perfiles'], ['archivo','Años anteriores (filtro de año)'] ];
+const MODULOS = [ ['panel','Panel de control'], ['rector','Panel del rector'], ['instituto','Instituto'], ['cursos','Cursos y estudiantes'], ['asignaturas','Asignaturas y logros'], ['notas','Registro de notas'], ['boletines','Boletines'], ['final','Informe final'], ['asistencia','Asistencia diaria'], ['planeador','Planeador semanal'], ['observador','Observador'], ['tareas','Tareas y actividades'], ['certificados','Certificados'], ['documentos','Documentos'], ['pagos','Matrículas y pensiones'], ['facturacion','Facturación electrónica'], ['nomina','Nómina'], ['transacciones','Transacciones (Wallet)'], ['matriculas','Matrículas 2027'], ['perfiles','Perfiles'], ['archivo','Años anteriores (filtro de año)'] ];
 const MODULOS_TODOS = MODULOS.map(m=>m[0]);
 const PERFILES_BASE = [
   { id:'p-andres', nombre:'Andrés Hernández', usuario:'andres', email:'andres.hernandz89@gmail.com', rol:'owner', rolTxt:'Dueño (Owner)', cursoNombre:'', clave:'', modulos: MODULOS_TODOS.slice() },
@@ -1025,7 +1040,7 @@ let hashNube = {};
 function dbParaNube(){ const o = {}; CLAVES_NUBE.forEach(k=>{ if(k==='perfiles'){ o[k] = (DB.perfiles||[]).map(p=>{ const q = Object.assign({}, p); delete q.clave; return q; }); } else { o[k] = (DB[k] === undefined ? null : DB[k]); } }); o.demo = false; return o; }
 function guardarNube(){ if(!FB_DB || !NUBE_LISTA) return; const datos = dbParaNube(); const cambios = {}; const enviados = []; CLAVES_NUBE.forEach(k=>{ const h = hashDe(datos[k]); if(hashNube[k] !== h){ cambios[k] = datos[k]; enviados.push([k, h]); } }); if(!enviados.length) return; ultimoEnvioNube = Date.now(); FB_DB.ref('cemiDB').update(cambios).then(()=>{ enviados.forEach(par=>{ hashNube[par[0]] = par[1]; }); }).catch(err=>{ console.error('Error subiendo a la nube', err); if(typeof window !== 'undefined' && typeof window.mostrarToast === 'function') window.mostrarToast('⚠️ No se pudieron subir tus cambios a la nube. Quedan en este equipo y la subida se reintentará automáticamente al volver la conexión.', 'error'); }); }
 function programarGuardarNube(){ if(timerNube) clearTimeout(timerNube); timerNube = setTimeout(guardarNube, 600); }
-function migrarModulosPerfiles(){ if(!Array.isArray(DB.perfiles)) return; const ACADEMICOS = ['panel','instituto','cursos','asignaturas','notas','boletines','final','asistencia','planeador','observador']; DB.perfiles.forEach(p=>{ if(!p || p.rol==='owner' || p.modulosV3) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ ACADEMICOS.forEach(add); add('certificados'); add('matriculas'); } p.modulosV3 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV4) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('tareas'); add('rector'); } else if(p.rol==='docente'){ add('tareas'); } p.modulosV4 = true; }); }
+function migrarModulosPerfiles(){ if(!Array.isArray(DB.perfiles)) return; const ACADEMICOS = ['panel','instituto','cursos','asignaturas','notas','boletines','final','asistencia','planeador','observador']; DB.perfiles.forEach(p=>{ if(!p || p.rol==='owner' || p.modulosV3) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ ACADEMICOS.forEach(add); add('certificados'); add('matriculas'); } p.modulosV3 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV4) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('tareas'); add('rector'); } else if(p.rol==='docente'){ add('tareas'); } p.modulosV4 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV5) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('documentos'); } p.modulosV5 = true; }); }
 function saneamientoNube(){ migrarModulosPerfiles(); if(!DB.parciales) DB.parciales = {}; if(!DB.asistencia) DB.asistencia = {}; if(!DB.planeadores) DB.planeadores = {}; if(!DB.observadores) DB.observadores = {}; if(!Array.isArray(DB.auditoria)) DB.auditoria = []; if(!Array.isArray(DB.perfiles)) DB.perfiles = []; if(!Array.isArray(DB.perfilesEliminados)) DB.perfilesEliminados = []; if(!Array.isArray(DB.cursos)) DB.cursos = []; if(!Array.isArray(DB.estudiantes)) DB.estudiantes = []; if(!DB.notas) DB.notas = {}; if(!DB.extra) DB.extra = {}; Object.values(DB.asistencia||{}).forEach(pc=>Object.values(pc).forEach(dia=>{ Object.keys(dia).forEach(id=>{ if(dia[id]==='R') dia[id]='P'; }); }));  }
 function aplicarDatosNube(datos){ if (typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) return; DB = datos; if(!Array.isArray(DB.tareas)) DB.tareas = []; saneamientoNube(); if(typeof respaldoAutomatico === 'function') respaldoAutomatico(); if(typeof fusionarPagosWallet === 'function') fusionarPagosWallet(); if(typeof sincronizarConsulta2027 === 'function') sincronizarConsulta2027(false); try{ localStorage.setItem(LS_KEY, JSON.stringify(DB)); }catch(e){} const d = dbParaNube(); CLAVES_NUBE.forEach(k=>{ hashNube[k] = hashDe(d[k]); }); }
 let MATRI = {}, MATRI_ACTIVO = false, MATRI_SEL = '';
@@ -2419,7 +2434,7 @@ function verTab(tab){
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('activo', b.dataset.tab===tab));
   expandirGrupoDe(tab);
   $('user-chip').classList.toggle('en-miperfil', tab==='miperfil');
-  ['panel','rector','certificados','pagos','facturacion','nomina','instituto','cursos','asignaturas','notas','boletines','final','asistencia','planeador','observador','tareas','perfiles','miperfil','matriculas','transacciones','calendario','certpadres'].forEach(t=>$('tab-'+t).classList.toggle('hidden', t!==tab));
+  ['panel','rector','certificados','pagos','facturacion','nomina','instituto','cursos','asignaturas','notas','boletines','final','asistencia','planeador','observador','tareas','perfiles','miperfil','matriculas','transacciones','calendario','certpadres','documentos'].forEach(t=>$('tab-'+t).classList.toggle('hidden', t!==tab));
   if(tab==='cursos') renderEstudiantes();
   if(tab==='asignaturas') renderAsignaturas();
   if(tab==='notas'){ renderNotas(); }
@@ -2441,6 +2456,7 @@ function verTab(tab){
   if(tab==='calendario') renderCalendario();
   if(tab==='transacciones') renderTransacciones();
   if(tab==='certpadres') renderCertSolicitudes();
+  if(tab==='documentos') renderDocumentos();
 }
 function actualizarBannerDemo(){ $('demo-banner').classList.toggle('hidden', !DB.demo); }
 function renderTodo(){ renderEstudiantes(); renderAsignaturas(); renderNotas(); renderBoletines(); renderFinal(); renderAsistencia(); }
@@ -2556,7 +2572,7 @@ function verFicha(id){
   const e = DB.estudiantes.find(x=>x.id===id); if(!e) return;
   FICHA_ID = id;
   const d = e.datos || {};
-  $('ficha-nombre').textContent = e.nombre;
+  $('ficha-nombre').value = e.nombre;
   $('ficha-doctipo').value = d.docTipo || ''; $('ficha-docnum').value = d.docNumero || '';
   $('ficha-nacimiento').value = d.fechaNacimiento || ''; $('ficha-genero').value = d.genero || '';
   $('ficha-direccion').value = d.direccion || ''; $('ficha-acudiente').value = d.acudiente || '';
@@ -2572,8 +2588,8 @@ function verFicha(id){
   $('ficha-sim-tipodisc').value = d.simTipoDiscapacidad || ''; $('ficha-sim-victima').value = d.simVictima || '';
   $('ficha-sim-capacidades').value = d.simCapacidades || '';
   const rt = e.retiro || {}; $('ficha-retirado').checked = !!rt.activo; $('ficha-fecha-retiro').value = rt.fecha || '';
-  const soloLectura = !puedeEditarFicha();
-  ['ficha-doctipo','ficha-docnum','ficha-nacimiento','ficha-genero','ficha-direccion','ficha-acudiente','ficha-tel','ficha-correo','ficha-retirado','ficha-fecha-retiro','ficha-doctipo-acud','ficha-docnum-acud','ficha-sim-depto-nac','ficha-sim-muni-nac','ficha-sim-depto-res','ficha-sim-muni-res','ficha-sim-zona','ficha-sim-estrato','ficha-sim-sisben','ficha-sim-etnia','ficha-sim-resguardo','ficha-sim-eps','ficha-sim-regimen','ficha-sim-discapacidad','ficha-sim-tipodisc','ficha-sim-victima','ficha-sim-capacidades'].forEach(id=>{ $(id).disabled = soloLectura; });
+  const soloLectura = !puedeEditarFicha() || (typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO);
+  ['ficha-nombre','ficha-doctipo','ficha-docnum','ficha-nacimiento','ficha-genero','ficha-direccion','ficha-acudiente','ficha-tel','ficha-correo','ficha-retirado','ficha-fecha-retiro','ficha-doctipo-acud','ficha-docnum-acud','ficha-sim-depto-nac','ficha-sim-muni-nac','ficha-sim-depto-res','ficha-sim-muni-res','ficha-sim-zona','ficha-sim-estrato','ficha-sim-sisben','ficha-sim-etnia','ficha-sim-resguardo','ficha-sim-eps','ficha-sim-regimen','ficha-sim-discapacidad','ficha-sim-tipodisc','ficha-sim-victima','ficha-sim-capacidades'].forEach(id=>{ $(id).disabled = soloLectura; });
   $('btn-guardar-ficha').classList.toggle('hidden', soloLectura);
   $('ficha-constancias').classList.toggle('hidden', soloLectura);
   if(typeof iniciarCertSolicitudes === 'function') iniciarCertSolicitudes();
@@ -2585,6 +2601,15 @@ function verFicha(id){
 function guardarFicha(){
   if(!puedeEditarFicha()){ alert('Tu perfil solo puede consultar la ficha del estudiante; no puede modificarla.'); return; }
   const e = DB.estudiantes.find(x=>x.id===FICHA_ID); if(!e) return;
+  const inpNombre = $('ficha-nombre');
+  if(inpNombre){
+    const nombreNuevo = (inpNombre.value || '').trim().toUpperCase();
+    if(!nombreNuevo){ alert('El nombre del estudiante no puede quedar vacío: se conserva el nombre actual.'); inpNombre.value = e.nombre; }
+    else if(nombreNuevo !== e.nombre && !(typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) && !(typeof SIMULANDO !== 'undefined' && SIMULANDO)){
+      const nombreAntes = e.nombre; e.nombre = nombreNuevo;
+      registrarCambio('Nombre del estudiante: «' + nombreAntes + '» → «' + nombreNuevo + '»');
+    }
+  }
   e.datos = { docTipo: $('ficha-doctipo').value, docNumero: $('ficha-docnum').value.trim(),
     fechaNacimiento: $('ficha-nacimiento').value, genero: $('ficha-genero').value,
     direccion: $('ficha-direccion').value.trim(), acudiente: $('ficha-acudiente').value.trim(),
@@ -2600,7 +2625,7 @@ function guardarFicha(){
   e.datos.docTipoAcudiente = $('ficha-doctipo-acud').value; e.datos.docNumeroAcudiente = $('ficha-docnum-acud').value.trim();
   e.retiro = { activo: $('ficha-retirado').checked, fecha: $('ficha-fecha-retiro').value || '' };
   if(e.retiro.activo && !e.retiro.fecha) e.retiro.fecha = hoyISO();
-  guardar(); alert('Perfil de ' + e.nombre + ' guardado.');
+  guardar(); refrescarSelectsEstudiantes(); renderEstudiantes(); alert('Perfil de ' + e.nombre + ' guardado.');
 }
 function cerrarFicha(){ $('card-ficha').classList.add('hidden'); FICHA_ID = null; }
 /* ---- Foto y documentos del estudiante ---- */
@@ -3796,6 +3821,97 @@ function imprimir(cual){
   const src = cual==='boletines' ? $('boletines-out').innerHTML : $('final-out').innerHTML;
   if(!src.trim()){ alert('No hay nada para imprimir todavía.'); return; }
   $('print-area').innerHTML = src;
+  window.print();
+}
+
+/* ================= DOCUMENTOS (CONTROL POR AÑO) ================= */
+let DOCSMOD = { q:'', cursoId:'', soloFaltantes:false, abiertos:{} };
+function docsmodAnio(){ return (typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO && ANIO_VIENDO) ? ANIO_VIENDO : anioDe(DB); }
+function docsmodSoloLectura(){ return (typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO); }
+function docsmodNivelTxt(curso){ const n = nivelPorNombreCurso(curso ? curso.nombre : ''); return n === 'PREESCOLAR' ? 'Preescolar' : (n === 'PRIMARIA' ? 'Primaria' : ''); }
+function docsmodBase(){
+  const ids = new Set(cursosVisibles().map(c=>c.id));
+  const orden = {}; DB.cursos.forEach((c,i)=>{ orden[c.id] = i; });
+  return DB.estudiantes
+    .filter(e=>ids.has(e.cursoId) && !estaRetirado(e))
+    .map(e=>({ e:e, curso: cursoDe(e.cursoId), req: docsRequeridosDe(e) }))
+    .filter(x=>x.req.length)
+    .sort((a,b)=>{ const ia = orden[a.e.cursoId] || 0, ib = orden[b.e.cursoId] || 0; if(ia !== ib) return ia - ib; return a.e.nombre.localeCompare(b.e.nombre); });
+}
+function docsmodFiltradas(base){
+  let filas = base;
+  if(DOCSMOD.cursoId) filas = filas.filter(x=>x.e.cursoId === DOCSMOD.cursoId);
+  if(DOCSMOD.q){ const q = normNombre(DOCSMOD.q); filas = filas.filter(x=>normNombre(x.e.nombre).includes(q)); }
+  if(DOCSMOD.soloFaltantes) filas = filas.filter(x=>x.req.some(r=>!r.ok));
+  return filas;
+}
+function renderDocumentos(){
+  const anioTxt = $('docsmod-anio-txt'); if(anioTxt) anioTxt.textContent = 'año lectivo ' + docsmodAnio() + (docsmodSoloLectura() ? ' (solo lectura)' : '');
+  const base = docsmodBase();
+  const completos = base.filter(x=>x.req.every(r=>r.ok)).length;
+  const totSlots = base.reduce((s,x)=>s + x.req.length, 0);
+  const okSlots = base.reduce((s,x)=>s + x.req.filter(r=>r.ok).length, 0);
+  const pct = totSlots ? Math.round(okSlots * 1000 / totSlots) / 10 : 0;
+  $('docsmod-resumen').innerHTML =
+    '<span class="chip">Estudiantes: <strong>' + base.length + '</strong></span> ' +
+    '<span class="chip">Carpetas completas: <strong>' + completos + '</strong></span> ' +
+    '<span class="chip">Con documentos pendientes: <strong>' + (base.length - completos) + '</strong></span> ' +
+    '<span class="chip">Completitud general: <strong>' + String(pct).replace('.', ',') + '%</strong></span>' +
+    '<div style="height:10px;background:#e8eefb;border-radius:99px;margin-top:10px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:#0792FE;border-radius:99px"></div></div>';
+  const sel = $('docsmod-curso');
+  if(sel){
+    const prev = DOCSMOD.cursoId;
+    sel.innerHTML = '<option value="">Todos los grados</option>' + cursosVisibles().map(c=>'<option value="' + c.id + '">' + esc(c.nombre) + '</option>').join('');
+    if(prev && DB.cursos.some(c=>c.id === prev)) sel.value = prev; else DOCSMOD.cursoId = '';
+  }
+  const chk = $('docsmod-solo'); if(chk) chk.checked = !!DOCSMOD.soloFaltantes;
+  const q = $('docsmod-q'); if(q && q.value !== DOCSMOD.q) q.value = DOCSMOD.q;
+  docsmodPintarTabla();
+}
+function docsmodPintarTabla(){
+  const cont = $('docsmod-tabla'); if(!cont) return;
+  const base = docsmodBase();
+  const filas = docsmodFiltradas(base);
+  const soloLect = docsmodSoloLectura();
+  if(!base.length){ cont.innerHTML = '<p class="ayuda">Este año no tiene estudiantes en grados con lista de documentos requeridos (Preescolar y Primaria).</p>'; return; }
+  if(!filas.length){ cont.innerHTML = '<p class="ayuda">Ningún estudiante coincide con los filtros elegidos (de ' + base.length + ' en total).</p>'; return; }
+  let h = '<p class="ayuda" style="margin:0 0 8px">Mostrando ' + filas.length + ' de ' + base.length + ' estudiantes.</p>';
+  h += '<div class="scroll"><table class="tabla"><tr><th>#</th><th>Estudiante</th><th>Grado</th><th>Nivel</th><th>Avance</th><th>Estado</th><th>Documentos faltantes</th><th></th></tr>';
+  filas.forEach((x,i)=>{
+    const faltan = x.req.filter(r=>!r.ok).map(r=>r.nombre);
+    const n = x.req.filter(r=>r.ok).length;
+    const completo = !faltan.length;
+    h += '<tr><td class="num">' + (i + 1) + '</td><td><strong>' + esc(x.e.nombre) + '</strong></td><td>' + esc(x.curso ? x.curso.nombre : '') + '</td><td>' + docsmodNivelTxt(x.curso) + '</td><td>📁 ' + n + '/' + x.req.length + '</td><td>' + (completo ? '<span class="sem v">Completo</span>' : '<span class="sem a">Incompleto</span>') + '</td><td>' + (completo ? '—' : esc(faltan.join(', '))) + '</td><td style="white-space:nowrap"><button class="btn btn-sec mini" onclick="docsmodToggle(\'' + x.e.id + '\')">' + (DOCSMOD.abiertos[x.e.id] ? 'Ocultar' : 'Detalle') + '</button>' + (soloLect ? '' : ' <button class="btn btn-sec mini" onclick="docsmodAbrirFicha(\'' + x.e.id + '\')">Perfil</button>') + '</td></tr>';
+    if(DOCSMOD.abiertos[x.e.id]){
+      const extras = (Array.isArray(x.e.documentos) ? x.e.documentos : []).filter(d=>!x.req.some(r=>r.nombre === d.categoria));
+      h += '<tr><td></td><td colspan="7"><div style="display:flex;flex-wrap:wrap;gap:6px">' + x.req.map(r=>'<span class="sem ' + (r.ok ? 'v' : 'r') + '">' + (r.ok ? '✔ ' : '✖ ') + esc(r.nombre) + '</span>').join('') + '</div>' + (extras.length ? '<p class="ayuda" style="margin:8px 0 0">Otros documentos en la carpeta: ' + esc(extras.map(d=>d.nombre || d.categoria || 'Documento').join(', ')) + '</p>' : '') + '</td></tr>';
+    }
+  });
+  h += '</table></div>';
+  cont.innerHTML = h;
+}
+function docsmodToggle(id){ DOCSMOD.abiertos[id] = !DOCSMOD.abiertos[id]; docsmodPintarTabla(); }
+function docsmodAbrirFicha(id){ if(docsmodSoloLectura()) return; verTab('cursos'); verFicha(id); }
+function imprimirDocsFaltantes(){
+  const base = docsmodBase();
+  let filas = base.filter(x=>x.req.some(r=>!r.ok));
+  if(DOCSMOD.cursoId) filas = filas.filter(x=>x.e.cursoId === DOCSMOD.cursoId);
+  if(!filas.length){ alert('No hay estudiantes con documentos faltantes en la vista actual.'); return; }
+  const hoy = new Date();
+  const fecha = String(hoy.getDate()).padStart(2, '0') + '/' + String(hoy.getMonth() + 1).padStart(2, '0') + '/' + hoy.getFullYear();
+  let h = '<div style="width:8.5in;margin:0 auto;padding:0.5in 0.6in;background:#fff;font-family:Calibri,Arial,sans-serif;color:#111">';
+  h += '<h2 style="margin:0 0 2px;font-size:17pt">' + esc((DB.instituto || {}).nombre || '') + '</h2>';
+  h += '<h3 style="margin:0 0 6px;font-size:13pt">Documentos faltantes por estudiante — Año lectivo ' + docsmodAnio() + '</h3>';
+  h += '<p style="margin:0 0 14px;font-size:10.5pt;color:#444">Lista generada el ' + fecha + ' para solicitar a los acudientes los documentos que faltan en la carpeta de cada estudiante. Estudiantes con pendientes: ' + filas.length + '.</p>';
+  let cursoAnt = null;
+  filas.forEach(x=>{
+    const cn = x.curso ? x.curso.nombre : '';
+    if(cn !== cursoAnt){ if(cursoAnt !== null) h += '</table>'; h += '<h4 style="margin:14px 0 6px;font-size:11.5pt">Grado: ' + esc(cn) + '</h4><table style="width:100%;border-collapse:collapse;font-size:10.5pt"><tr><th style="border:1px solid #999;padding:4px 6px;text-align:left">Estudiante</th><th style="border:1px solid #999;padding:4px 6px;text-align:left">Documentos que faltan</th></tr>'; cursoAnt = cn; }
+    h += '<tr><td style="border:1px solid #999;padding:4px 6px">' + esc(x.e.nombre) + '</td><td style="border:1px solid #999;padding:4px 6px">' + esc(x.req.filter(r=>!r.ok).map(r=>r.nombre).join(', ')) + '</td></tr>';
+  });
+  if(cursoAnt !== null) h += '</table>';
+  h += '</div>';
+  $('print-area').innerHTML = h;
   window.print();
 }
 
