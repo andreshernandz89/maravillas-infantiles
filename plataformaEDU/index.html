@@ -3876,15 +3876,15 @@ function docsmodPintarTabla(){
   if(!base.length){ cont.innerHTML = '<p class="ayuda">Este año no tiene estudiantes en grados con lista de documentos requeridos (Preescolar y Primaria).</p>'; return; }
   if(!filas.length){ cont.innerHTML = '<p class="ayuda">Ningún estudiante coincide con los filtros elegidos (de ' + base.length + ' en total).</p>'; return; }
   let h = '<p class="ayuda" style="margin:0 0 8px">Mostrando ' + filas.length + ' de ' + base.length + ' estudiantes.</p>';
-  h += '<div class="scroll"><table class="tabla"><tr><th>#</th><th>Estudiante</th><th>Grado</th><th>Nivel</th><th>Avance</th><th>Estado</th><th>Documentos faltantes</th><th></th></tr>';
+  h += '<div class="scroll"><table class="tabla"><tr><th>#</th><th>Estudiante</th><th>Grado</th><th>Documentos</th><th>Estado</th><th></th></tr>';
   filas.forEach((x,i)=>{
-    const faltan = x.req.filter(r=>!r.ok).map(r=>r.nombre);
     const n = x.req.filter(r=>r.ok).length;
-    const completo = !faltan.length;
-    h += '<tr><td class="num">' + (i + 1) + '</td><td><strong>' + esc(x.e.nombre) + '</strong></td><td>' + esc(x.curso ? x.curso.nombre : '') + '</td><td>' + docsmodNivelTxt(x.curso) + '</td><td>📁 ' + n + '/' + x.req.length + '</td><td>' + (completo ? '<span class="sem v">Completo</span>' : '<span class="sem a">Incompleto</span>') + '</td><td>' + (completo ? '—' : esc(faltan.join(', '))) + '</td><td style="white-space:nowrap"><button class="btn btn-sec mini" onclick="docsmodToggle(\'' + x.e.id + '\')">' + (DOCSMOD.abiertos[x.e.id] ? 'Ocultar' : 'Detalle') + '</button>' + (soloLect ? '' : ' <button class="btn btn-sec mini" onclick="docsmodAbrirFicha(\'' + x.e.id + '\')">Perfil</button>') + '</td></tr>';
+    const completo = n === x.req.length;
+    const pctAv = x.req.length ? Math.round(n * 100 / x.req.length) : 0;
+    h += '<tr><td class="num">' + (i + 1) + '</td><td><strong>' + esc(x.e.nombre) + '</strong></td><td>' + esc(x.curso ? x.curso.nombre : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;min-width:120px"><span style="white-space:nowrap">📁 ' + n + '/' + x.req.length + '</span><div style="flex:1;height:8px;background:#e8eefb;border-radius:99px;overflow:hidden"><div style="height:100%;width:' + pctAv + '%;background:#0792FE;border-radius:99px"></div></div></div></td><td>' + (completo ? '<span class="sem v">Completo</span>' : '<span class="sem a">Incompleto</span>') + '</td><td style="white-space:nowrap"><button class="btn btn-sec mini" onclick="docsmodToggle(\'' + x.e.id + '\')">' + (DOCSMOD.abiertos[x.e.id] ? 'Ocultar' : 'Detalle') + '</button>' + (soloLect ? '' : ' <button class="btn btn-sec mini" onclick="docsmodAbrirFicha(\'' + x.e.id + '\')">Perfil</button>') + '</td></tr>';
     if(DOCSMOD.abiertos[x.e.id]){
       const extras = (Array.isArray(x.e.documentos) ? x.e.documentos : []).filter(d=>!x.req.some(r=>r.nombre === d.categoria));
-      h += '<tr><td></td><td colspan="7"><div style="display:flex;flex-wrap:wrap;gap:6px">' + x.req.map(r=>'<span class="sem ' + (r.ok ? 'v' : 'r') + '">' + (r.ok ? '✔ ' : '✖ ') + esc(r.nombre) + '</span>').join('') + '</div>' + (extras.length ? '<p class="ayuda" style="margin:8px 0 0">Otros documentos en la carpeta: ' + esc(extras.map(d=>d.nombre || d.categoria || 'Documento').join(', ')) + '</p>' : '') + '</td></tr>';
+      h += '<tr><td></td><td colspan="5">' + (docsmodNivelTxt(x.curso) ? '<p class="ayuda" style="margin:0 0 6px">Nivel: ' + docsmodNivelTxt(x.curso) + '</p>' : '') + '<div style="display:flex;flex-wrap:wrap;gap:6px">' + x.req.map(r=>'<span class="sem ' + (r.ok ? 'v' : 'r') + '">' + (r.ok ? '✔ ' : '✖ ') + esc(r.nombre) + '</span>').join('') + '</div>' + (extras.length ? '<p class="ayuda" style="margin:8px 0 0">Otros documentos en la carpeta: ' + esc(extras.map(d=>d.nombre || d.categoria || 'Documento').join(', ')) + '</p>' : '') + '</td></tr>';
     }
   });
   h += '</table></div>';
