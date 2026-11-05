@@ -677,10 +677,10 @@ async function enviarArchivosRanura(inp){
   if(!files.length || !cat) return;
   await enviarDocumentosLista(files, cat);
 }
-/* ---- Documentos requeridos del ASPIRANTE en etapa PROCESO (aún no es estudiante) ---- */
+/* ---- Documentos requeridos del ASPIRANTE en proceso de matrícula (aún no es estudiante) ---- */
 let PROCESO_ACTUAL = null, DOC_CONSULTADO = '', RANURA_ASP = '';
 function documentosProcesoHTML(p){
-  if(!p || p.etapa !== 'PROCESO' || p.tramite === 'ACTUALIZACION') return '';
+  if(!p || p.tramite === 'ACTUALIZACION' || p.etapa === 'IMPORTADA') return '';
   const req = Array.isArray(p.docsRequeridos) ? p.docsRequeridos : [];
   if(!req.length) return '';
   const env = Array.isArray(p.enviosDocs) ? p.enviosDocs : [];
