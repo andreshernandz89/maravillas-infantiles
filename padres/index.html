@@ -225,7 +225,8 @@ async function consultar(){
   }
   if(proceso && !datos){
     try{ localStorage.setItem('padres_doc', doc); const bo = $('btn-otro'); if(bo) bo.style.display = ''; }catch(e){}
-    res.innerHTML = procesoHTML(proceso);
+    PROCESO_ACTUAL = proceso; DOC_CONSULTADO = ($('doc').value || '').trim();
+    res.innerHTML = procesoHTML(proceso) + documentosProcesoHTML(proceso);
     res.scrollIntoView({behavior:'smooth'});
     return;
   }
@@ -675,6 +676,58 @@ async function enviarArchivosRanura(inp){
   const cat = RANURA_ACTUAL; RANURA_ACTUAL = '';
   if(!files.length || !cat) return;
   await enviarDocumentosLista(files, cat);
+}
+/* ---- Documentos requeridos del ASPIRANTE en etapa PROCESO (aún no es estudiante) ---- */
+let PROCESO_ACTUAL = null, DOC_CONSULTADO = '', RANURA_ASP = '';
+function documentosProcesoHTML(p){
+  if(!p || p.etapa !== 'PROCESO' || p.tramite === 'ACTUALIZACION') return '';
+  const req = Array.isArray(p.docsRequeridos) ? p.docsRequeridos : [];
+  if(!req.length) return '';
+  const env = Array.isArray(p.enviosDocs) ? p.enviosDocs : [];
+  let s = '<div class="card"><h2><span class="ico">📁</span> Documentos requeridos</h2>'
+    + '<p style="margin:0 0 8px">Para avanzar en tu proceso de matrícula, envía estos documentos por aquí (foto o PDF, máximo 2 MB cada archivo; hasta 5 archivos por envío). El colegio los revisa y los guarda en la carpeta del aspirante.</p>';
+  s += req.map((r, i) => {
+    const pend = !r.ok && env.some(x => x.estado === 'PENDIENTE' && (x.categoria || '') === r.nombre);
+    let linea = '<p style="margin:5px 0">' + (r.ok ? '✔' : (pend ? '🕐' : '⬜')) + ' ' + esc(r.nombre) + ' — ' + (r.ok ? '<strong>Guardado</strong>' : (pend ? '<strong>En revisión</strong>' : '<strong>Pendiente</strong>'));
+    if(!r.ok && !pend) linea += ' <button class="btn-pri" style="width:auto;padding:5px 14px;font-size:.9rem" onclick="enviarDocRanuraAsp(' + i + ')">Enviar</button>';
+    return linea + '</p>';
+  }).join('');
+  if(env.length){
+    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + env.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Guardado</strong>' : (x.estado === 'DESCARTADO' ? '✖ <strong>No guardado</strong> — escríbenos por WhatsApp si tienes dudas' : '🕐 <strong>En revisión</strong> por el colegio')) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
+  }
+  s += '<div id="docs-asp-msg"></div><input type="file" id="docs-files-ranura-asp" style="display:none" multiple accept="image/*,.pdf" onchange="enviarArchivosRanuraAsp(this)"></div>';
+  return s;
+}
+function enviarDocRanuraAsp(i){
+  const p = PROCESO_ACTUAL; const r = p && Array.isArray(p.docsRequeridos) ? p.docsRequeridos[i] : null; if(!r) return;
+  RANURA_ASP = r.nombre;
+  const inp = document.getElementById('docs-files-ranura-asp'); if(inp){ inp.value = ''; inp.click(); }
+}
+async function enviarArchivosRanuraAsp(inp){
+  const files = inp && inp.files ? Array.prototype.slice.call(inp.files) : [];
+  const cat = RANURA_ASP; RANURA_ASP = '';
+  if(inp) inp.value = '';
+  if(!files.length || !cat) return;
+  await enviarDocumentosAspLista(files, cat);
+}
+async function enviarDocumentosAspLista(files, categoria){
+  const msg = document.getElementById('docs-asp-msg');
+  const pon = t => { if(msg) msg.innerHTML = '<div class="error">' + t + '</div>'; };
+  const p = PROCESO_ACTUAL; if(!p){ pon('Vuelve a consultar el documento del estudiante e inténtalo de nuevo.'); return; }
+  if(!files.length){ pon('Elige primero uno o varios archivos.'); return; }
+  if(files.length > 5){ pon('Puedes enviar hasta 5 archivos por vez.'); return; }
+  for(const f of files){ const esImg = f.type && f.type.indexOf('image/') === 0; if(!esImg && f.size > 2 * 1024 * 1024){ pon('El archivo «' + f.name + '» supera los 2 MB.'); return; } }
+  if(msg) msg.innerHTML = '<p class="nota">Enviando tu documento…</p>';
+  try{
+    const adjuntos = [];
+    for(const f of files) adjuntos.push(await leerDocumentoPadre(f));
+    const sol = { ts: Date.now(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: p.nombre || '', grado: p.grado || '', docTipo: '', docNumero: DOC_CONSULTADO, genero: '', tipo: 'DOCUMENTO', valor: 0, categoria: categoria || 'Otro', adjuntos: adjuntos };
+    const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    if(msg) msg.innerHTML = '<p class="aviso-ok">✔ Documento enviado (' + (categoria || 'Otro') + '). El colegio lo revisará; vuelve a consultar más tarde para ver el estado.</p>';
+  }catch(e){
+    pon('No pudimos enviar tu documento en este momento. Escríbenos por WhatsApp al 302 285 2745 y te ayudamos.');
+  }
 }
 async function enviarSolicitudCert(){
   const msg = document.getElementById('cert-sol-msg');

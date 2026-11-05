@@ -1250,6 +1250,8 @@ function iniciarCertSolicitudes(){
     if(cficha && !cficha.classList.contains('hidden') && typeof FICHA_ID !== 'undefined' && FICHA_ID && typeof renderFichaDocumentos === 'function') renderFichaDocumentos();
     const sec = $('tab-certpadres');
     if(sec && !sec.classList.contains('hidden')) renderCertSolicitudes();
+    const secMt = $('tab-matriculas');
+    if(secMt && !secMt.classList.contains('hidden') && typeof renderMatriculas === 'function') renderMatriculas();
     const secA = $('tab-asistencia');
     if(secA && !secA.classList.contains('hidden')) renderAsistencia();
     const secP = $('tab-panel');
@@ -1367,15 +1369,29 @@ function etapaDe(m){
 }
 /* URL de la Consulta para Padres de ESTA instalación. Se usa en la bienvenida de Matriculados. */
 const URL_PADRES = 'https://maravillasinfantiles.com/padres';
+/* Documentos requeridos según el grado SOLICITADO en la matrícula (lista oficial por nivel). */
+function matriDocsReqDeGrado(grado){
+  const nivel = nivelPorNombreCurso(grado);
+  return nivel === 'PRIMARIA' ? DOCS_REQ_PRIMARIA : (nivel === 'PREESCOLAR' ? DOCS_REQ_PREESCOLAR : []);
+}
+function matriNivelTxtDeGrado(grado){
+  const nivel = nivelPorNombreCurso(grado);
+  return nivel === 'PREESCOLAR' ? 'Preescolar' : (nivel === 'PRIMARIA' ? 'Básica Primaria' : '');
+}
 function matriAvisoTexto(etapa, nombreEst, grado, inst){
   const nom = nombreEst || 'su hijo(a)';
   const gTxt = grado ? ('el grado ' + grado) : 'el grado solicitado';
   const asunto = 'Proceso de admisión 2027 de ' + nom + ' — ' + inst;
   let cuerpo, wa;
   if(etapa === 'PROCESO'){
-    cuerpo = ['Hola, familia de ' + nom + ':', '',
-      'El proceso de admisión de ' + nom + ' para ' + gTxt + ' (año 2027) está en revisión por parte del colegio. Les avisaremos en cuanto haya novedades.', '',
-      'Cordialmente,', inst].join('\r\n');
+    const reqT = matriDocsReqDeGrado(grado);
+    const linT = ['Hola, familia de ' + nom + ':', '',
+      'El proceso de admisión de ' + nom + ' para ' + gTxt + ' (año 2027) está en revisión por parte del colegio.', '',
+      'Para avanzar en el proceso, por favor suban los documentos requeridos en la plataforma para padres:', URL_PADRES,
+      'Ingresan con el número de documento del estudiante, sin contraseña.', ''];
+    if(reqT.length){ linT.push('Documentos requeridos' + (matriNivelTxtDeGrado(grado) ? ' (' + matriNivelTxtDeGrado(grado) + ')' : '') + ':'); reqT.forEach(d => linT.push('• ' + d)); linT.push(''); }
+    linT.push('Les avisaremos en cuanto haya novedades.', '', 'Cordialmente,', inst);
+    cuerpo = linT.join('\r\n');
     wa = 'Hola 👋 Les escribimos de ' + inst + ': el proceso de admisión de ' + nom + (grado ? ' (' + grado + ' 2027)' : '') + ' está en revisión. Pronto les tendremos novedades.';
   } else if(etapa === 'ADMITIDA'){
     cuerpo = ['Hola, familia de ' + nom + ':', '',
@@ -1412,7 +1428,10 @@ function matriAvisoHTML(etapa, nombreEst, grado, inst){
   let titulo, parrafos, boton;
   if(etapa === 'PROCESO'){
     titulo = 'El proceso está en revisión';
-    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', 'El proceso de admisión de <strong>' + nom + '</strong> para <strong>' + gTxt + '</strong> (año 2027) está en revisión por parte del colegio.', 'Les avisaremos en cuanto haya novedades.'];
+    const reqH = matriDocsReqDeGrado(grado);
+    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', 'El proceso de admisión de <strong>' + nom + '</strong> para <strong>' + gTxt + '</strong> (año 2027) está en revisión por parte del colegio.',
+      'Para avanzar en el proceso, suban los <strong>documentos requeridos</strong> en la plataforma para padres (con el botón de abajo): allí verán la lista y podrán enviar cada documento.' + (reqH.length ? '<br><br><strong>Documentos requeridos' + (matriNivelTxtDeGrado(grado) ? ' (' + esc(matriNivelTxtDeGrado(grado)) + ')' : '') + ':</strong><br>' + reqH.map(d => '• ' + esc(d)).join('<br>') : ''),
+      'Les avisaremos en cuanto haya novedades.'];
     boton = { texto: 'Ver el estado del proceso', url: URL_PADRES };
   } else if(etapa === 'ADMITIDA'){
     titulo = '¡Buenas noticias: fue admitido(a)!';
@@ -1479,6 +1498,7 @@ function matriTarjetaHTML(m){
       '<span class="sem">' + (esAct ? '🔄 Actualización' : '🆕 Matrícula nueva') + '</span>' +
       (etapa === 'IMPORTADA' ? '<span class="sem v">' + (esAct ? 'Ficha actualizada' : 'Estudiante creado') + '</span>' : '') +
       (avisoEtapaOk ? '<span class="sem v">📧 Aviso de etapa enviado</span>' : '') +
+      ((typeof matriDocsPanelVisible === 'function' && matriDocsPanelVisible(m) && matriDocsPadresDe(m).length) ? '<span class="sem b">📥 ' + matriDocsPadresDe(m).length + ' envío(s) de documentos por revisar</span>' : '') +
       '<span class="ayuda">' + matriFecha(m.ts) + '</span>' +
     '</div>' +
     '<div class="ayuda" style="margin:4px 0 8px">Acudiente: <strong>' + esc(a.nombre || '—') + '</strong> · CC ' + esc(a.cc || '—') + '<br>Tel. ' + esc(a.telefono || '—') + '</div>' +
@@ -1524,11 +1544,13 @@ function matriTarjetaHTML(m){
         matriFilaHTML('Discapacidad (SIMAT)', e.simDiscapacidad) + matriFilaHTML('Tipo de discapacidad', e.simTipoDiscapacidad) +
         matriFilaHTML('Víctima del conflicto', e.simVictima) + matriFilaHTML('Capacidades excepcionales', e.simCapacidades) +
       '</div>';
+      h += matriDocsPanelHTML(m);
     }
   return h + '</div>';
 }
 function renderMatriculas(){
   iniciarMatriculas();
+  if(typeof iniciarCertSolicitudes === 'function') iniciarCertSolicitudes();
   sincronizarConsulta2027(false);
   sincronizarProceso2027();
   const lista = matriLista();
@@ -1555,6 +1577,27 @@ function renderMatriculas(){
    que la familia lo siga desde la Consulta para Padres con el documento del estudiante.
    Sin documentos, teléfonos ni correos en el contenido: la clave es el hash, igual que consulta2027.
    Es de mejor esfuerzo: si falla, NUNCA debe romper el trabajo de secretaría. */
+/* Documentos del ASPIRANTE (matrícula que aún no es estudiante): la lista requerida sale del
+   grado solicitado y los archivos ya guardados por el colegio viven en m.documentos. */
+function matriDocsRequeridosDe(m){
+  const lista = matriDocsReqDeGrado(m.grado || '');
+  const docs = Array.isArray(m.documentos) ? m.documentos : [];
+  return lista.map(nombre => ({ nombre: nombre, ok: docs.some(d => d.categoria === nombre) }));
+}
+/* Estados de los envíos de documentos del aspirante para publicar a los padres (SOLO estados y
+   nombres de archivo, sin contenido): los del buzón en vivo + los resueltos guardados en m.docsEnvios. */
+function matriEnviosDocsDe(m){
+  const docN = normDocMatricula((m.estudiante || {}).docNumero || '');
+  const porTs = {};
+  if(docN){
+    Object.keys(CERTSOL || {}).forEach(id => {
+      const s = CERTSOL[id];
+      if(s && s.tipoSolicitud === 'DOCUMENTO' && normDocMatricula(s.docNumero || '') === docN) porTs[s.ts || 0] = { ts: s.ts || 0, estado: s.estado || 'PENDIENTE', categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') };
+    });
+  }
+  (Array.isArray(m.docsEnvios) ? m.docsEnvios : []).forEach(x => { if(x && (x.ts || 0) && !porTs[x.ts]) porTs[x.ts] = { ts: x.ts || 0, estado: x.estado || 'PENDIENTE', categoria: x.categoria || 'Documentos', archivos: Array.isArray(x.archivos) ? x.archivos : [] }; });
+  return Object.keys(porTs).map(k => porTs[k]).sort((a, b) => a.ts - b.ts);
+}
 async function sincronizarProceso2027(){
   if(!FB_DB) return;
   if((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)) return;
@@ -1578,6 +1621,8 @@ async function sincronizarProceso2027(){
         grado: m.grado || '',
         tramite: m.tramite || 'NUEVA',
         etapa: etapaDe(m),
+        docsRequeridos: matriDocsRequeridosDe(m),
+        enviosDocs: matriEnviosDocsDe(m),
         ts: m.ts || 0,
         actualizado: Date.now()
       });
@@ -2120,6 +2165,54 @@ function matriEliminar(id){
     .then(() => { const docM = normDocMatricula((m.estudiante || {}).docNumero || ''); if(docM){ sha256Hex(docM).then(clave => FB_DB.ref('proceso2027/' + clave).remove()).catch(() => {}); } registrarCambio('Respuesta de matrícula 2027 eliminada (' + (((m.estudiante || {}).apellidos) || '') + ')'); guardar(); })
     .catch(err => alert('No se pudo eliminar: ' + err.message));
 }
+/* ---- Documentos del aspirante enviados por el acudiente (buzón, flujo separado del de fichas) ---- */
+function matriDocsPadresDe(m){
+  const docN = normDocMatricula((m.estudiante || {}).docNumero || ''); if(!docN) return [];
+  return Object.keys(CERTSOL || {}).map(id => Object.assign({ id: id }, CERTSOL[id]))
+    .filter(s => s.tipoSolicitud === 'DOCUMENTO' && s.estado === 'PENDIENTE' && normDocMatricula(s.docNumero || '') === docN)
+    .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+}
+function matriDocsPanelVisible(m){ return !!m && m.tramite !== 'ACTUALIZACION' && etapaDe(m) !== 'IMPORTADA'; }
+function matriDocsPanelHTML(m){
+  if(!matriDocsPanelVisible(m)) return '';
+  const envios = matriDocsPadresDe(m);
+  if(!envios.length) return '';
+  const edita = puedeEditarFicha();
+  return '<div style="background:#fff7e6;border:1px solid #f0d9a0;border-radius:10px;padding:10px 12px;margin-top:12px"><strong>📥 Documentos que el acudiente envió desde su consulta (' + envios.length + ' envío(s) por revisar):</strong>' + envios.map(s =>
+    '<div style="margin-top:8px"><div>' + esc(s.categoria || 'Documentos') + ' · ' + new Date(s.ts || Date.now()).toLocaleDateString('es-CO') + ' · ' + (s.adjuntos || []).length + ' archivo(s): ' + (s.adjuntos || []).map((a, i) => '<a href="#" onclick="fichaVerDocPadre(\'' + s.id + '\',' + i + ');return false">' + esc(a.nombre || ('archivo ' + (i + 1))) + '</a>').join(', ') + '</div>'
+    + (edita ? '<div style="margin-top:4px"><button class="btn mini" onclick="matriGuardarDocsPadres(\'' + m.id + '\',\'' + s.id + '\')">Guardar en la matrícula</button> <button class="btn btn-sec mini" onclick="matriDescartarDocsPadres(\'' + m.id + '\',\'' + s.id + '\')">Descartar envío</button></div>' : '<p class="ayuda" style="margin:2px 0 0">Tu perfil puede verlos; guardarlos lo hace un perfil con permiso de edición.</p>')
+    + '</div>').join('') + '</div>';
+}
+async function matriGuardarDocsPadres(mid, solId){
+  if(!puedeEditarFicha()){ alert('Tu perfil no puede guardar documentos.'); return; }
+  const m = MATRI[mid]; const s = CERTSOL[solId]; if(!m || !s) return;
+  if(!Array.isArray(m.documentos)) m.documentos = [];
+  (s.adjuntos || []).forEach(a => { if(m.documentos.length < DOC_MAX_N) m.documentos.push({ id: 'doc' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36), nombre: a.nombre || 'documento', tipo: a.tipo || '', b64: a.b64 || '', categoria: s.categoria || 'Otro', fecha: hoyISO(), por: 'Acudiente', origen: 'Padres' }); });
+  if(!Array.isArray(m.docsEnvios)) m.docsEnvios = [];
+  const entrada = { ts: s.ts || Date.now(), estado: 'ATENDIDA', categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') };
+  m.docsEnvios = m.docsEnvios.filter(x => (x.ts || 0) !== entrada.ts); m.docsEnvios.push(entrada);
+  try{ await FB_DB.ref('matriculas2027/' + mid).update({ documentos: m.documentos, docsEnvios: m.docsEnvios }); }catch(err){}
+  try{ await FB_DB.ref('solicitudesCert/' + solId).update({ estado: 'ATENDIDA', por: (perfilActual() || {}).nombre || '', tsResolucion: Date.now() }); }catch(err){}
+  if(CERTSOL[solId]) CERTSOL[solId].estado = 'ATENDIDA';
+  sincronizarProceso2027();
+  renderMatriculas();
+  alert('Documentos guardados en la matrícula. Cuando crees el estudiante, pasarán a su ficha.');
+}
+async function matriDescartarDocsPadres(mid, solId){
+  if(!puedeEditarFicha()){ alert('Tu perfil no puede descartar envíos.'); return; }
+  if(!confirm('¿Descartar este envío del acudiente? Los archivos no se guardarán.')) return;
+  const m = MATRI[mid]; const s = CERTSOL[solId];
+  try{ await FB_DB.ref('solicitudesCert/' + solId).update({ estado: 'DESCARTADO', por: (perfilActual() || {}).nombre || '', tsResolucion: Date.now() }); }catch(err){}
+  if(CERTSOL[solId]) CERTSOL[solId].estado = 'DESCARTADO';
+  if(m && s){
+    if(!Array.isArray(m.docsEnvios)) m.docsEnvios = [];
+    const entrada = { ts: s.ts || Date.now(), estado: 'DESCARTADO', categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') };
+    m.docsEnvios = m.docsEnvios.filter(x => (x.ts || 0) !== entrada.ts); m.docsEnvios.push(entrada);
+    try{ await FB_DB.ref('matriculas2027/' + mid).update({ docsEnvios: m.docsEnvios }); }catch(err){}
+  }
+  sincronizarProceso2027();
+  renderMatriculas();
+}
 function matriCrearEstudiante(id){
   if(MODO_ARCHIVO || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('Estás en una vista de solo lectura (año anterior o simulación de perfil). Vuelve a tu vista normal para hacer cambios.'); return; }
   const m = MATRI[id]; if(!m) return;
@@ -2134,7 +2227,7 @@ function matriCrearEstudiante(id){
   }
   const nombre = ((e.apellidos || '') + ', ' + (e.nombres || '')).toUpperCase();
   if(!confirm('Crear el estudiante ' + nombre + ' en el curso ' + curso.nombre + ' con los datos de este formulario?')) return;
-  DB.estudiantes.push({ id: uid(), nombre, cursoId: curso.id, datos: {
+  DB.estudiantes.push({ id: uid(), nombre, cursoId: curso.id, documentos: (Array.isArray(m.documentos) ? m.documentos.map(d => Object.assign({}, d)) : []), datos: {
     docTipo: e.docTipo || 'RC', docNumero: e.docNumero || '', fechaNacimiento: e.fechaNacimiento || '', genero: '',
     direccion: e.direccion || '', acudiente: a.nombre || '', telAcudiente: a.telefono || '',
     correoAcudiente: e.correo || '', docTipoAcudiente: 'CC', docNumeroAcudiente: a.cc || '',
