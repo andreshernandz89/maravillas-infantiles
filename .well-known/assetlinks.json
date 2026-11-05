@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.maravillasinfantiles.padres",
+      "sha256_cert_fingerprints": [
+        "78:08:03:79:8C:7C:7C:88:EC:73:F2:59:77:34:83:36:94:52:22:9E:12:55:60:4C:97:C2:83:90:65:1F:9D:8F"
+      ]
+    }
+  }
+]
