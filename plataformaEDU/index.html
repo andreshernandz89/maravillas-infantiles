@@ -1483,7 +1483,7 @@ function matriTarjetaHTML(m){
   const iniciales = ((((e.nombres || ' ').trim().charAt(0)) + ((e.apellidos || ' ').trim().charAt(0))).toUpperCase()) || '•';
   const docTxt = (((e.docTipo || '') + ' ' + (e.docNumero || '')).trim()) || 'Sin documento';
   const avisoEtapaOk = !!((m.avisoCorreoEtapa && m.avisoCorreoEtapa.etapa === etapa) || (etapa === 'NUEVA' && m.avisoCorreoInicial));
-  let h = '<div class="pipe-card">' +
+  let h = '<div class="pipe-card" id="matri-card-' + m.id + '">' +
     '<div style="display:flex;gap:10px;align-items:flex-start">' +
       '<div class="pipe-avatar">' + esc(iniciales) + '</div>' +
       '<div style="flex:1;min-width:0">' +
@@ -4240,8 +4240,10 @@ function renderPanelNotificaciones(){
       items.push({ ts: x.ts || 0, icono: '💳', tab: 'pagos',
         texto: '<strong>Pago reportado por un padre</strong> · ' + esc(x.estudiante || '') + (x.grado ? ' (' + esc(x.grado) + ')' : '') + ' · ' + fmtPesos(x.valor || 0) + (x.meses ? ' · ' + esc(x.meses) : '') });
     } else if(x.tipoSolicitud === 'DOCUMENTO'){
-      items.push({ ts: x.ts || 0, icono: '📁', tab: 'cursos',
-        texto: '<strong>Documentos enviados por un padre</strong> · ' + esc(x.estudiante || '') + (x.grado ? ' (' + esc(x.grado) + ')' : '') + ' · ' + ((x.adjuntos || []).length) + ' archivo(s): abre su perfil en Cursos y estudiantes para guardarlos' });
+      const estD = (DB.estudiantes || []).find(e => docsPadresDe(e).some(s => s.id === id));
+      const midD = !estD ? Object.keys(MATRI || {}).find(k => matriDocsPadresDe(MATRI[k]).some(s => s.id === id)) : '';
+      items.push({ ts: x.ts || 0, icono: '📁', tab: estD ? 'cursos' : 'matriculas', solDoc: id, destinoDoc: estD ? 'ficha' : (midD ? 'matri' : ''),
+        texto: '<strong>Documentos enviados por un padre</strong> · ' + esc(x.estudiante || '') + (x.grado ? ' (' + esc(x.grado) + ')' : '') + ' · ' + ((x.adjuntos || []).length) + ' archivo(s)' + (estD ? ': pulsa «Ver» para abrir su perfil y guardarlos' : (midD ? ': pulsa «Ver» para abrir su matrícula y guardarlos' : ' · no coincide con ningún estudiante ni aspirante registrado: puedes descartar este aviso (el registro no se borra)')) });
     } else if(x.tipoSolicitud !== 'JUSTIFICACION'){
       items.push({ ts: x.ts || 0, icono: '📜', tab: 'certpadres',
         texto: '<strong>Solicitud de certificado</strong> · ' + esc(x.estudiante || '') + (x.grado ? ' (' + esc(x.grado) + ')' : '') + (x.tipo ? ' · ' + esc(x.tipo) : '') });
@@ -4262,12 +4264,45 @@ function renderPanelNotificaciones(){
     const f = it.ts ? new Date(it.ts).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
     return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-top:1px solid #eef1f6">'
       + '<div style="min-width:0">' + it.icono + ' ' + it.texto + (f ? '<div style="font-size:12px;color:#7a8699;margin-top:1px">' + esc(f) + '</div>' : '') + '</div>'
-      + '<button class="btn mini" style="flex:none" onclick="verTab(\'' + it.tab + '\')">Ver</button></div>';
+      + (it.solDoc ? (it.destinoDoc
+          ? '<button class="btn mini" style="flex:none" onclick="verNotifDocumento(\'' + it.solDoc + '\')">Ver</button>'
+          : '<button class="btn btn-sec mini" style="flex:none" onclick="notifDescartarDocumento(\'' + it.solDoc + '\')">Descartar</button>')
+        : '<button class="btn mini" style="flex:none" onclick="verTab(\'' + it.tab + '\')">Ver</button>') + '</div>';
   }).join('');
   cont.innerHTML = '<div style="background:#ffffff;border:1.5px solid #c9bffa;border-radius:12px;padding:12px 14px;margin:12px 0;box-shadow:var(--sombra)">'
     + '<strong>🔔 Notificaciones</strong> <span style="background:#6a1b9a;color:#fff;border-radius:12px;padding:1px 8px;font-size:12px;font-weight:bold">' + items.length + '</span>'
     + (items.length > 8 ? '<span style="font-size:12px;color:#7a8699"> · las 8 más recientes</span>' : '')
     + filas + '</div>';
+}
+function verNotifDocumento(solId){
+  const s = CERTSOL[solId]; if(!s) return;
+  const est = (DB.estudiantes || []).find(e => docsPadresDe(e).some(x => x.id === solId));
+  if(est){
+    verTab('cursos');
+    const sel = $('sel-curso'); if(sel) sel.value = est.cursoId;
+    renderEstudiantes();
+    verFicha(est.id);
+    setTimeout(() => { const d = $('ficha-docs-padres') || $('ficha-docs-lista'); if(d) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 400);
+    return;
+  }
+  const mid = Object.keys(MATRI || {}).find(k => matriDocsPadresDe(MATRI[k]).some(x => x.id === solId));
+  if(mid){
+    verTab('matriculas');
+    MATRI_SEL = mid;
+    renderMatriculas();
+    setTimeout(() => { const el = document.getElementById('matri-card-' + mid); if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 150);
+    return;
+  }
+  alert('Este envío de documentos no coincide con ningún estudiante ni aspirante registrado (puede ser un registro de prueba), así que no tiene perfil para abrir. En el panel verás el botón «Descartar» para quitar este aviso sin borrar el registro.');
+  renderPanelNotificaciones();
+}
+async function notifDescartarDocumento(solId){
+  const s = CERTSOL[solId]; if(!s) return;
+  if(!confirm('¿Descartar este envío de documentos de «' + (s.estudiante || 'sin nombre') + '»? Quedará marcado como DESCARTADO y dejará de aparecer en las notificaciones. El registro NO se borra.')) return;
+  try{ await FB_DB.ref('solicitudesCert/' + solId).update({ estado: 'DESCARTADO', por: (perfilActual() || {}).nombre || '', tsResolucion: Date.now() }); }
+  catch(err){ alert('No se pudo descartar el envío: ' + (err && err.message ? err.message : err)); return; }
+  if(CERTSOL[solId]) CERTSOL[solId].estado = 'DESCARTADO';
+  renderPanelNotificaciones();
 }
 function renderPanelAvisosPadres(){ /* Reemplazada por la tarjeta unificada de Notificaciones (renderPanelNotificaciones). */ }
 function renderPanelJustif(){
