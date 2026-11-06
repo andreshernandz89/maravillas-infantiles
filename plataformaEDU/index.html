@@ -3574,7 +3574,7 @@ function pagosDB(){ if(!DB.pagos || typeof DB.pagos !== 'object') DB.pagos = { t
 function tarifaDe(cursoId){ const P = pagosDB(); if(P.tarifas[cursoId]) return P.tarifas[cursoId]; const c = cursoDe(cursoId); const TAB = (typeof TARIFAS_POR_ANIO !== 'undefined' && TARIFAS_POR_ANIO[String(anioDe(DB))]) || TARIFAS_2026; const t = c ? TAB[normNombre(c.nombre)] : null; return t || { matricula:0, pension:0 }; }
 function regVista(estId){ return pagosDB().reg[estId] || { matricula:null, meses:{} }; }
 function regDe(estId){ const P = pagosDB(); if(!P.reg[estId]) P.reg[estId] = { matricula:null, meses:{} }; if(!P.reg[estId].meses) P.reg[estId].meses = {}; return P.reg[estId]; }
-function mesesPendientes(estId){ const r = regVista(estId); const e = DB.estudiantes.find(x=>x.id===estId); const tope = mesTopeRetiro(e); let mesActual = new Date().getMonth() + 1; if(tope != null) mesActual = Math.min(mesActual, tope); return MESES_PENSION.filter(([mm]) => Number(mm) <= mesActual && !(r.meses && r.meses[mm] && r.meses[mm].ok)); }
+function mesesPendientes(estId){ const r = regVista(estId); const e = DB.estudiantes.find(x=>x.id===estId); const tope = mesTopeRetiro(e); let mesActual = new Date().getMonth() + 1; if(new Date().getDate() <= 10) mesActual -= 1; if(tope != null) mesActual = Math.min(mesActual, tope); return MESES_PENSION.filter(([mm]) => Number(mm) <= mesActual && !(r.meses && r.meses[mm] && r.meses[mm].ok)); }
 function fmtPesos(n){ return n ? '$' + Number(n).toLocaleString('es-CO') : '—'; }
 
 /* ================= INTEGRACIÓN ALEGRA: cola de facturación ================= */
