@@ -805,7 +805,7 @@ button.btn:hover{ background:var(--azul-osc); }
         <div class="fila">
           <div><label>Estudiante</label><select id="extra-estudiante" onchange="renderExtra()"></select></div>
           <div><label>Comprensión lectora</label>
-            <select id="extra-comp" onchange="guardarExtra()"><option value="">—</option><option value="DS">DS (Superior)</option><option value="DA">DA (Alto)</option><option value="DB">DB (Bajo)</option></select></div>
+            <select id="extra-comp" onchange="guardarExtra()"><option value="">—</option><option value="DS">DS (Superior)</option><option value="DA">DA (Alto)</option><option value="DB">DB (Básico)</option></select></div>
           <div><label>¿Reforzar caligrafía?</label>
             <select id="extra-calig" onchange="guardarExtra()"><option value="">—</option><option value="SI">SÍ</option><option value="NO">NO</option></select></div>
           <div style="width:130px"><label>Inasist. justificadas (h)</label><input type="number" id="extra-inasj" min="0" onchange="guardarExtra()"></div>
@@ -3219,9 +3219,8 @@ function renderExtra(){
   const cont = $('extra-disciplina');
   if(!estId){ cont.innerHTML = '<p class="ayuda">Este curso aún no tiene estudiantes.</p>'; $('extra-obs').value=''; return; }
   const x = extraDe(estId, periodo);
-  const estSel = (DB.estudiantes || []).find(s=>s.id===estId);
   const opDB = document.querySelector('#extra-comp option[value="DB"]');
-  if(opDB) opDB.textContent = (estSel && esPreescolar(cursoDe(estSel.cursoId))) ? 'DB (Básico)' : 'DB (Bajo)';
+  if(opDB) opDB.textContent = 'DB (Básico)';
   $('extra-comp').value = x.comp||''; $('extra-calig').value = x.caligrafia||'';
   $('extra-inasj').value = x.inasJ||''; $('extra-inasn').value = x.inasN||'';
   $('extra-obs').value = x.obs||'';
@@ -4816,7 +4815,7 @@ async function generarObservacionIA(btn){
   try{
     const res = resumenEstudianteIA(e, periodo);
     const x = extraDe(estId, periodo);
-    const compTxt = { DS: 'superior', DA: 'alto', DB: esPreescolar(cursoDe(e.cursoId)) ? 'básico' : 'bajo' }[x.comp] || '';
+    const compTxt = { DS: 'superior', DA: 'alto', DB: 'básico' }[x.comp] || '';
     const d = await llamarPuenteIA(Object.assign({ accion: 'observacion', periodo }, res, { comprension: compTxt, caligrafia: x.caligrafia || '' }));
     $('extra-obs').value = d.observacion || '';
     guardarExtra();
