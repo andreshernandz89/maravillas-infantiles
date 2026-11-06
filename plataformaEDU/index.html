@@ -3219,6 +3219,9 @@ function renderExtra(){
   const cont = $('extra-disciplina');
   if(!estId){ cont.innerHTML = '<p class="ayuda">Este curso aún no tiene estudiantes.</p>'; $('extra-obs').value=''; return; }
   const x = extraDe(estId, periodo);
+  const estSel = (DB.estudiantes || []).find(s=>s.id===estId);
+  const opDB = document.querySelector('#extra-comp option[value="DB"]');
+  if(opDB) opDB.textContent = (estSel && esPreescolar(cursoDe(estSel.cursoId))) ? 'DB (Básico)' : 'DB (Bajo)';
   $('extra-comp').value = x.comp||''; $('extra-calig').value = x.caligrafia||'';
   $('extra-inasj').value = x.inasJ||''; $('extra-inasn').value = x.inasN||'';
   $('extra-obs').value = x.obs||'';
@@ -3280,6 +3283,7 @@ function marcaX(valor, col){ return valor===col ? 'X' : ''; }
 function hojaBoletin(e, periodo){
   const curso = cursoDe(e.cursoId); if(!curso) return '';
   const pre = esPreescolar(curso);
+  const esParvulo = /PÁRVUL|PARVUL/i.test(curso.nombre || '');
   const rank = puestos(e.cursoId, periodo);
   const prom = promedioPeriodo(e.id, periodo);
   const x = extraDe(e.id, periodo);
@@ -3294,9 +3298,9 @@ function hojaBoletin(e, periodo){
     <div class="titulo">Informe del ${ROMANOS[String(periodo)]} periodo</div>
     <div class="seccion">Aspectos del plan de formación</div>
     <table><thead><tr><th style="text-align:left;width:190px">ASIGNATURA</th><th class="c" style="width:44px">IH</th><th class="c" style="width:92px">DESEMPEÑO</th><th style="text-align:left">FORTALEZA / DEBILIDADES / ESTRATEGIAS</th></tr></thead><tbody>${filas}</tbody></table>
-    <table style="margin-top:10px"><thead><tr><th style="text-align:left">COMPRENSIÓN LECTORA</th><th class="c" style="width:44px">DS</th><th class="c" style="width:44px">DA</th><th class="c" style="width:44px">DB</th></tr></thead>
+    ${esParvulo ? '' : `<table style="margin-top:10px"><thead><tr><th style="text-align:left">COMPRENSIÓN LECTORA</th><th class="c" style="width:44px">DS</th><th class="c" style="width:44px">DA</th><th class="c" style="width:44px">DB</th></tr></thead>
     <tbody><tr><td class="logros">${esc(TEXTO_COMP_LECTORA)}</td><td class="x">${marcaX(x.comp,'DS')}</td><td class="x">${marcaX(x.comp,'DA')}</td><td class="x">${marcaX(x.comp,'DB')}</td></tr>
-    <tr><td>${esc(TEXTO_CALIGRAFIA)}<br>Reforzar Caligrafía: &nbsp;SI ${x.caligrafia==='SI'?'✗':''} &nbsp;&nbsp; NO ${x.caligrafia==='NO'?'✗':''}</td><td></td><td></td><td></td></tr></tbody></table>
+    <tr><td>${esc(TEXTO_CALIGRAFIA)}<br>Reforzar Caligrafía: &nbsp;SI ${x.caligrafia==='SI'?'✗':''} &nbsp;&nbsp; NO ${x.caligrafia==='NO'?'✗':''}</td><td></td><td></td><td></td></tr></tbody></table>`}
     ${pre ? '' : tablaEscala()}
     <table style="margin-top:10px"><thead><tr><th style="text-align:left">DISCIPLINA Y ACTITUDES</th><th class="c" style="width:44px">DS</th><th class="c" style="width:44px">DA</th><th class="c" style="width:44px">DB</th></tr></thead><tbody>${disc}</tbody></table>
     <p class="inasis">INASISTENCIAS: &nbsp; JUSTIFICADAS: ${esc(x.inasJ||'')} HORAS &nbsp;&nbsp;&nbsp; NO JUSTIFICADAS: ${esc(x.inasN||'')} HORAS</p>
@@ -4812,7 +4816,7 @@ async function generarObservacionIA(btn){
   try{
     const res = resumenEstudianteIA(e, periodo);
     const x = extraDe(estId, periodo);
-    const compTxt = { DS: 'superior', DA: 'alto', DB: 'bajo' }[x.comp] || '';
+    const compTxt = { DS: 'superior', DA: 'alto', DB: esPreescolar(cursoDe(e.cursoId)) ? 'básico' : 'bajo' }[x.comp] || '';
     const d = await llamarPuenteIA(Object.assign({ accion: 'observacion', periodo }, res, { comprension: compTxt, caligrafia: x.caligrafia || '' }));
     $('extra-obs').value = d.observacion || '';
     guardarExtra();
@@ -5129,7 +5133,14 @@ async function agregarPerfil(){
   let sec = null;
   try{
     sec = firebase.initializeApp(FB_CONFIG, 'sec' + Date.now());
-    const cred = await sec.auth().createUserWithEmailAndPassword(correo, pin);
+    let cred = null, enlazada = false;
+    try{ cred = await sec.auth().createUserWithEmailAndPassword(correo, pin); }
+    catch(eCrear){
+      if(eCrear && eCrear.code === 'auth/email-already-in-use'){
+        cred = await sec.auth().signInWithEmailAndPassword(correo, pin);
+        enlazada = true;
+      } else throw eCrear;
+    }
     const nuevoUid = cred.user.uid;
     try{ await sec.auth().signOut(); }catch(e){}
     try{ sec.delete(); }catch(e){}
@@ -5137,11 +5148,11 @@ async function agregarPerfil(){
     DB.perfiles.push({ id: nuevoPid, nombre: n, usuario: usu, email: correo, uid: nuevoUid, rol: rol, rolTxt: textos[rol] || 'Docente', cursoNombre: esDoc ? ($('nuevo-perfil-curso').value || '') : '', gradosExtra: [], info: { cc:'', direccion:'', telefono:'', correo: correoIngresado, nacimiento: nacimientoIngresado }, modulos: esDoc ? ['cursos','notas','boletines','asistencia','planeador','observador','tareas'] : MODULOS_TODOS.slice() });
     try{ await FB_DB.ref('clavesVisibles/' + nuevoPid).set(pin); await FB_DB.ref('uidPorPerfil/' + nuevoPid).set(nuevoUid); await FB_DB.ref('loginMap/' + usu).set(correo); CLAVES_VIS[nuevoPid] = pin; }catch(e){ console.error(e); }
     $('nuevo-perfil-nombre').value=''; $('nuevo-perfil-pin').value=''; $('nuevo-perfil-usuario').value=''; $('nuevo-perfil-correo').value=''; $('nuevo-perfil-nacimiento').value=''; $('nuevo-perfil-rol').value='docente';
-    guardar(); renderPerfiles(); alert('Perfil creado: ' + n + ' (' + (textos[rol] || 'Docente') + '). Entra con el usuario «' + usu + '» y la contraseña temporal que pusiste; la persona la puede cambiar en «Mi perfil».' + (correoIngresado ? '' : ' Sin correo registrado: cuando la persona complete su correo en «Mi perfil» al primer ingreso, se le habilita el restablecimiento por correo.'));
+    guardar(); renderPerfiles(); alert('Perfil creado: ' + n + ' (' + (textos[rol] || 'Docente') + '). Entra con el usuario «' + usu + '» y la contraseña temporal que pusiste; la persona la puede cambiar en «Mi perfil».' + (correoIngresado ? '' : ' Sin correo registrado: cuando la persona complete su correo en «Mi perfil» al primer ingreso, se le habilita el restablecimiento por correo.') + (enlazada ? ' Se enlazó la cuenta de ingreso que ya existía para este usuario.' : ''));
   }catch(err){
     console.error(err);
     if(sec){ try{ await sec.auth().signOut(); }catch(e){} try{ sec.delete(); }catch(e){} }
-    alert(err && err.code==='auth/email-already-in-use' ? 'Ese correo ya tiene una cuenta creada. Avísame para enlazarla a un perfil.' : 'No se pudo crear la cuenta. Inténtalo de nuevo.');
+    alert(err && (err.code==='auth/wrong-password' || err.code==='auth/invalid-credential') ? 'La cuenta de ingreso de «' + usu + '» quedó de un perfil anterior y su contraseña no coincide con la contraseña temporal que escribiste. Avísame para eliminarla desde Firebase y vuelve a intentarlo.' : (err && err.code==='auth/email-already-in-use' ? 'Ese correo ya tiene una cuenta creada. Avísame para enlazarla a un perfil.' : 'No se pudo crear la cuenta. Inténtalo de nuevo.'));
   }
 }
 function eliminarPerfil(id){ if((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('En la vista de solo lectura (año archivado o simulación de perfil) no se pueden eliminar perfiles.'); return; } const p = perfiles().find(x=>x.id===id); if(!p) return; if(!confirm('¿Eliminar el perfil de ' + p.nombre + '?')) return; if(PERFILES_BASE.some(b=>b.id===id)){ if(!Array.isArray(DB.perfilesEliminados)) DB.perfilesEliminados = []; if(!DB.perfilesEliminados.includes(id)) DB.perfilesEliminados.push(id); } DB.perfiles = DB.perfiles.filter(x=>x.id!==id); delete CLAVES_VIS[id]; if(FB_DB){ FB_DB.ref('clavesVisibles/' + id).remove().catch(()=>{}); FB_DB.ref('uidPorPerfil/' + id).remove().catch(()=>{}); if(p.usuario) FB_DB.ref('loginMap/' + normNombre(p.usuario).toLowerCase().replace(/\s+/g,'')).remove().catch(()=>{}); } guardar(); renderPerfiles(); }
