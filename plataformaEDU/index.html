@@ -176,7 +176,7 @@
     body *{ visibility:hidden; }
     #print-area, #print-area *{ visibility:visible; }
     #print-area{ display:block; position:absolute; inset:0; padding:0; }
-    .hoja{ border:none; max-width:none; margin:0; page-break-after:always; }
+    .hoja{ border:none; max-width:none; margin:0; page-break-after:always; page-break-inside:avoid; break-inside:avoid; }
     .hoja:last-child{ page-break-after:auto; }
   }
 
@@ -3998,7 +3998,28 @@ function imprimir(cual){
   const src = cual==='boletines' ? $('boletines-out').innerHTML : $('final-out').innerHTML;
   if(!src.trim()){ alert('No hay nada para imprimir todavía.'); return; }
   $('print-area').innerHTML = src;
+  ajustarHojasAUnaPagina();
   window.print();
+}
+function ajustarHojasAUnaPagina(){
+  // Cada boletín/informe debe caber COMPLETO en una sola hoja Carta:
+  // se mide la altura natural de cada hoja (en un clon oculto al ancho real
+  // de la página) y si se pasa, se le aplica el zoom exacto para que quepa.
+  const area = $('print-area'); if (!area) return;
+  const hojas = Array.from(area.querySelectorAll('.hoja'));
+  if (!hojas.length) return;
+  const med = document.createElement('div');
+  med.style.cssText = 'position:absolute;left:-99999px;top:0;width:816px;visibility:hidden;';
+  med.innerHTML = area.innerHTML;
+  document.body.appendChild(med);
+  const ALTO_UTIL = 1050; // Carta sin márgenes: 11in \u2248 1056px; se dejan 6px de seguridad
+  const zooms = Array.from(med.querySelectorAll('.hoja')).map(h => {
+    h.style.maxWidth = 'none'; h.style.margin = '0';
+    const alto = h.offsetHeight || 0;
+    return alto > ALTO_UTIL ? (ALTO_UTIL / alto) : 1;
+  });
+  document.body.removeChild(med);
+  hojas.forEach((h, i) => { if (zooms[i] && zooms[i] < 1) h.style.zoom = zooms[i].toFixed(3); });
 }
 
 /* ================= DOCUMENTOS (CONTROL POR AÑO) ================= */
