@@ -2070,15 +2070,28 @@ function usuarioPadresBase(nombreCompleto){
   const ape = (partes[0] || '').trim().split(/\s+/)[0] || '';
   return normUsuarioPadres((nom.charAt(0) || '') + ape);
 }
-function usuarioPadresDe(e){
-  if (!e || !e.datos || !e.datos.docNumero) return '';
-  const usados = {}; let res = '';
-  (DB.estudiantes || []).filter(x => !estaRetirado(x) && x.datos && x.datos.docNumero).forEach(x => {
-    let base = usuarioPadresBase(x.nombre); if (!base) base = 'est' + String(x.id || '').slice(-4);
-    let u = base, n = 2; while (usados[u]) { u = base + n; n++; } usados[u] = true;
-    if (x.id === e.id) res = u;
+function asignarUsuariosPadres(items, semilla){
+  // Usuarios ESTABLES: quien ya tiene usuario guardado lo conserva siempre
+  // (la identidad es el documento: el mismo documento hereda su usuario aunque
+  // el estudiante pase de año o su registro se renueve). Solo los estudiantes
+  // NUEVOS reciben usuario: la base (inicial + primer apellido) o el primer
+  // sufijo libre. La semilla trae usuarios guardados de registros retirados.
+  const usados = {}; const porDoc = {}; const res = {};
+  (semilla || []).forEach(sd => { const d = String(sd.docNumero || ''); if (d && sd.usuarioPadres && !porDoc[d]) porDoc[d] = sd.usuarioPadres; });
+  items.forEach(x => { const d = String((x.datos || {}).docNumero || ''); const u = (x.datos || {}).usuarioPadres; if (d && u && !porDoc[d]) porDoc[d] = u; });
+  items.forEach(x => { const d = String((x.datos || {}).docNumero || ''); const u = porDoc[d]; if (u && !usados[u]) { usados[u] = true; res[x.id] = u; } });
+  items.forEach(x => {
+    if (res[x.id]) return;
+    let base = usuarioPadresBase(x.nombre); if (!base) base = 'est' + String(x.clave || x.id || '').slice(0, 4);
+    let u = base, n = 2; while (usados[u]) { u = base + n; n++; } usados[u] = true; res[x.id] = u;
   });
   return res;
+}
+function usuarioPadresDe(e){
+  if (!e || !e.datos || !e.datos.docNumero) return '';
+  if (e.datos.usuarioPadres) return e.datos.usuarioPadres;
+  const items = (DB.estudiantes || []).filter(x => !estaRetirado(x) && x.datos && x.datos.docNumero).map(x => ({ id: x.id, nombre: x.nombre, datos: x.datos, clave: '' }));
+  return asignarUsuariosPadres(items)[e.id] || '';
 }
 async function sincronizarConsulta2027(forzar){
   if ((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)) return;
@@ -2121,7 +2134,7 @@ async function sincronizarConsulta2027(forzar){
             if(!e.datos || !e.datos.docNumero) continue;
             const clave = await sha256Hex(normDocMatricula(e.datos.docNumero));
             if(mapa[clave]) continue;
-            accesoArchivo.push({ nombre: e.nombre, clave: clave });
+            accesoArchivo.push({ nombre: e.nombre, clave: clave, docNumero: e.datos.docNumero, usuarioPadres: e.datos.usuarioPadres || '' });
             const cSnap = (snap.cursos || []).find(x => x.id === e.cursoId) || {};
             const partes = String(e.nombre || '').split(',');
             const pgS = pagosParaPadresSnap(e, snap); const blqS = pgS.deuda > 0;
@@ -2147,11 +2160,16 @@ async function sincronizarConsulta2027(forzar){
     }catch(ePrev){}
     await FB_DB.ref('consulta2027').set(mapa);
     try {
-      const usadosU = {}; const acceso = {};
-      const asignarU = (nombreU, claveU) => { let base = usuarioPadresBase(nombreU); if (!base) base = 'est' + claveU.slice(0, 4); let u = base, n = 2; while (usadosU[u]) { u = base + n; n++; } usadosU[u] = true; acceso[u] = claveU; };
-      (DB.estudiantes || []).filter(x => !estaRetirado(x) && x.datos && x.datos.docNumero).forEach(x => { if (accesoClavePorId[x.id]) asignarU(x.nombre, accesoClavePorId[x.id]); });
-      accesoArchivo.forEach(x => asignarU(x.nombre, x.clave));
+      const acceso = {};
+      const itemsAct = (DB.estudiantes || []).filter(x => !estaRetirado(x) && x.datos && x.datos.docNumero && accesoClavePorId[x.id]).map(x => ({ id: x.id, nombre: x.nombre, datos: x.datos, clave: accesoClavePorId[x.id] }));
+      const itemsArch = accesoArchivo.map((x, i) => ({ id: 'arch' + i, nombre: x.nombre, datos: { docNumero: x.docNumero || '', usuarioPadres: x.usuarioPadres || '' }, clave: x.clave }));
+      const semilla = (DB.estudiantes || []).filter(x => x.datos && x.datos.docNumero && x.datos.usuarioPadres).map(x => ({ docNumero: x.datos.docNumero, usuarioPadres: x.datos.usuarioPadres }));
+      const mapaU = asignarUsuariosPadres(itemsAct.concat(itemsArch), semilla);
+      let cambioU = false;
+      itemsAct.forEach(x => { const u = mapaU[x.id]; if (!u) return; acceso[u] = x.clave; const est = (DB.estudiantes || []).find(y => y.id === x.id); if (est && est.datos && est.datos.usuarioPadres !== u) { est.datos.usuarioPadres = u; cambioU = true; } });
+      itemsArch.forEach(x => { const u = mapaU[x.id]; if (u) acceso[u] = x.clave; });
       await FB_DB.ref('accesoPadres').set(acceso);
+      if (cambioU) guardar();
     } catch (eAcc) {}
     const el = $('matri-sync-info');
     if(el) el.textContent = 'Datos de consulta sincronizados: ' + Object.keys(mapa).length + ' estudiantes pueden consultar su información (' + new Date().toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' }) + ').';
