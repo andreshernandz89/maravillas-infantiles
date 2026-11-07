@@ -844,6 +844,7 @@ function documentosConsultaHTML(d){
   const docs = Array.isArray(d.documentos) ? d.documentos : [];
   const req = Array.isArray(d.docsRequeridos) ? d.docsRequeridos : [];
   const env = Array.isArray(d.enviosDocs) ? d.enviosDocs : [];
+  const envVis = env.filter(x => x.estado !== 'ATENDIDA' || (Date.now() - (x.tsResolucion || x.ts || 0)) < 48 * 3600 * 1000);
   const verBtn = doc => { const i = docs.indexOf(doc); return ' <button class="btn-pri" style="width:auto;padding:5px 14px;font-size:.9rem" onclick="verDocumentoConsulta(' + i + ')">Ver</button>'; };
   if(req.length){
     const nOk = req.filter(r => r.ok).length;
@@ -863,8 +864,8 @@ function documentosConsultaHTML(d){
   if(extras.length){
     s += '<p style="margin:10px 0 4px"><strong>📂 Otros documentos en el perfil:</strong></p>' + extras.map(doc => '<p style="margin:5px 0">' + (String(doc.tipo || '').indexOf('image/') === 0 ? '🖼' : '📄') + ' ' + esc(doc.nombre || 'documento') + (doc.categoria ? ' <span class="nota">(' + esc(doc.categoria) + ')</span>' : '') + verBtn(doc) + '</p>').join('');
   }
-  if(env.length){
-    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + env.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Aceptado</strong> — ya está en el perfil del estudiante' : (x.estado === 'DESCARTADO' ? '✖ <strong>No aceptado</strong> — vuelve a enviarlo, por favor' : '🕐 <strong>Pendiente por revisión</strong> — el colegio lo está revisando')) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
+  if(envVis.length){
+    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + envVis.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Aceptado</strong> — ya está en el perfil del estudiante' : (x.estado === 'DESCARTADO' ? '✖ <strong>No aceptado</strong> — vuelve a enviarlo, por favor' : '🕐 <strong>Pendiente por revisión</strong> — el colegio lo está revisando')) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
   }
   if(s) s += '<hr style="border:none;border-top:1px solid #e3ecfb;margin:12px 0">';
   return s;
@@ -932,6 +933,7 @@ function documentosProcesoHTML(p){
   const req = Array.isArray(p.docsRequeridos) ? p.docsRequeridos : [];
   if(!req.length) return '';
   const env = Array.isArray(p.enviosDocs) ? p.enviosDocs : [];
+  const envVis = env.filter(x => x.estado !== 'ATENDIDA' || (Date.now() - (x.tsResolucion || x.ts || 0)) < 48 * 3600 * 1000);
   let s = '<div class="card"><h2><span class="ico">📁</span> Documentos requeridos</h2>'
     + '<p style="margin:0 0 8px">Para avanzar en tu proceso de matrícula, envía estos documentos por aquí (foto o PDF, máximo 2 MB cada archivo; hasta 5 archivos por envío). El colegio los revisa y los guarda en la carpeta del aspirante.</p>';
   s += req.map((r, i) => {
@@ -941,8 +943,8 @@ function documentosProcesoHTML(p){
     if(!r.ok && !pend) linea += ' <button class="btn-pri" style="width:auto;padding:5px 14px;font-size:.9rem" onclick="enviarDocRanuraAsp(' + i + ')">Enviar</button>';
     return linea + '</p>';
   }).join('');
-  if(env.length){
-    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + env.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Aceptado</strong> — ya está en la carpeta del aspirante' : (x.estado === 'DESCARTADO' ? '✖ <strong>No aceptado</strong> — vuelve a enviarlo, por favor' : '🕐 <strong>Pendiente por revisión</strong> — el colegio lo está revisando')) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
+  if(envVis.length){
+    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + envVis.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Aceptado</strong> — ya está en la carpeta del aspirante' : (x.estado === 'DESCARTADO' ? '✖ <strong>No aceptado</strong> — vuelve a enviarlo, por favor' : '🕐 <strong>Pendiente por revisión</strong> — el colegio lo está revisando')) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
   }
   s += '<div id="docs-asp-msg"></div><input type="file" id="docs-files-ranura-asp" style="display:none" multiple accept="image/*,.pdf" onchange="enviarArchivosRanuraAsp(this)"></div>';
   return s;

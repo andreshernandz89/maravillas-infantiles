@@ -1619,10 +1619,10 @@ function matriEnviosDocsDe(m){
   if(docN){
     Object.keys(CERTSOL || {}).forEach(id => {
       const s = CERTSOL[id];
-      if(s && s.tipoSolicitud === 'DOCUMENTO' && normDocMatricula(s.docNumero || '') === docN) porTs[s.ts || 0] = { ts: s.ts || 0, estado: s.estado || 'PENDIENTE', categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') };
+      if(s && s.tipoSolicitud === 'DOCUMENTO' && normDocMatricula(s.docNumero || '') === docN) porTs[s.ts || 0] = { ts: s.ts || 0, estado: s.estado || 'PENDIENTE', tsResolucion: s.tsResolucion || 0, categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') };
     });
   }
-  (Array.isArray(m.docsEnvios) ? m.docsEnvios : []).forEach(x => { if(x && (x.ts || 0) && !porTs[x.ts]) porTs[x.ts] = { ts: x.ts || 0, estado: x.estado || 'PENDIENTE', categoria: x.categoria || 'Documentos', archivos: Array.isArray(x.archivos) ? x.archivos : [] }; });
+  (Array.isArray(m.docsEnvios) ? m.docsEnvios : []).forEach(x => { if(x && (x.ts || 0) && !porTs[x.ts]) porTs[x.ts] = { ts: x.ts || 0, estado: x.estado || 'PENDIENTE', tsResolucion: x.tsResolucion || 0, categoria: x.categoria || 'Documentos', archivos: Array.isArray(x.archivos) ? x.archivos : [] }; });
   return Object.keys(porTs).map(k => porTs[k]).sort((a, b) => a.ts - b.ts);
 }
 async function sincronizarProceso2027(){
@@ -2198,7 +2198,7 @@ function enviosDocsParaPadres(e){
   return Object.keys(CERTSOL || {}).map(id => Object.assign({ id: id }, CERTSOL[id]))
     .filter(s => s.tipoSolicitud === 'DOCUMENTO' && String(s.docNumero || '').trim() === docNum)
     .sort((a, b) => (a.ts || 0) - (b.ts || 0))
-    .map(s => ({ ts: s.ts || 0, estado: s.estado || 'PENDIENTE', categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') }));
+    .map(s => ({ ts: s.ts || 0, estado: s.estado || 'PENDIENTE', tsResolucion: s.tsResolucion || 0, categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') }));
 }
 function matriActualizarFicha(id){
   if(MODO_ARCHIVO || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('Estás en una vista de solo lectura (año anterior o simulación de perfil). Vuelve a tu vista normal para hacer cambios.'); return; }
@@ -2272,11 +2272,11 @@ async function matriGuardarDocsPadres(mid, solId){
   if(!Array.isArray(m.documentos)) m.documentos = [];
   (s.adjuntos || []).forEach(a => { if(m.documentos.length < DOC_MAX_N) m.documentos.push({ id: 'doc' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36), nombre: a.nombre || 'documento', tipo: a.tipo || '', b64: a.b64 || '', categoria: s.categoria || 'Otro', fecha: hoyISO(), por: 'Acudiente', origen: 'Padres' }); });
   if(!Array.isArray(m.docsEnvios)) m.docsEnvios = [];
-  const entrada = { ts: s.ts || Date.now(), estado: 'ATENDIDA', categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') };
+  const entrada = { ts: s.ts || Date.now(), estado: 'ATENDIDA', tsResolucion: Date.now(), categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') };
   m.docsEnvios = m.docsEnvios.filter(x => (x.ts || 0) !== entrada.ts); m.docsEnvios.push(entrada);
   try{ await FB_DB.ref('matriculas2027/' + mid).update({ documentos: m.documentos, docsEnvios: m.docsEnvios }); }catch(err){}
   try{ await FB_DB.ref('solicitudesCert/' + solId).update({ estado: 'ATENDIDA', por: (perfilActual() || {}).nombre || '', tsResolucion: Date.now() }); }catch(err){}
-  if(CERTSOL[solId]) CERTSOL[solId].estado = 'ATENDIDA';
+  if(CERTSOL[solId]){ CERTSOL[solId].estado = 'ATENDIDA'; CERTSOL[solId].tsResolucion = Date.now(); }
   sincronizarProceso2027();
   renderMatriculas();
   alert('Documentos guardados en la matrícula. Cuando crees el estudiante, pasarán a su ficha.');
@@ -2286,10 +2286,10 @@ async function matriDescartarDocsPadres(mid, solId){
   if(!confirm('¿Descartar este envío del acudiente? Los archivos no se guardarán.')) return;
   const m = MATRI[mid]; const s = CERTSOL[solId];
   try{ await FB_DB.ref('solicitudesCert/' + solId).update({ estado: 'DESCARTADO', por: (perfilActual() || {}).nombre || '', tsResolucion: Date.now() }); }catch(err){}
-  if(CERTSOL[solId]) CERTSOL[solId].estado = 'DESCARTADO';
+  if(CERTSOL[solId]){ CERTSOL[solId].estado = 'DESCARTADO'; CERTSOL[solId].tsResolucion = Date.now(); }
   if(m && s){
     if(!Array.isArray(m.docsEnvios)) m.docsEnvios = [];
-    const entrada = { ts: s.ts || Date.now(), estado: 'DESCARTADO', categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') };
+    const entrada = { ts: s.ts || Date.now(), estado: 'DESCARTADO', tsResolucion: Date.now(), categoria: s.categoria || 'Documentos', archivos: (s.adjuntos || []).map(a => a.nombre || 'archivo') };
     m.docsEnvios = m.docsEnvios.filter(x => (x.ts || 0) !== entrada.ts); m.docsEnvios.push(entrada);
     try{ await FB_DB.ref('matriculas2027/' + mid).update({ docsEnvios: m.docsEnvios }); }catch(err){}
   }
@@ -3210,7 +3210,7 @@ async function fichaGuardarDocsPadres(solId){
   (s.adjuntos || []).forEach(a => { if(e.documentos.length < DOC_MAX_N) e.documentos.push({ id: 'doc' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36), nombre: a.nombre || 'documento', tipo: a.tipo || '', b64: a.b64 || '', categoria: s.categoria || 'Otro', fecha: hoyISO(), por: 'Acudiente', origen: 'Padres' }); });
   guardar();
   try{ await FB_DB.ref('solicitudesCert/' + solId).update({ estado: 'ATENDIDA', por: (perfilActual() || {}).nombre || '', tsResolucion: Date.now() }); }catch(err){}
-  if(CERTSOL[solId]) CERTSOL[solId].estado = 'ATENDIDA';
+  if(CERTSOL[solId]){ CERTSOL[solId].estado = 'ATENDIDA'; CERTSOL[solId].tsResolucion = Date.now(); }
   sincronizarConsultaTrasDocs();
   renderFichaDocumentos();
   alert('Documentos guardados en el perfil de ' + e.nombre + '.');
@@ -3219,7 +3219,7 @@ async function fichaDescartarDocsPadres(solId){
   if(!puedeEditarFicha()){ alert('Tu perfil no puede descartar envíos.'); return; }
   if(!confirm('¿Descartar este envío del acudiente? Los archivos no se guardarán en el perfil.')) return;
   try{ await FB_DB.ref('solicitudesCert/' + solId).update({ estado: 'DESCARTADO', por: (perfilActual() || {}).nombre || '', tsResolucion: Date.now() }); }catch(err){}
-  if(CERTSOL[solId]) CERTSOL[solId].estado = 'DESCARTADO';
+  if(CERTSOL[solId]){ CERTSOL[solId].estado = 'DESCARTADO'; CERTSOL[solId].tsResolucion = Date.now(); }
   sincronizarConsultaTrasDocs();
   renderFichaDocumentos();
 }
@@ -4796,7 +4796,7 @@ async function notifDescartarDocumento(solId){
   if(!confirm('¿Descartar este envío de documentos de «' + (s.estudiante || 'sin nombre') + '»? Quedará marcado como DESCARTADO y dejará de aparecer en las notificaciones. El registro NO se borra.')) return;
   try{ await FB_DB.ref('solicitudesCert/' + solId).update({ estado: 'DESCARTADO', por: (perfilActual() || {}).nombre || '', tsResolucion: Date.now() }); }
   catch(err){ alert('No se pudo descartar el envío: ' + (err && err.message ? err.message : err)); return; }
-  if(CERTSOL[solId]) CERTSOL[solId].estado = 'DESCARTADO';
+  if(CERTSOL[solId]){ CERTSOL[solId].estado = 'DESCARTADO'; CERTSOL[solId].tsResolucion = Date.now(); }
   renderPanelNotificaciones();
 }
 function renderPanelAvisosPadres(){ /* Reemplazada por la tarjeta unificada de Notificaciones (renderPanelNotificaciones). */ }
