@@ -1397,6 +1397,14 @@ function matriAccesoDe(m){
   }
   return m.usuarioPadres || '';
 }
+function matriFirmaEstadoDe(m, categoria){
+  const docs = Array.isArray(m.documentos) ? m.documentos : [];
+  if(docs.some(d => (d.categoria || '') === categoria)) return 'guardada';
+  const env = matriEnviosDocsDe(m).filter(x => (x.categoria || '') === categoria);
+  if(env.some(x => x.estado === 'ATENDIDA')) return 'guardada';
+  if(env.some(x => x.estado === 'PENDIENTE')) return 'revision';
+  return 'pendiente';
+}
 function matriDocsPendientesTxt(m){
   const req = matriDocsRequeridosDe(m);
   const porRevisar = {};
@@ -1404,7 +1412,9 @@ function matriDocsPendientesTxt(m){
   return {
     faltan: req.filter(r => !r.ok && !porRevisar[r.nombre]).map(r => r.nombre),
     enRevision: req.filter(r => !r.ok && porRevisar[r.nombre]).map(r => r.nombre),
-    completos: req.length > 0 && req.every(r => r.ok)
+    completos: req.length > 0 && req.every(r => r.ok),
+    firmaAut: matriFirmaEstadoDe(m, 'Autorización de uso de imagen (firmada)'),
+    firmaCon: matriFirmaEstadoDe(m, 'Contrato de matrícula (firmado)')
   };
 }
 function matriAvisoTexto(etapa, nombreEst, grado, inst, acceso, pend){
@@ -1428,10 +1438,19 @@ function matriAvisoTexto(etapa, nombreEst, grado, inst, acceso, pend){
     if(pd.faltan.length){ linDocs.push('DOCUMENTOS QUE AÚN DEBEN SUBIR en la plataforma para padres (sin estos documentos la matrícula no queda completa):', ...pd.faltan.map(d => '• ' + d), ''); }
     if(pd.enRevision.length){ linDocs.push('Ya recibimos y estamos revisando: ' + pd.enRevision.join(', ') + '.', ''); }
     if(pd.completos){ linDocs.push('Ya tienen TODOS los documentos requeridos guardados. ✔', ''); }
+    const lf = [];
+    const fPend = [];
+    if((pd.firmaAut || 'pendiente') === 'pendiente') fPend.push('la AUTORIZACIÓN DE USO DE IMAGEN (tarjeta «Firmar autorización de uso de imagen»)');
+    if((pd.firmaCon || 'pendiente') === 'pendiente') fPend.push('el CONTRATO DE MATRÍCULA (tarjeta «Firmar contrato de matrícula»)');
+    if(fPend.length) lf.push('Para completar la matrícula, firmen electrónicamente en la plataforma para padres ' + fPend.join(' y ') + ': escriben su nombre completo, su cédula y dibujan su firma en la pantalla.', '');
+    const fRev = [];
+    if(pd.firmaAut === 'revision') fRev.push('la autorización de uso de imagen');
+    if(pd.firmaCon === 'revision') fRev.push('el contrato de matrícula');
+    if(fRev.length) lf.push('Ya firmaron ' + fRev.join(' y ') + '; está en revisión del colegio, no necesitan firmarlo de nuevo.', '');
     cuerpo = ['Hola, familia de ' + nom + ':', '',
       '¡Buenas noticias! ' + nom + ' fue ADMITIDO(A) en ' + inst + ' para ' + gTxt + ' del año 2027.', '',
       'El siguiente paso es formalizar la matrícula: por favor comuníquense con secretaría para completar el proceso.', '',
-      'Para completar la matrícula, firmen electrónicamente en la plataforma para padres la AUTORIZACIÓN DE USO DE IMAGEN y el CONTRATO DE MATRÍCULA del estudiante (tarjetas «Firmar autorización de uso de imagen» y «Firmar contrato de matrícula»): escriben su nombre completo, su cédula y dibujan su firma en la pantalla.', '', ...linDocs,
+      ...lf, ...linDocs,
       'También pueden seguir el estado del proceso en la plataforma para padres:', URL_PADRES,
       ...(acceso ? ['Usuario: ' + acceso, 'Contraseña: el número de documento del estudiante.', ''] : ['Ingresan con el usuario y la contraseña que les enviamos por correo.', '']),
       'Cordialmente,', inst].join('\r\n');
@@ -1479,7 +1498,16 @@ function matriAvisoHTML(etapa, nombreEst, grado, inst, acceso, pend){
     if(pdH.faltan.length) docHtml = 'Les recordamos los <strong>documentos que aún están pendientes por subir</strong> en la plataforma para padres (sin ellos la matrícula no queda completa):<br>' + pdH.faltan.map(d => '• ' + esc(d)).join('<br>') + (pdH.enRevision.length ? '<br><br>Ya recibimos y estamos revisando: ' + pdH.enRevision.map(esc).join(', ') + '.' : '');
     else if(pdH.enRevision.length) docHtml = 'Ya recibimos todos los documentos requeridos; estamos revisando: ' + pdH.enRevision.map(esc).join(', ') + '.';
     else if(pdH.completos) docHtml = 'Ya tienen <strong>todos los documentos requeridos</strong> guardados. ✔';
-    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', '<strong>' + nom + '</strong> fue <strong>ADMITIDO(A)</strong> en ' + esc(inst) + ' para <strong>' + gTxt + '</strong> del año 2027.', 'El siguiente paso es formalizar la matrícula: comuníquense con secretaría para completar el proceso.', 'También deben firmar electrónicamente en la plataforma para padres la <strong>autorización de uso de imagen</strong> y el <strong>contrato de matrícula</strong> del estudiante (tarjetas «✍️ Firmar autorización de uso de imagen» y «📝 Firmar contrato de matrícula»): toman pocos minutos y son requisito para completar la matrícula.', ...(docHtml ? [docHtml] : [])];
+    const fPendH = [];
+    if((pdH.firmaAut || 'pendiente') === 'pendiente') fPendH.push('la <strong>autorización de uso de imagen</strong> (tarjeta «✍️ Firmar autorización de uso de imagen»)');
+    if((pdH.firmaCon || 'pendiente') === 'pendiente') fPendH.push('el <strong>contrato de matrícula</strong> (tarjeta «📝 Firmar contrato de matrícula»)');
+    let firmaHtml = '';
+    if(fPendH.length) firmaHtml = 'También deben firmar electrónicamente en la plataforma para padres ' + fPendH.join(' y ') + ' del estudiante: toman pocos minutos y son requisito para completar la matrícula.';
+    const fRevH = [];
+    if(pdH.firmaAut === 'revision') fRevH.push('la autorización de uso de imagen');
+    if(pdH.firmaCon === 'revision') fRevH.push('el contrato de matrícula');
+    if(fRevH.length) firmaHtml += (firmaHtml ? '<br><br>' : '') + 'Ya firmaron ' + fRevH.join(' y ') + '; está en revisión del colegio, no necesitan firmarlo de nuevo.';
+    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', '<strong>' + nom + '</strong> fue <strong>ADMITIDO(A)</strong> en ' + esc(inst) + ' para <strong>' + gTxt + '</strong> del año 2027.', 'El siguiente paso es formalizar la matrícula: comuníquense con secretaría para completar el proceso.', ...(firmaHtml ? [firmaHtml] : []), ...(docHtml ? [docHtml] : [])];
     boton = { texto: 'Ver el estado del proceso', url: URL_PADRES };
   } else if(etapa === 'IMPORTADA'){
     titulo = '¡Bienvenidos! Ya está matriculado(a)';
