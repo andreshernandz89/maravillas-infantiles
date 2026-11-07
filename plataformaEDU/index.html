@@ -1574,7 +1574,7 @@ function matriTarjetaHTML(m){
         matriFilaHTML('Discapacidad (SIMAT)', e.simDiscapacidad) + matriFilaHTML('Tipo de discapacidad', e.simTipoDiscapacidad) +
         matriFilaHTML('Víctima del conflicto', e.simVictima) + matriFilaHTML('Capacidades excepcionales', e.simCapacidades) +
       '</div>';
-      h += matriDocsPanelHTML(m);
+      h += matriDocsPanelHTML(m) + matriDocsGuardadosHTML(m);
     }
   return h + '</div>';
 }
@@ -2259,6 +2259,17 @@ function matriDocsPadresDe(m){
     .sort((a, b) => (a.ts || 0) - (b.ts || 0));
 }
 function matriDocsPanelVisible(m){ return !!m && m.tramite !== 'ACTUALIZACION' && etapaDe(m) !== 'IMPORTADA'; }
+function matriDocsGuardadosHTML(m){
+  const docs = Array.isArray(m.documentos) ? m.documentos : [];
+  if(!docs.length) return '';
+  return '<div style="background:#eef4ff;border:1px solid #c9d6f5;border-radius:10px;padding:10px 12px;margin-top:12px"><strong>📁 Documentos guardados en esta matrícula (' + docs.length + '):</strong>'
+    + docs.map((d, i) => '<div style="margin-top:6px">' + (String(d.tipo || '').indexOf('image/') === 0 ? '🖼' : '📄') + ' <a href="#" onclick="matriVerDocGuardado(\'' + m.id + '\',' + i + ');return false">' + esc(d.nombre || 'documento') + '</a>' + (d.categoria ? ' <span class="ayuda">(' + esc(d.categoria) + ')</span>' : '') + (d.fecha ? ' <span class="ayuda">· ' + esc(d.fecha) + '</span>' : '') + '</div>').join('')
+    + '<p class="ayuda" style="margin:6px 0 0">Estos son los archivos que el colegio ya aceptó y guardó. Al crear el estudiante, pasan a su ficha.</p></div>';
+}
+function matriVerDocGuardado(mid, i){
+  const m = MATRI[mid]; const d = m && Array.isArray(m.documentos) ? m.documentos[i] : null;
+  if(d && d.b64) abrirB64(d.nombre || 'documento', d.tipo || '', d.b64);
+}
 function matriDocsPanelHTML(m){
   if(!matriDocsPanelVisible(m)) return '';
   const envios = matriDocsPadresDe(m);
