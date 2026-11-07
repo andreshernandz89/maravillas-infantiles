@@ -1248,10 +1248,67 @@ function expandirGrupoDe(tab){
   const g = b && b.closest ? b.closest('.menu-grupo') : null;
   if(g && g.classList.contains('cerrado')){ g.classList.remove('cerrado'); guardarEstadoMenu(); }
 }
+const COPIAS_FIRMA_VISTAS = {};
+async function procesarCopiasFirma(){
+  try{
+    if(!FB_DB || typeof CERTSOL === 'undefined' || !CERTSOL) return;
+    if((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)) return;
+    const p = (typeof perfilActual === 'function') ? perfilActual() : null;
+    if(!p || !(p.rol === 'owner' || p.rol === 'coord' || p.rol === 'admin')) return;
+    const cats = { 'Autorización de uso de imagen (firmada)': 'autorización de uso de imagen', 'Contrato de matrícula (firmado)': 'contrato de matrícula' };
+    for(const id of Object.keys(CERTSOL)){
+      const s = CERTSOL[id];
+      if(!s || !s.copiaCorreoPendiente || COPIAS_FIRMA_VISTAS[id]) continue;
+      if(s.tipoSolicitud !== 'DOCUMENTO' || !cats[s.categoria || '']) continue;
+      COPIAS_FIRMA_VISTAS[id] = true;
+      try{
+        const docN = normDocMatricula(s.docNumero || '');
+        const m = docN ? matriLista().find(x => normDocMatricula(((x.estudiante || {}).docNumero) || '') === docN) : null;
+        const para = m ? String((m.estudiante || {}).correo || '').trim() : '';
+        const adj = (Array.isArray(s.adjuntos) ? s.adjuntos : [])[0];
+        if(!m || !para || !adj || !adj.b64){
+          await FB_DB.ref('solicitudesCert/' + id).update({ copiaCorreoPendiente: false, copiaCorreoError: !para ? 'sin-correo-del-acudiente' : 'sin-documento' });
+          continue;
+        }
+        const inst = (DB.instituto && DB.instituto.nombre) || 'el colegio';
+        const nombreEst = s.estudiante || ((((m.estudiante || {}).nombres || '') + ' ' + ((m.estudiante || {}).apellidos || '')).trim());
+        const esAut = (s.categoria || '').indexOf('Autorización') === 0;
+        const asunto = 'Copia de tu ' + (esAut ? 'autorización de uso de imagen firmada' : 'contrato de matrícula firmado') + ' — ' + nombreEst;
+        let docTxt = '';
+        try{ docTxt = decodeURIComponent(escape(atob(String(adj.b64).replace(/^data:[^,]*,/, '')))); }catch(eDec){ docTxt = ''; }
+        const codM = docTxt.match(/Código de verificación:\s*([A-Z0-9-]+)/i);
+        const hashM = docTxt.match(/Hash SHA-256:\s*([a-f0-9]{16,})/i);
+        const fecha = new Date(s.ts || Date.now()).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' });
+        const cuerpo = ['Hola, familia de ' + nombreEst + ':', '',
+          'El ' + fecha + ' firmaste electrónicamente la ' + cats[s.categoria] + ' de ' + nombreEst + ' en ' + inst + '.',
+          'Adjunto a este correo encuentras la COPIA ÍNTEGRA del documento firmado, tal como quedó guardado en el colegio, con su constancia de firma electrónica.' + (codM ? '\r\nCódigo de verificación: ' + codM[1] : '') + (hashM ? '\r\nHash SHA-256: ' + hashM[1] : ''),
+          'Consérvala como soporte de tu matrícula. Si no reconoces esta firma, comunícate de inmediato con secretaría.',
+          '', 'Cordialmente,', inst].join('\r\n');
+        const escudoC = new URL('../escudo.png', location.href).href;
+        let htmlDoc = '';
+        const bodyM = docTxt.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        if(bodyM) htmlDoc = '<div style="max-width:680px;margin:14px auto 0;background:#ffffff;border:1px solid #dfe7f3;border-radius:14px;padding:22px"><p style="font-size:11.5px;letter-spacing:.08em;color:#5A6B84;margin:0 0 12px">COPIA ÍNTEGRA DEL DOCUMENTO FIRMADO</p>' + bodyM[1] + '</div>';
+        const html = '<div style="background:#F5F8FC;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">'
+          + '<div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #dfe7f3;border-radius:14px;overflow:hidden">'
+          + '<div style="background:#13213F;padding:18px 22px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="padding-right:12px"><img src="' + escudoC + '" alt="" width="44" height="55" style="display:block"></td><td style="color:#ffffff;font-size:18px;font-weight:bold">' + esc(inst) + '</td></tr></table></div>'
+          + '<div style="padding:22px">'
+          + '<p style="margin:0 0 14px;font-size:15.5px;line-height:1.6;color:#26324a">Hola, familia de <strong>' + esc(nombreEst) + '</strong>:</p>'
+          + '<p style="margin:0 0 14px;font-size:15.5px;line-height:1.6;color:#26324a">El ' + esc(fecha) + ' firmaste electrónicamente la <strong>' + cats[s.categoria] + '</strong> de <strong>' + esc(nombreEst) + '</strong> en ' + esc(inst) + '.</p>'
+          + '<p style="margin:0 0 14px;font-size:15.5px;line-height:1.6;color:#26324a">Adjunto a este correo encuentras la <strong>copia íntegra</strong> del documento firmado, tal como quedó guardado en el colegio, con su constancia de firma electrónica.' + (codM ? '<br>Código de verificación: <strong>' + esc(codM[1]) + '</strong>' : '') + (hashM ? '<br>Hash SHA-256: <span style="word-break:break-all">' + esc(hashM[1]) + '</span>' : '') + '</p>'
+          + '<p style="margin:0;font-size:15.5px;line-height:1.6;color:#26324a">Consérvala como soporte de tu matrícula. Si no reconoces esta firma, comunícate de inmediato con secretaría.</p>'
+          + '</div></div>' + htmlDoc + '</div>';
+        await correoEnviarPlataforma(para, asunto, cuerpo, html, [{ filename: adj.nombre || (esAut ? 'Autorizacion-uso-imagen-firmada.html' : 'Contrato-de-matricula-firmado.html'), content: String(adj.b64).replace(/^data:[^,]*,/, '') }]);
+        await FB_DB.ref('solicitudesCert/' + id).update({ copiaCorreoPendiente: false, copiaCorreoTs: Date.now() });
+        s.copiaCorreoPendiente = false;
+      }catch(errEnv){ /* queda pendiente en el servidor; no se reintenta en esta sesión */ }
+    }
+  }catch(err){ /* silencioso: nunca debe romper la plataforma */ }
+}
 function iniciarCertSolicitudes(){
   if(CERTSOL_ACTIVO || !FB_DB) return; CERTSOL_ACTIVO = true;
   FB_DB.ref('solicitudesCert').on('value', snap => {
     CERTSOL = snap.val() || {};
+    if(typeof procesarCopiasFirma === 'function') procesarCopiasFirma();
     const cficha = $('card-ficha');
     if(cficha && !cficha.classList.contains('hidden') && typeof FICHA_ID !== 'undefined' && FICHA_ID && typeof renderFichaDocumentos === 'function') renderFichaDocumentos();
     const sec = $('tab-certpadres');
@@ -5346,16 +5403,16 @@ async function correoEnviarMicrosoft(para, asunto, cuerpo, html){
   if(r.status !== 202) throw new Error('Microsoft no envió el correo (' + r.status + ').');
   return { ok: true, desde: localStorage.getItem('correoMicrosoft') || '' };
 }
-async function correoEnviarPlataforma(para, asunto, cuerpo, html){
+async function correoEnviarPlataforma(para, asunto, cuerpo, html, adjuntos){
   const prov = correoProveedorActivo();
   if(prov === 'google') return await correoEnviarGoogle(para, asunto, cuerpo, html);
   if(prov === 'microsoft') return await correoEnviarMicrosoft(para, asunto, cuerpo, html);
   if(prov === 'puente') return await correoLlamarPuente({ accion: 'correoEnviar', para: para, asunto: asunto, cuerpo: cuerpo, html: html || '' });
-  if(prov === 'central') return await correoEnviarCentral(para, asunto, cuerpo, html);
+  if(prov === 'central') return await correoEnviarCentral(para, asunto, cuerpo, html, adjuntos);
   throw new Error('No hay un medio de envío disponible.');
 }
 const PUENTE_CENTRAL_URL = 'https://script.google.com/macros/s/AKfycbzH2kijh_2wmn4yXEWELP3QNMCfcwyN4TLYrCC7UO93y4zFiQivYrIKk-jxOMBUysM/exec'; // Puente central de correos de PlataformaEDU (Apps Script de la empresa).
-async function correoEnviarCentral(para, asunto, cuerpo, html){
+async function correoEnviarCentral(para, asunto, cuerpo, html, adjuntos){
   if (typeof SIMULANDO !== 'undefined' && SIMULANDO) throw new Error('Estás simulando otro perfil (vista previa): el correo no se envía en este modo.');
   const inst = DB.instituto || {};
   if(FB_CONFIG.projectId.indexOf('demo') >= 0) return { ok: true, desde: inst.correo || '', simulado: true };
@@ -5364,7 +5421,7 @@ async function correoEnviarCentral(para, asunto, cuerpo, html){
   const destino = String(para || '').trim();
   if(!destino) throw new Error('El correo destino está vacío.');
   const idToken = await u.getIdToken();
-  const r = await fetch(PUENTE_CENTRAL_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ idToken: idToken, accion: 'correoEnviar', para: destino, asunto: asunto || '', cuerpo: cuerpo || '', html: html || '', replyTo: (inst.correo || '').trim(), nombre: (inst.nombre || 'PlataformaEDU') }) });
+  const r = await fetch(PUENTE_CENTRAL_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ idToken: idToken, accion: 'correoEnviar', adjuntos: (adjuntos && adjuntos.length) ? adjuntos : undefined, para: destino, asunto: asunto || '', cuerpo: cuerpo || '', html: html || '', replyTo: (inst.correo || '').trim(), nombre: (inst.nombre || 'PlataformaEDU') }) });
   const resp = await r.json().catch(() => null);
   if(resp && resp.ok) return { ok: true, desde: resp.desde || 'contacto@plataformaedu.app' };
   throw new Error((resp && resp.error) || ('El servicio central de correo no respondió (' + r.status + ').'));

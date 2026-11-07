@@ -1093,7 +1093,7 @@ async function enviarFirmaAutorizacion(){
     + 'Código de verificación: <strong>' + codigo + '</strong><br>Hash SHA-256 del contenido firmado: ' + huella + '</div>'
     + '</body></html>';
   const b64 = btoa(unescape(encodeURIComponent(htmlDoc)));
-  const sol = { ts: ahora.getTime(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: p.nombre || '', grado: p.grado || '', docTipo: '', docNumero: DOC_CONSULTADO, genero: '', tipo: 'DOCUMENTO', valor: 0, categoria: FIRMA_CATEGORIA, adjuntos: [{ nombre: 'Autorizacion-uso-imagen-firmada.html', tipo: 'text/html', b64: b64 }] };
+  const sol = { ts: ahora.getTime(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: p.nombre || '', grado: p.grado || '', docTipo: '', docNumero: DOC_CONSULTADO, genero: '', tipo: 'DOCUMENTO', valor: 0, categoria: FIRMA_CATEGORIA, copiaCorreoPendiente: true, adjuntos: [{ nombre: 'Autorizacion-uso-imagen-firmada.html', tipo: 'text/html', b64: b64 }] };
   if(msg) msg.innerHTML = '<p class="nota">Enviando tu firma…</p>';
   try{
     const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
@@ -1206,7 +1206,7 @@ async function enviarFirmaContrato(){
     + 'Código de verificación: <strong>' + codigo + '</strong><br>Hash SHA-256 del contenido firmado: ' + huella + '</div>'
     + '</body></html>';
   const b64 = btoa(unescape(encodeURIComponent(htmlDoc)));
-  const sol = { ts: ahora.getTime(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: p.nombre || '', grado: p.grado || '', docTipo: '', docNumero: DOC_CONSULTADO, genero: '', tipo: 'DOCUMENTO', valor: 0, categoria: CONTRATO_CATEGORIA, adjuntos: [{ nombre: 'Contrato-de-matricula-2027-firmado.html', tipo: 'text/html', b64: b64 }] };
+  const sol = { ts: ahora.getTime(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: p.nombre || '', grado: p.grado || '', docTipo: '', docNumero: DOC_CONSULTADO, genero: '', tipo: 'DOCUMENTO', valor: 0, categoria: CONTRATO_CATEGORIA, copiaCorreoPendiente: true, adjuntos: [{ nombre: 'Contrato-de-matricula-2027-firmado.html', tipo: 'text/html', b64: b64 }] };
   if(msg) msg.innerHTML = '<p class="nota">Enviando tu firma…</p>';
   try{
     const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
