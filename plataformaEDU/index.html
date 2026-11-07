@@ -1409,7 +1409,6 @@ function matriAvisoTexto(etapa, nombreEst, grado, inst, acceso){
       'Para avanzar en el proceso, por favor suban los documentos requeridos en la plataforma para padres:', URL_PADRES,
       ...(acceso ? ['Ingresan con estos datos:', 'Usuario: ' + acceso, 'Contraseña: el número de documento del estudiante.', ''] : ['Ingresan con el usuario y la contraseña que les enviamos por correo.', ''])];
     if(reqT.length){ linT.push('Documentos requeridos' + (matriNivelTxtDeGrado(grado) ? ' (' + matriNivelTxtDeGrado(grado) + ')' : '') + ':'); reqT.forEach(d => linT.push('• ' + d)); linT.push(''); }
-    linT.push('También deben firmar electrónicamente la AUTORIZACIÓN DE USO DE IMAGEN del estudiante: en la misma plataforma para padres busquen la tarjeta «Firmar autorización de uso de imagen»; escriben su nombre completo, su cédula y dibujan su firma en la pantalla. Es un requisito para completar la matrícula.', '');
     linT.push('Les avisaremos en cuanto haya novedades.', '', 'Cordialmente,', inst);
     cuerpo = linT.join('\r\n');
     wa = 'Hola 👋 Les escribimos de ' + inst + ': el proceso de admisión de ' + nom + (grado ? ' (' + grado + ' 2027)' : '') + ' está en revisión. Pronto les tendremos novedades.';
@@ -1417,7 +1416,7 @@ function matriAvisoTexto(etapa, nombreEst, grado, inst, acceso){
     cuerpo = ['Hola, familia de ' + nom + ':', '',
       '¡Buenas noticias! ' + nom + ' fue ADMITIDO(A) en ' + inst + ' para ' + gTxt + ' del año 2027.', '',
       'El siguiente paso es formalizar la matrícula: por favor comuníquense con secretaría para completar el proceso.', '',
-      'Para completar la matrícula, firmen también la AUTORIZACIÓN DE USO DE IMAGEN del estudiante en la plataforma para padres (tarjeta «Firmar autorización de uso de imagen»): escriben su nombre completo, su cédula y dibujan su firma en la pantalla.', '',
+      'Para completar la matrícula, firmen electrónicamente en la plataforma para padres la AUTORIZACIÓN DE USO DE IMAGEN y el CONTRATO DE MATRÍCULA del estudiante (tarjetas «Firmar autorización de uso de imagen» y «Firmar contrato de matrícula»): escriben su nombre completo, su cédula y dibujan su firma en la pantalla.', '',
       'También pueden seguir el estado del proceso en la plataforma para padres:', URL_PADRES,
       ...(acceso ? ['Usuario: ' + acceso, 'Contraseña: el número de documento del estudiante.', ''] : ['Ingresan con el usuario y la contraseña que les enviamos por correo.', '']),
       'Cordialmente,', inst].join('\r\n');
@@ -1456,11 +1455,11 @@ function matriAvisoHTML(etapa, nombreEst, grado, inst, acceso){
     const reqH = matriDocsReqDeGrado(grado);
     parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', 'El proceso de admisión de <strong>' + nom + '</strong> para <strong>' + gTxt + '</strong> (año 2027) está en revisión por parte del colegio.',
       'Para avanzar en el proceso, suban los <strong>documentos requeridos</strong> en la plataforma para padres (con el botón de abajo): allí verán la lista y podrán enviar cada documento.' + (reqH.length ? '<br><br><strong>Documentos requeridos' + (matriNivelTxtDeGrado(grado) ? ' (' + esc(matriNivelTxtDeGrado(grado)) + ')' : '') + ':</strong><br>' + reqH.map(d => '• ' + esc(d)).join('<br>') : ''),
-      'También deben <strong>firmar electrónicamente la autorización de uso de imagen</strong> del estudiante: en la misma plataforma verán la tarjeta «✍️ Firmar autorización de uso de imagen». Escriben su nombre completo y su cédula, dibujan su firma en la pantalla y queda enviada al colegio. Es un requisito para completar la matrícula.', 'Les avisaremos en cuanto haya novedades.'];
+      'Les avisaremos en cuanto haya novedades.'];
     boton = { texto: 'Ver el estado del proceso', url: URL_PADRES };
   } else if(etapa === 'ADMITIDA'){
     titulo = '¡Buenas noticias: fue admitido(a)!';
-    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', '<strong>' + nom + '</strong> fue <strong>ADMITIDO(A)</strong> en ' + esc(inst) + ' para <strong>' + gTxt + '</strong> del año 2027.', 'El siguiente paso es formalizar la matrícula: comuníquense con secretaría para completar el proceso.', 'También pueden firmar desde ya la <strong>autorización de uso de imagen</strong> del estudiante en la plataforma para padres (tarjeta «✍️ Firmar autorización de uso de imagen»): es electrónica, toma dos minutos y es requisito para completar la matrícula.'];
+    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', '<strong>' + nom + '</strong> fue <strong>ADMITIDO(A)</strong> en ' + esc(inst) + ' para <strong>' + gTxt + '</strong> del año 2027.', 'El siguiente paso es formalizar la matrícula: comuníquense con secretaría para completar el proceso.', 'También deben firmar electrónicamente en la plataforma para padres la <strong>autorización de uso de imagen</strong> y el <strong>contrato de matrícula</strong> del estudiante (tarjetas «✍️ Firmar autorización de uso de imagen» y «📝 Firmar contrato de matrícula»): toman pocos minutos y son requisito para completar la matrícula.'];
     boton = { texto: 'Ver el estado del proceso', url: URL_PADRES };
   } else if(etapa === 'IMPORTADA'){
     titulo = '¡Bienvenidos! Ya está matriculado(a)';

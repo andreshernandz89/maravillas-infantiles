@@ -311,7 +311,7 @@ async function consultar(){
   if(proceso && !datos){
     try{ localStorage.setItem('padres_doc', doc); }catch(e){} sesionIniciada();
     PROCESO_ACTUAL = proceso; DOC_CONSULTADO = ($('doc').value || '').trim();
-    res.innerHTML = procesoHTML(proceso) + documentosProcesoHTML(proceso) + firmaAutorizacionHTML(proceso);
+    res.innerHTML = procesoHTML(proceso) + documentosProcesoHTML(proceso) + firmaAutorizacionHTML(proceso) + firmaContratoHTML(proceso);
     res.scrollIntoView({behavior:'smooth'});
     return;
   }
@@ -1006,14 +1006,13 @@ function autorizacionCuerpoHTML(d){
 }
 function firmaAutorizacionHTML(p){
   if(!p || p.tramite === 'ACTUALIZACION') return '';
-  const idx = ETAPAS_PROC.findIndex(x => x.k === (p.etapa || 'NUEVA'));
-  if(idx < 1) return '';
   const env = (Array.isArray(p.enviosDocs) ? p.enviosDocs : []).filter(x => (x.categoria || '') === FIRMA_CATEGORIA);
   const guardada = env.find(x => x.estado === 'ATENDIDA');
   const pendiente = env.find(x => x.estado === 'PENDIENTE');
   let h = '<div class="card"><h2><span class="ico">✍️</span> Firmar autorización de uso de imagen</h2>';
   if(guardada){ return h + '<div class="aviso-ok">✔ <strong>Autorización firmada y guardada por el colegio.</strong> ¡Gracias! Este paso de la matrícula ya está completo.</div></div>'; }
   if(pendiente){ return h + '<div class="aviso-ok">🕐 <strong>Tu firma fue enviada</strong> el ' + new Date(pendiente.ts || Date.now()).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) + ' y está en revisión del colegio. No necesitas firmarla de nuevo.</div></div>'; }
+  if((p.etapa || 'NUEVA') !== 'ADMITIDA') return '';
   if(env.length) h += '<div class="error" style="margin-bottom:10px">El colegio no pudo guardar la firma anterior. Por favor fírmala de nuevo.</div>';
   h += '<p style="margin:0 0 8px">Para completar la matrícula, el padre, la madre o el acudiente debe firmar electrónicamente la <strong>autorización de uso de imagen</strong> del estudiante (fotos y videos en redes sociales, página web, la plataforma, el observador y el material institucional del colegio). Toma menos de dos minutos:</p>'
     + '<ol style="margin:0 0 10px;padding-left:20px"><li>Lee la autorización.</li><li>Escribe tu nombre completo y tu cédula.</li><li>Dibuja tu firma con el dedo en el recuadro y pulsa «Firmar y enviar».</li></ol>'
@@ -1087,8 +1086,121 @@ async function enviarFirmaAutorizacion(){
     if(!Array.isArray(p.enviosDocs)) p.enviosDocs = [];
     p.enviosDocs.push({ ts: sol.ts, estado: 'PENDIENTE', categoria: FIRMA_CATEGORIA, archivos: ['Autorizacion-uso-imagen-firmada.html'] });
     const res = document.getElementById('resultado');
-    if(res) res.innerHTML = procesoHTML(p) + documentosProcesoHTML(p) + firmaAutorizacionHTML(p);
+    if(res) res.innerHTML = procesoHTML(p) + documentosProcesoHTML(p) + firmaAutorizacionHTML(p) + firmaContratoHTML(p);
     alert('✔ ¡Firma enviada! El colegio la guardará en la carpeta del estudiante para completar la matrícula.');
+  }catch(e){
+    pon('No pudimos enviar tu firma en este momento. Revisa tu conexión e inténtalo de nuevo, o escríbenos por WhatsApp al 302 285 2745.');
+  }
+}
+/* ---- Firma electrónica del CONTRATO DE MATRÍCULA (solo etapa ADMITIDA) ----
+ * Mismo mecanismo de la autorización de imagen: el acudiente lee el contrato (texto del
+ * colegio actualizado al año lectivo 2027), escribe su nombre completo y su cédula, dibuja
+ * su firma y el documento firmado entra al buzón con la categoría CONTRATO_CATEGORIA. */
+const CONTRATO_CATEGORIA = 'Contrato de matrícula (firmado)';
+function contratoCuerpoHTML(d){
+  const lin = '________________________________';
+  const cl = [
+    ['PRIMERA: OBJETO: ', 'Es el de aunar esfuerzos recíprocos entre los aquí comprometidos, para asegurar el derecho a una excelente formación académica y humana del precitado estudiante, correspondiente al programa curricular del GRADO ' + (d.grado || '______') + ', al cual se matricula, aprobado por el Ministerio de Educación Nacional.'],
+    ['SEGUNDA: OBLIGACIONES ESENCIALES DEL CONTRATO ', 'sin cuyo cumplimiento continuado se considera interrumpido: A) POR PARTE DEL ESTUDIANTE BENEFICIARIO: a) Asistir a la institución y cumplir las pautas exigidas por el Colegio, el Ministerio de Educación Nacional y demás autoridades competentes, para la promoción académica. b) Cumplir lo normado en el MANUAL DE CONVIVENCIA. El incumplimiento de este reglamento es imputable al estudiante, al padre de familia y/o acudiente. B) POR PARTE DEL PADRE DE FAMILIA Y/O ACUDIENTE: Pagar dentro del plazo aquí convenido, los costos inherentes al servicio público de educación objeto de este contrato, y el suministro inmediato de los implementos exigidos por el colegio al estudiante para el desarrollo de sus actividades escolares. C) POR PARTE DEL COLEGIO: Impartir la educación académica integral y moral materia de este pacto.'],
+    ['TERCERA: DURACIÓN DEL CONTRATO: ', 'Siendo de ejecución sucesiva por períodos mensuales, su vigencia es por el año lectivo de 2027, contado a partir del día 01 del mes de Febrero hasta el día 30 del mes de Noviembre, excepto que el Ministerio de Educación o alguna otra autoridad competente ordene lo contrario, circunstancia en la cual automáticamente se prorrogará este pacto.'],
+    ['CUARTA: RENOVACIÓN DEL CONTRATO: ', 'De conformidad con lo ordenado en los Artículos 95 y 101 de la ley 115 de 1994 y los parámetros señalados por la Corte Constitucional, este contrato puede ser renovado para cada período académico, excepto cuando se den los siguientes casos: 1° Incumplimiento de alguna de las obligaciones derivadas de este contrato. 2° Incumplimiento de las normas contenidas en el Manual de Convivencia, por razones de comportamiento, rendimiento académico o de competencias o capacidades que requieran tratamiento especial. 3° No estar a paz y salvo por todo concepto con este establecimiento educativo en el momento de suscribir el Contrato de matrícula. 4° No renovar el Contrato de Matrícula en la fecha establecida por el colegio. 5° Incumplimiento de los compromisos de comportamiento suscritos entre el estudiante, la familia y de otra parte por el colegio a través del Comité de Promoción y Evaluación.'],
+    ['QUINTA: COSTOS DEL CONTRATO: ', 'El valor total del contrato por el Servicio Público Educativo para todo el período escolar del año 2027 será señalado por el colegio y cancelado por los padres de familia y/o acudiente o persona aquí comprometida del educando, en once cuotas así: la primera corresponde a la matrícula que será cancelada en la fecha indicada por el colegio; y el saldo en diez cuotas como pensión mensual, que serán canceladas en forma anticipada dentro de los primeros diez días calendario del correspondiente mes. El costo se reajustará cada año de conformidad con la ley 115 de 1994 y normas reglamentarias. Parágrafo primero: El pago tardío de la matrícula de este contrato, acarreará como sanción en el pago un recargo de $20.000 pesos; el pago tardío de los costos de este contrato, acarreará como sanción el pago de intereses moratorios que estén vigentes al momento que se haga exigible la obligación, este interés de $10.000 pesos, el cual se verá reflejado después de los 10 primeros días de cada mes. Parágrafo segundo: La ausencia temporal o definitiva dentro del correspondiente mes por enfermedad u otra causa atribuible al educando, el padre de familia y/o acudiente, así esta sea por caso fortuito o fuerza mayor, no dará derecho al aquí comprometido, a descontar suma alguna de lo obligado a pagar en el colegio o a que este le haga devoluciones o abonos a los meses siguientes.'],
+    ['SEXTA: FORMA DE PAGO DE COSTOS Y SANCIONES POR DEVOLUCIÓN DE TÍTULO VALOR. ', 'El pago de los costos inherentes a este contrato se hará únicamente con el recibo de matrícula y/o pensión entregado por el colegio, debiéndose en consecuencia consignar en la entidad financiera y/o financieras indicada por el colegio. Si el pago se hace mediante cheque y este es devuelto por cualquier causal, el girador o endosante cancelará como sanción el 30% del valor del título valor de conformidad con lo previsto en el artículo 731 del Código de Comercio, y si se consigna en efectivo y se requiere la devolución del dinero de la matrícula, se retiene un 30% del valor consignado; el colegio queda facultado para declarar vencido el plazo y exigir el pago inmediato del mismo.'],
+    ['SÉPTIMA: DERECHOS Y OBLIGACIONES DEL COLEGIO: ', 'Concordante con el objeto de este pacto, el Colegio tiene los siguientes derechos: 1° Exigir a los padres de familia y/o acudiente y al educando el cumplimiento de la Constitución Política de Colombia, las leyes, el Manual de Convivencia y este contrato, así como de los deberes académicos esenciales para obtener el fin común pretendido y compartido entre el Colegio, los padres de familia y/o acudiente. 2° Exigir por todos los medios lícitos y a su alcance, el pago de los costos educativos dejados de cancelar oportunamente por los padres de familia y/o acudientes. Constituirán obligaciones del colegio correlativas al cumplimiento de las obligaciones del educando y de sus padres y/o acudiente, las siguientes: 1° Prestar en forma cualificada y regular el servicio público educativo aquí contratado, dentro de los parámetros legales y exigencias de las autoridades competentes. 2° El colegio no responde por bajo rendimiento académico del estudiante, cuando el mismo se atribuya al educando y/o a los padres de familia y/o acudiente. 3° El colegio ofrece al educando el uso de la infraestructura física y elementos de dotación necesarios para el desarrollo de todos los procesos académicos de apoyo.'],
+    ['OCTAVA: DERECHOS Y OBLIGACIONES DE LOS PADRES DE FAMILIA Y/O ACUDIENTE. ', 'Constituyen derechos de los padres de familia y/o acudiente: 1° Recibir la prestación del servicio de educación aquí pactado. 2° Que este servicio se ajuste a los programas y el nivel académico prescrito en la ley, de acuerdo con las evaluaciones que realicen las autoridades competentes. 3° A respetuosamente buscar y recibir orientación sobre la educación integral de su hijo(a) o acudido(a). Así mismo se obligan además de las otras cláusulas de este pacto, a: 1° Efectuar la matrícula en las fechas señaladas para tal fin, con el lleno de los requisitos académicos y documentales exigidos por el colegio, cancelando el valor correspondiente en las fechas indicadas para ello, so pena de que el colegio disponga del cupo para adjudicárselo a otro aspirante si así lo estima conveniente. 2° Velar por el progreso del educando, estando para ello en permanente contacto con el colegio y proporcionarle en todo momento a su protegido el ambiente adecuado para su desarrollo integral. 3° En caso de ser convocado por las Directivas y/o docentes para reuniones ordinarias o extraordinarias de carácter general o entrevista especial, asistir el día y la hora en el que fue citado, so pena de que el estudiante no pueda ingresar al salón de clases hasta no concurra con el padre de familia y/o acudiente. 4° Cumplir y hacer cumplir al educando todas y cada una de las cláusulas de este contrato y el Manual de Convivencia.'],
+    ['NOVENA: GARANTÍAS DE CUMPLIMIENTO EN EL PAGO DE COSTOS. ', 'Como garantía de cumplimiento en el pago de los costos de pensión dentro del término estipulado en este contrato, los padres de familia y/o acudiente o persona responsable de dichos costos, firmarán un pagaré.'],
+    ['DÉCIMA: CARTA DE INSTRUCCIONES DEL PAGARÉ: ', 'De conformidad con lo establecido en el artículo 622 del Código de Comercio, los padres de familia y/o acudiente o persona responsable de los costos educativos, autorizan en forma irrevocable al Colegio CENTRO EDUCATIVO MARAVILLAS INFANTILES para llenar el pagaré otorgado a su favor y firmado en blanco el día de la matrícula, en los espacios relacionados con la cuantía, interés y fecha de vencimiento, en cualquier tiempo y sin previo aviso, de acuerdo con las siguientes instrucciones: 1° El valor será igual al monto de todas las sumas adeudadas al Colegio, hasta el día en que sea llenado el pagaré. 2° Los intereses serán los comerciales moratorios que estén vigentes al momento en que se haga exigible la obligación y se acreditarán con la certificación expedida por la Superintendencia Bancaria. 3° La fecha de exigibilidad del pagaré será la del día en que el título sea llenado. 4° En caso de mora en la cancelación de cualquiera de las obligaciones de los aceptantes del pagaré, las mismas serán exigibles inmediatamente a la fecha sin necesidad de requerimiento; se autoriza al Colegio CENTRO EDUCATIVO MARAVILLAS INFANTILES para exigir de inmediato el pago de todos y cada una de las sumas adeudadas de los aquí obligados, por la vía ejecutiva o por cualquier otro medio legal. 5° En el caso en que se haya realizado cobro jurídico con fundamento en el pagaré suscrito el día de la matrícula y aún faltaren varios meses para la terminación de este contrato, los padres de familia y/o acudiente o persona a cargo de los costos educativos, firmarán un título valor junto con un codeudor de comprobada solvencia económica, con el fin de garantizar el pago de los costos educativos que se ocasionen con posterioridad al mencionado cobro jurídico.'],
+    ['DÉCIMA PRIMERA: SUSPENSIÓN DE SERVICIOS EDUCATIVOS. ', 'Con fundamento en el inciso tercero del artículo 67 de la Constitución Política de Colombia, la doctrina y la Jurisprudencia, el Colegio suspenderá de manera inmediata el servicio educativo para aquellos educandos de los grados décimo y undécimo cuyos padres y/o acudiente incumplan con sus obligaciones económicas contraídas con esta institución educativa.'],
+    ['DÉCIMA SEGUNDA: DE LOS CERTIFICADOS Y CONSTANCIAS EN CASO DE MORA. ', 'En caso de incumplimiento en el pago estipulado en la cláusula quinta de este pacto, el Colegio de conformidad con las normas vigentes y la jurisprudencia en materia de costos educativos, se reserva la facultad de retener las evaluaciones, boletines de notas, otorgar el grado de bachiller, certificados y constancias del educando que correspondan a la vigencia de este contrato y en especial la de expedir el paz y salvo, requisito éste indispensable para que el estudiante pueda renovar la matrícula para el año siguiente a cursar; en este mismo caso el Colegio se reserva el derecho de colocar en los documentos que expida con ocasión de este contrato, la circunstancia de que el padre de familia y/o acudiente no está a paz y salvo por todo concepto.'],
+    ['DÉCIMA TERCERA: TERMINACIÓN DEL CONTRATO: ', 'Este contrato termina por una de las siguientes causales: 1ª Por expiración del plazo fijado. 2ª Por muerte, desaparición o incapacidad física o mental total o parcial del educando para continuar estudiando. 3ª Por mutuo consentimiento.'],
+    ['DÉCIMA CUARTA: TERMINACIÓN UNILATERAL DEL CONTRATO: ', 'Para que en forma unilateral cesen los efectos de lo aquí pactado, deberá observarse: 1° Por parte del Colegio: a) Por el medio más expedito, comunicará al estudiante y/o a sus padres de familia y/o acudiente, la decisión de cancelación inmediata de la matrícula. b) Por mora en el pago de pensiones por dos o más meses. c) Por causales determinadas en el Manual de convivencia y este contrato. d) Cuando los padres de familia y/o acudiente o el estudiante suministren información falsa al Colegio o procedan de mala fe contra cualquiera de los intereses de esta institución educativa, sin perjuicio de las acciones judiciales por los mismos hechos. 2° Por parte del padre de familia y/o acudiente: Debe comunicar por escrito al representante legal del Colegio la decisión unilateral de retiro, con una antelación de treinta días, expresando las razones que ocasionan el retiro temporal o definitivo del estudiante, o por el contrario, deberá cancelar los costos educativos hasta el momento en que suministre la información por escrito. En cualquiera de estos casos la obligación económica se causará en su totalidad para ese mes si la terminación del contrato tiene ocurrencia después de los primeros ocho días calendario de ese mes. Parágrafo: Igualmente se debe tener en cuenta que en caso de no cancelación de lo adeudado hasta la fecha del retiro definitivo del estudiante, el Colegio se reserva el derecho señalado en la cláusula décima y siguientes de este contrato.'],
+    ['DÉCIMA QUINTA. ', 'Este contrato por sí sólo presta mérito ejecutivo, pactándose que los costos y demás gastos judiciales y extrajudiciales que se ocasionen por el incumplimiento de cualquiera de las cláusulas aquí convenidas, serán por cuenta del incumplido.'],
+    ['DÉCIMA SEXTA. ', 'El estudiante, los padres de familia y/o el acudiente manifiestan que conocen el Manual de Convivencia Estudiantil que rige en el Colegio y por ello comparten los principios filosóficos y educativos en los cuales se fundamentan y se comprometen a cumplir con las normas que les corresponden ya como educando, padre de familia y/o acudiente o responsable de la obligación. Parágrafo: De conformidad con el artículo 101 de la ley 115 de 1994, el Manual de Convivencia, demás normas internas del Colegio, el pagaré firmado en blanco para ser llenado en los términos de la carta de instrucciones señalada en la cláusula décima, serán parte integrante de este contrato.'],
+    ['DÉCIMA SÉPTIMA: FIRMA ELECTRÓNICA. ', 'Las partes acuerdan suscribir este contrato por medios electrónicos, con la misma validez y efectos jurídicos que la firma manuscrita, de conformidad con la Ley 527 de 1999 y el Decreto 2364 de 2012. La constancia de la firma electrónica (nombre, cédula, fecha, hora y código de verificación) hace parte integral de este documento.']
+  ];
+  return '<div style="display:flex;gap:12px;align-items:center;border-bottom:2.5px solid #d9a62e;padding-bottom:10px;margin-bottom:14px">'
+    + (d.escudo ? '<img src="' + d.escudo + '" alt="" style="height:64px">' : '')
+    + '<div><div style="font-weight:700;font-size:1.05rem">CENTRO EDUCATIVO MARAVILLAS INFANTILES</div><div style="font-size:.85rem;color:#5A6B84">Barranquilla — Atlántico<br>Código DANE #308001000238 · Núcleo #11 · NIT 1.045.684.643-5</div></div></div>'
+    + '<p style="text-align:center;font-weight:700;margin:0 0 12px">CONTRATO DE MATRÍCULA — AÑO LECTIVO 2027</p>'
+    + '<p style="text-align:justify">Con el fin de asegurar el derecho a la educación integral del estudiante <strong>' + esc(d.menor || '') + '</strong>, identificado(a) con documento No. <strong>' + esc(d.docMenor || '') + '</strong>, el (la) suscrito(a) <strong>' + esc(d.firmante || lin) + '</strong>, mayor de edad, identificado(a) como aparece al pie de su firma, en calidad de <strong>PADRE, MADRE Y/O ACUDIENTE</strong> del prenombrado beneficiario estudiante del servicio público educativo contratado, QUIEN SE DECLARA EN CAPACIDAD DE PAGO, celebra con el Sr. ANDRÉS RICARDO HERNÁNDEZ OSPINO, mayor de edad, identificado con la cédula de ciudadanía Nº 1.045.684.643 expedida en Barranquilla (Atlántico), vecino de esta ciudad, en su calidad de Representante Legal del COLEGIO CENTRO EDUCATIVO MARAVILLAS INFANTILES, previsto en el artículo 95 de la ley 115 de 1994, el presente contrato, que se regirá mediante las siguientes cláusulas:</p>'
+    + cl.map(c => '<p style="text-align:justify;margin:0 0 8px"><strong>' + c[0] + '</strong>' + c[1] + '</p>').join('')
+    + '<p style="text-align:justify">Para constancia se firma en Barranquilla, a los ' + esc(d.fechaTxt || '______') + '.</p>';
+}
+function firmaContratoHTML(p){
+  if(!p || p.tramite === 'ACTUALIZACION') return '';
+  const env = (Array.isArray(p.enviosDocs) ? p.enviosDocs : []).filter(x => (x.categoria || '') === CONTRATO_CATEGORIA);
+  const guardada = env.find(x => x.estado === 'ATENDIDA');
+  const pendiente = env.find(x => x.estado === 'PENDIENTE');
+  let h = '<div class="card"><h2><span class="ico">📝</span> Firmar contrato de matrícula</h2>';
+  if(guardada){ return h + '<div class="aviso-ok">✔ <strong>Contrato de matrícula firmado y guardado por el colegio.</strong> ¡Gracias! Este paso de la matrícula ya está completo.</div></div>'; }
+  if(pendiente){ return h + '<div class="aviso-ok">🕐 <strong>Tu contrato firmado fue enviado</strong> el ' + new Date(pendiente.ts || Date.now()).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) + ' y está en revisión del colegio. No necesitas firmarlo de nuevo.</div></div>'; }
+  if((p.etapa || 'NUEVA') !== 'ADMITIDA') return '';
+  if(env.length) h += '<div class="error" style="margin-bottom:10px">El colegio no pudo guardar el contrato firmado anterior. Por favor fírmalo de nuevo.</div>';
+  h += '<p style="margin:0 0 8px">¡Tu hijo(a) fue admitido(a)! Para completar la matrícula, el padre, la madre o el acudiente debe firmar electrónicamente el <strong>contrato de matrícula del año lectivo 2027</strong>:</p>'
+    + '<ol style="margin:0 0 10px;padding-left:20px"><li>Lee el contrato completo.</li><li>Escribe tu nombre completo y tu cédula.</li><li>Dibuja tu firma con el dedo en el recuadro y pulsa «Firmar y enviar».</li></ol>'
+    + '<div style="border:1.5px solid #d7e0f0;border-radius:10px;padding:14px;max-height:320px;overflow:auto;background:#fbfcfe;font-size:.93rem;line-height:1.5">' + contratoCuerpoHTML({ menor: p.nombre || '', docMenor: DOC_CONSULTADO, grado: p.grado || '', escudo: FIRMA_ESCUDO_URL }) + '</div>'
+    + '<label style="display:flex;gap:8px;align-items:flex-start;margin:12px 0"><input type="checkbox" id="contrato-acepto" style="margin-top:3px;width:auto"> <span>Declaro que soy el padre, la madre o el acudiente del estudiante, que leí y acepto este contrato, y que firmo electrónicamente conforme a la Ley 527 de 1999 y el Decreto 2364 de 2012.</span></label>'
+    + '<p style="margin:8px 0 4px"><strong>Nombre completo de quien firma</strong></p><input id="contrato-nombre" type="text" autocomplete="name" placeholder="Ej.: María Fernanda Pérez Gómez" style="width:100%;padding:10px;border:1.5px solid #c9d6f5;border-radius:9px;font-size:16px">'
+    + '<p style="margin:10px 0 4px"><strong>Cédula de ciudadanía de quien firma</strong></p><input id="contrato-cedula" type="text" inputmode="numeric" placeholder="Ej.: 1045680000" style="width:100%;padding:10px;border:1.5px solid #c9d6f5;border-radius:9px;font-size:16px">'
+    + '<p style="margin:12px 0 4px"><strong>Dibuja tu firma aquí</strong></p>'
+    + '<canvas id="contrato-lienzo" width="640" height="200" style="width:100%;height:180px;border:1.5px dashed #9db8dd;border-radius:10px;background:#fff;touch-action:none"></canvas>'
+    + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn-pri" style="flex:1;min-width:200px" onclick="enviarFirmaContrato()">📝 Firmar y enviar al colegio</button><button type="button" onclick="contratoLimpiar()" style="background:#fff;color:#16283f;border:1.5px solid #c9d6f5;border-radius:9px;padding:10px 16px;font-weight:600;cursor:pointer">Borrar firma</button></div>'
+    + '<div id="contrato-msg"></div></div>';
+  setTimeout(contratoInitLienzo, 80);
+  return h;
+}
+let CONTRATO_CTX = null, CONTRATO_SUCIA = false;
+function contratoInitLienzo(){
+  const cv = document.getElementById('contrato-lienzo'); if(!cv) return;
+  const ctx = cv.getContext('2d'); ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#12264a';
+  CONTRATO_CTX = ctx; CONTRATO_SUCIA = false;
+  let dibujando = false, ult = null;
+  const pos = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * cv.width / r.width, y: (e.clientY - r.top) * cv.height / r.height }; };
+  cv.addEventListener('pointerdown', e => { dibujando = true; ult = pos(e); try{ cv.setPointerCapture(e.pointerId); }catch(err){} });
+  cv.addEventListener('pointermove', e => { if(!dibujando) return; const p2 = pos(e); ctx.beginPath(); ctx.moveTo(ult.x, ult.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); ult = p2; CONTRATO_SUCIA = true; });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => cv.addEventListener(ev, () => { dibujando = false; }));
+}
+function contratoLimpiar(){ const cv = document.getElementById('contrato-lienzo'); if(cv && CONTRATO_CTX){ CONTRATO_CTX.clearRect(0, 0, cv.width, cv.height); CONTRATO_SUCIA = false; } }
+async function enviarFirmaContrato(){
+  const msg = document.getElementById('contrato-msg');
+  const pon = t => { if(msg) msg.innerHTML = '<div class="error">' + t + '</div>'; };
+  const p = PROCESO_ACTUAL; if(!p){ pon('Vuelve a consultar el documento del estudiante e inténtalo de nuevo.'); return; }
+  const nombre = (document.getElementById('contrato-nombre').value || '').trim();
+  const cedula = (document.getElementById('contrato-cedula').value || '').replace(/\D/g, '');
+  if(!document.getElementById('contrato-acepto').checked){ pon('Marca la casilla de declaración y aceptación para poder firmar.'); return; }
+  if(nombre.split(/\s+/).filter(Boolean).length < 2){ pon('Escribe tu nombre completo (nombres y apellidos).'); return; }
+  if(cedula.length < 6){ pon('Escribe tu número de cédula.'); return; }
+  if(!CONTRATO_SUCIA){ pon('Dibuja tu firma en el recuadro.'); return; }
+  const cv = document.getElementById('contrato-lienzo');
+  const firmaURL = cv.toDataURL('image/png');
+  const ahora = new Date();
+  const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const fechaTxt = ahora.getDate() + ' días del mes de ' + meses[ahora.getMonth()] + ' de ' + ahora.getFullYear();
+  const fechaCorta = ahora.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  const horaTxt = ahora.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  const base = { tipo: 'CONTRATO', menor: p.nombre || '', docMenor: DOC_CONSULTADO, grado: p.grado || '', firmante: nombre, cedula: cedula, ts: ahora.getTime() };
+  const huella = await sha256Hex(JSON.stringify(base) + '|' + firmaURL);
+  const codigo = huella.slice(0, 10).toUpperCase();
+  const escudo = await firmaEscudoURI();
+  const htmlDoc = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Contrato de matrícula 2027 firmado — ' + esc(base.menor) + '</title></head>'
+    + '<body style="font-family:Georgia,serif;color:#16283f;max-width:760px;margin:24px auto;padding:0 18px;line-height:1.55">'
+    + contratoCuerpoHTML({ menor: base.menor, docMenor: base.docMenor, grado: base.grado, firmante: nombre, cedula: cedula, fechaTxt: fechaTxt, escudo: escudo })
+    + '<div style="margin-top:18px"><img src="' + firmaURL + '" alt="Firma" style="height:90px;border-bottom:1.5px solid #16283f;padding:0 12px"><p style="margin:6px 0 0"><strong>' + esc(nombre) + '</strong><br>C.C. No. ' + esc(cedula) + '<br>Padre, madre o acudiente y/o responsable de la obligación</p></div>'
+    + '<div style="margin-top:22px;border:1.5px solid #c9d6f5;background:#f4f8ff;border-radius:10px;padding:12px 16px;font-size:.88rem;color:#33415c"><strong>Constancia de firma electrónica</strong> (Ley 527 de 1999 y Decreto 2364 de 2012)<br>'
+    + 'Documento firmado electrónicamente por <strong>' + esc(nombre) + '</strong>, C.C. ' + esc(cedula) + ', el ' + esc(fechaCorta) + ' a las ' + esc(horaTxt) + ' (hora de Colombia), a través de la Consulta para Padres de la plataforma institucional.<br>'
+    + 'Código de verificación: <strong>' + codigo + '</strong><br>Hash SHA-256 del contenido firmado: ' + huella + '</div>'
+    + '</body></html>';
+  const b64 = btoa(unescape(encodeURIComponent(htmlDoc)));
+  const sol = { ts: ahora.getTime(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: p.nombre || '', grado: p.grado || '', docTipo: '', docNumero: DOC_CONSULTADO, genero: '', tipo: 'DOCUMENTO', valor: 0, categoria: CONTRATO_CATEGORIA, adjuntos: [{ nombre: 'Contrato-de-matricula-2027-firmado.html', tipo: 'text/html', b64: b64 }] };
+  if(msg) msg.innerHTML = '<p class="nota">Enviando tu firma…</p>';
+  try{
+    const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    if(!Array.isArray(p.enviosDocs)) p.enviosDocs = [];
+    p.enviosDocs.push({ ts: sol.ts, estado: 'PENDIENTE', categoria: CONTRATO_CATEGORIA, archivos: ['Contrato-de-matricula-2027-firmado.html'] });
+    const res = document.getElementById('resultado');
+    if(res) res.innerHTML = procesoHTML(p) + documentosProcesoHTML(p) + firmaAutorizacionHTML(p) + firmaContratoHTML(p);
+    alert('✔ ¡Contrato firmado y enviado! El colegio lo guardará en la carpeta del estudiante para completar la matrícula.');
   }catch(e){
     pon('No pudimos enviar tu firma en este momento. Revisa tu conexión e inténtalo de nuevo, o escríbenos por WhatsApp al 302 285 2745.');
   }
