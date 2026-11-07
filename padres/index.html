@@ -247,11 +247,11 @@ async function consultar(){
   try{
     const clave = await sha256Hex(doc);
     CLAVE_ACTUAL = clave;
-    if (window.__vincularPush) window.__vincularPush(clave);
     const r = await fetch(RTDB + '/consulta2027/' + clave + '.json');
     if(r.ok){ const dj = await r.json(); if(esConsultaValida(dj)) datos = dj; }
     else if(r.status === 401 || r.status === 403) estadoConsulta = 'permiso';
     if(datos) DATOS_ACTUAL = datos;
+    if (datos && window.__vincularPush) window.__vincularPush(clave);
     try{
       const rp = await fetch(RTDB + '/proceso2027/' + clave + '.json');
       const pj = await rp.json();
@@ -894,6 +894,7 @@ function msgPush(htmlTxt, ok){
   if (m) m.innerHTML = '<div class="' + (ok ? 'msg-ok' : 'error') + '">' + htmlTxt + '</div>';
 }
 function pushSoportado(){ return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window); }
+function gradoPush(){ try { return (typeof DATOS_ACTUAL !== 'undefined' && DATOS_ACTUAL && DATOS_ACTUAL.gradoActual) ? String(DATOS_ACTUAL.gradoActual) : ''; } catch (e) { return ''; } }
 async function estadoPush(){
   const b = document.getElementById('btn-push');
   if (!b) return;
@@ -922,7 +923,7 @@ async function activarPush(){
     const sid = await sha256Hex(j.endpoint);
     const r = await fetch(RTDB + '/pushSubs/' + clave + '/' + sid + '.json', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys, creado: Date.now(), ua: navigator.userAgent.slice(0, 120) })
+      body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys, grado: gradoPush(), creado: Date.now(), ua: navigator.userAgent.slice(0, 120) })
     });
     if (!r.ok) throw new Error('guardar');
     b.textContent = '\u2714 Notificaciones activadas';
@@ -943,7 +944,7 @@ window.__vincularPush = async function(clave){
     const sid = await sha256Hex(j.endpoint);
     await fetch(RTDB + '/pushSubs/' + clave + '/' + sid + '.json', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys, creado: Date.now(), ua: navigator.userAgent.slice(0, 120) })
+      body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys, grado: gradoPush(), creado: Date.now(), ua: navigator.userAgent.slice(0, 120) })
     });
   } catch (e) {}
 };

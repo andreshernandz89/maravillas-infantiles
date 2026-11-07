@@ -143,6 +143,10 @@
   .hoja .obs{ min-height:34px; white-space:pre-line; }
   .hoja .firma{ margin-top:44px; text-align:center; }
   .hoja .firma .linea{ border-top:1.5px solid #111; width:280px; margin:0 auto; padding-top:5px; font-weight:700; }
+  .hoja .firma-sec{ margin-top:6px; width:300px; }
+  .hoja .firma-sec img{ width:260px; display:block; }
+  .hoja .firma-sec .linea2{ border-top:1.6px solid #111; }
+  .hoja .firma-sec .cargo{ font-weight:700; font-size:13.5px; margin-top:5px; }
   .copyr{ font-size:.78rem; color:#8494ad; text-align:center; line-height:1.55; margin-top:14px }
   #print-area{ display:none; }
   @page{ size:Letter; margin:0; }
@@ -851,6 +855,8 @@ button.btn:hover{ background:var(--azul-osc); }
         <div class="fila">
           <div style="flex:1;min-width:280px"><label>Observaciones del informe final (estudiante elegido)</label>
           <textarea id="fin-obs" placeholder="Observaciones finales…" oninput="guardarObsFinal()"></textarea></div>
+          <div><label>Inasistencias justificadas (horas)</label><input type="number" id="fin-inasj" min="0" oninput="guardarObsFinal()"></div>
+          <div><label>Inasistencias NO justificadas (horas)</label><input type="number" id="fin-inasn" min="0" oninput="guardarObsFinal()"></div>
         </div>
       </div>
       <div id="final-out"></div>
@@ -3343,15 +3349,37 @@ function hojaFinal(e){
     return `<tr><td><strong>${esc(x.a.nombre)}</strong></td><td class="c">${x.a.ih!=null?x.a.ih:''}</td>${x.ps.map(v=>`<td class="c">${pre ? esc(v||'') : fmt(v)}</td>`).join('')}${pre ? '' : `<td class="c"><strong>${fmt(x.prom)}</strong></td><td class="c">${esc(d)}</td>`}</tr>`;
   }).join('');
   const xf = extraDe(e.id, 'F');
+  const GRADOS_CANON = ['PÁRVULO','PRE-JARDÍN','JARDÍN','TRANSICIÓN','PRIMERO','SEGUNDO','TERCERO','CUARTO','QUINTO','SEXTO'];
+  const ORDINAL_G = { PRIMERO:'1º', SEGUNDO:'2º', TERCERO:'3º', CUARTO:'4º', QUINTO:'5º', SEXTO:'6º' };
+  const claveG = s => String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z-]/g,'');
+  const iG = GRADOS_CANON.findIndex(g => claveG(g) === claveG(curso.nombre));
+  const gAct = iG >= 0 ? GRADOS_CANON[iG] : String(curso.nombre||'').toUpperCase();
+  const gSig = iG >= 0 ? GRADOS_CANON[iG+1] : null;
+  const fraseSig = gSig ? (ORDINAL_G[gSig] ? 'grado ' + ORDINAL_G[gSig] + ' (' + gSig + ') de Educación ' + (gSig==='SEXTO' ? 'Básica Secundaria' : 'Básica Primaria') : 'grado ' + gSig + ' de Educación Preescolar') : '';
+  const promovidoF = pre ? true : (promFinal != null && promFinal >= 3.0);
+  let promoTxt = '';
+  if(gSig && (pre || promFinal != null)){
+    promoTxt = promovidoF
+      ? 'Alcanzó los logros propuestos para el grado ' + gAct + ' de ' + (pre ? 'Educación Preescolar' : 'Educación Básica') + ' que lo(a) promociona para cursar ' + fraseSig + '.'
+      : 'No alcanzó los logros propuestos para el grado ' + gAct + ' de Educación Básica, por lo cual no es promovido(a) al siguiente grado.';
+  }
+  const MESES_F = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const hoyImp = new Date();
+  const dadoEn = 'Dado en Barranquilla, ' + (hoyImp.getDate() === 1 ? 'al 1 día' : 'a los ' + hoyImp.getDate() + ' días') + ' del mes de ' + MESES_F[hoyImp.getMonth()] + ' del ' + hoyImp.getFullYear() + '.';
   return `<div class="hoja">${encabezadoHoja(e, curso)}
     <div class="titulo">Informe final</div>
     <div class="seccion">Aspectos del plan de formación — Consolidado del año</div>
     <table><thead><tr><th style="text-align:left;width:170px">ASIGNATURA</th><th class="c" style="width:40px">IH</th><th class="c" style="width:48px">P1</th><th class="c" style="width:48px">P2</th><th class="c" style="width:48px">P3</th><th class="c" style="width:48px">P4</th>${pre ? '' : '<th class="c" style="width:76px">DEFINITIVA</th><th class="c" style="width:96px">DESEMPEÑO</th>'}</tr></thead><tbody>${filas}</tbody></table>
     ${pre ? tablaEscalaPreescolar() : tablaEscala()}
-    ${pre ? '' : `<p class="inasis">PROMEDIO GENERAL FINAL: ${fmt(promFinal)} (${esc(desFinal)}) &nbsp;&nbsp;·&nbsp;&nbsp; CONCEPTO: ${esc(concepto)}</p>`}
+    ${pre ? '' : `<p class="inasis">PROMEDIO GENERAL FINAL: ${fmt(promFinal)} (${esc(desFinal)})</p>`}
+    <p class="inasis">Asistencias durante el año escolar: Justificadas ${esc(xf.inasJ||'___')} horas &nbsp;&nbsp; No justificadas: ${esc(xf.inasN||'___')} horas</p>
+    <p><u>La institución se encuentra registrada en la Notaría octava, libro 6 Folio 138.</u></p>
+    ${promoTxt ? `<p>${esc(promoTxt)}</p>` : ''}
     <p class="obs-t">OBSERVACIONES:</p>
     <p class="obs">${esc(xf.obs||'')}</p>
-    <div class="firma"><div class="linea">Directora de grupo.</div></div>
+    <p>${dadoEn}</p>
+    <p>Atentamente.</p>
+    <div class="firma-sec"><img src="/plataformaCEMI/firma-secretaria.png" alt="Firma de la secretaria"><div class="linea2"></div><div class="cargo">Secretaria (E).</div></div>
   </div>`;
 }
 function renderFinal(){
@@ -3363,15 +3391,22 @@ function renderFinal(){
   if(sel && sel!=='all'){
     const e = DB.estudiantes.find(s=>s.id===sel);
     obsEl.disabled = false; obsEl.value = e ? (extraDe(e.id,'F').obs||'') : '';
+    const xf2 = e ? extraDe(e.id,'F') : {};
+    const ijA = $('fin-inasj'), inA = $('fin-inasn');
+    if(ijA){ ijA.disabled = false; ijA.value = xf2.inasJ||''; }
+    if(inA){ inA.disabled = false; inA.value = xf2.inasN||''; }
     $('final-out').innerHTML = e ? hojaFinal(e) : '';
   } else {
     obsEl.value=''; obsEl.disabled = true; obsEl.placeholder = 'Elige un estudiante específico para escribir sus observaciones finales.';
+    const ijB = $('fin-inasj'), inB = $('fin-inasn');
+    if(ijB){ ijB.value=''; ijB.disabled = true; }
+    if(inB){ inB.value=''; inB.disabled = true; }
     $('final-out').innerHTML = lista.map(e=>hojaFinal(e)).join('') || '<p style="text-align:center;color:#666">Este curso aún no tiene estudiantes.</p>';
   }
 }
 function guardarObsFinal(){
   const sel = $('fin-estudiante').value; if(!sel || sel==='all') return;
-  const x = asegurarExtra(sel, 'F'); x.obs = $('fin-obs').value; guardar();
+  const x = asegurarExtra(sel, 'F'); x.obs = $('fin-obs').value; const ijG = $('fin-inasj'), inG = $('fin-inasn'); if(ijG) x.inasJ = ijG.value; if(inG) x.inasN = inG.value; guardar();
   const e = DB.estudiantes.find(s=>s.id===sel);
   if(e) $('final-out').innerHTML = hojaFinal(e);
 }
@@ -4248,6 +4283,10 @@ async function renderPanelPush(){
     '<p class="ayuda" style="margin:0 0 8px">Llega como notificación al celular de los padres que la activaron en la Consulta de Padres. <span id="push-conteo">Contando dispositivos\u2026</span></p>' +
     '<label>Título</label><input id="push-titulo" maxlength="60" placeholder="Ej.: Aviso importante del colegio">' +
     '<label>Mensaje</label><textarea id="push-cuerpo" rows="2" maxlength="240" placeholder="Ej.: Mañana viernes los estudiantes salen a las 10:30 a.m."></textarea>' +
+    '<label>¿A qué grados va?</label><div id="push-grados" style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 4px">' +
+    '<label style="display:inline-flex;align-items:center;gap:5px;background:#EAF4FF;border:1px solid #C9DBFA;border-radius:999px;padding:4px 10px;font-size:13px;cursor:pointer;margin:0"><input type="checkbox" id="push-grado-todos" checked onchange="pushGradosTodos(this)"> Todos los grados</label>' +
+    (DB.cursos || []).map(c => '<label style="display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #C9DBFA;border-radius:999px;padding:4px 10px;font-size:13px;cursor:pointer;margin:0"><input type="checkbox" class="push-grado" value="' + esc(c.nombre) + '" disabled> ' + esc(c.nombre) + '</label>').join('') +
+    '</div><p class="ayuda" style="margin:0 0 4px">El aviso llega solo a los padres cuyo hijo está en los grados marcados (según el grado con el que consultaron en su celular).</p>' +
     '<div style="margin-top:10px"><button class="btn" id="btn-push-enviar" onclick="enviarPushPadres()">\uD83D\uDCF2 Enviar notificación</button></div>' +
     '<div id="push-estado"></div><div id="push-historial" style="margin-top:8px"></div></div>';
   try {
@@ -4265,20 +4304,27 @@ async function renderPanelPush(){
     if (h && lista.length) h.innerHTML = '<p class="ayuda" style="margin:6px 0 2px"><strong>Últimos envíos</strong></p>' + lista.map(x => {
       const f = x.fecha ? new Date(x.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
       const est = x.estado === 'enviado' ? '\u2714 Enviada' + (x.resultado ? ' a ' + (x.resultado.enviados || 0) + ' dispositivos' : '') : '\u23F3 En cola\u2026';
-      return '<p class="ayuda" style="margin:2px 0">\u00B7 ' + esc(f) + ' \u2014 <strong>' + esc(x.titulo || '') + '</strong> \u00B7 ' + est + '</p>';
+      return '<p class="ayuda" style="margin:2px 0">\u00B7 ' + esc(f) + ' \u2014 <strong>' + esc(x.titulo || '') + '</strong> \u00B7 ' + (x.grados && x.grados.length ? esc(x.grados.join(', ')) : 'Todos los grados') + ' \u00B7 ' + est + '</p>';
     }).join('');
   } catch (e) {}
+}
+function pushGradosTodos(cb){
+  document.querySelectorAll('.push-grado').forEach(x => { x.disabled = cb.checked; if (cb.checked) x.checked = false; });
 }
 async function enviarPushPadres(){
   const t = ($('push-titulo').value || '').trim();
   const c = ($('push-cuerpo').value || '').trim();
   const est = $('push-estado');
   if (!t || !c) { alert('Escribe el título y el mensaje de la notificación.'); return; }
-  if (!confirm('¿Enviar esta notificación a los padres con las notificaciones activadas?' + (PUSH_CONTEO != null ? '\nDispositivos alcanzados: ' + PUSH_CONTEO : ''))) return;
+  const chkTodos = $('push-grado-todos');
+  const todos = !chkTodos || chkTodos.checked;
+  const grados = todos ? [] : Array.from(document.querySelectorAll('.push-grado')).filter(x => x.checked).map(x => x.value);
+  if (!todos && !grados.length) { alert('Marca «Todos los grados» o elige al menos un grado.'); return; }
+  if (!confirm('¿Enviar esta notificación a los padres con las notificaciones activadas?' + '\nDestino: ' + (grados.length ? grados.join(', ') : 'todos los grados') + (PUSH_CONTEO != null ? '\nDispositivos suscritos en total: ' + PUSH_CONTEO : ''))) return;
   const btn = $('btn-push-enviar'); if (btn) btn.disabled = true;
   try {
     const p = perfilActual() || {};
-    await FB_DB.ref('pushEnvios').push({ titulo: t, cuerpo: c, autor: p.nombre || p.usuario || '', fecha: Date.now(), estado: 'pendiente' });
+    await FB_DB.ref('pushEnvios').push({ titulo: t, cuerpo: c, grados: grados, autor: p.nombre || p.usuario || '', fecha: Date.now(), estado: 'pendiente' });
     if (est) est.innerHTML = '<div style="background:#E2F4E5;color:#1E7D32;border:1px solid #BFE6C6;border-radius:12px;padding:10px 12px;margin-top:10px">\u2714 Quedó en cola. El despachador la enviará en menos de un minuto.</div>';
     $('push-titulo').value = ''; $('push-cuerpo').value = '';
     setTimeout(() => { if (typeof renderPanelPush === 'function') renderPanelPush(); }, 1500);
