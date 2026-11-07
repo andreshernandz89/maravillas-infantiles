@@ -995,6 +995,7 @@ window.__vincularPush = async function(clave){
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys, grado: gradoPush(), creado: Date.now(), ua: navigator.userAgent.slice(0, 120) })
     });
+    if (clave !== 'sin-consulta') { try { await fetch(RTDB + '/pushSubs/sin-consulta/' + sid + '.json', { method: 'DELETE' }); } catch (e) {} }
   } catch (e) {}
 };
 document.addEventListener('DOMContentLoaded', estadoPush);
