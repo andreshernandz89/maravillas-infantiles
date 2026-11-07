@@ -569,7 +569,6 @@ button.btn:hover{ background:var(--azul-osc); }
           <div><label>Buscar estudiante</label><input type="text" id="docsmod-q" placeholder="Nombre…" oninput="DOCSMOD.q=this.value;docsmodPintarTabla()"></div>
           <div><label>Grado</label><select id="docsmod-curso" onchange="DOCSMOD.cursoId=this.value;docsmodPintarTabla()"></select></div>
           <div style="align-self:flex-end"><label class="check-mod"><input type="checkbox" id="docsmod-solo" onchange="DOCSMOD.soloFaltantes=this.checked;docsmodPintarTabla()"> Solo con faltantes</label></div>
-          <div style="align-self:flex-end"><button class="btn" onclick="imprimirDocsFaltantes()">🖨 Imprimir lista de faltantes</button></div>
         </div>
         <div id="docsmod-tabla" style="margin-top:12px"></div>
       </div>
