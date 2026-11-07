@@ -4261,7 +4261,7 @@ function docsmodPintarTabla(){
     const n = x.req.filter(r=>r.ok).length;
     const completo = n === x.req.length;
     const pctAv = x.req.length ? Math.round(n * 100 / x.req.length) : 0;
-    h += '<tr><td class="num">' + (i + 1) + '</td><td><strong>' + esc(x.e.nombre) + '</strong></td><td>' + esc(x.curso ? x.curso.nombre : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;min-width:120px"><span style="white-space:nowrap">📁 ' + n + '/' + x.req.length + '</span><div style="flex:1;height:8px;background:#e8eefb;border-radius:99px;overflow:hidden"><div style="height:100%;width:' + pctAv + '%;background:#0792FE;border-radius:99px"></div></div></div></td><td>' + (completo ? '<span class="sem v">Completo</span>' : '<span class="sem a">Incompleto</span>') + '</td><td style="white-space:nowrap"><button class="btn btn-sec mini" onclick="docsmodToggle(\'' + x.e.id + '\')">' + (DOCSMOD.abiertos[x.e.id] ? 'Ocultar' : 'Detalle') + '</button>' + (soloLect ? '' : ' <button class="btn btn-sec mini" onclick="docsmodAbrirFicha(\'' + x.e.id + '\')">Perfil</button>') + '</td></tr>';
+    h += '<tr><td class="num">' + (i + 1) + '</td><td><strong>' + esc(x.e.nombre) + '</strong></td><td>' + esc(x.curso ? x.curso.nombre : '') + '</td><td><div style="display:flex;align-items:center;gap:8px;min-width:120px"><button class="btn btn-sec mini" style="white-space:nowrap" title="Ver y subir documentos" onclick="docsmodVentana(\'' + x.e.id + '\')">📁 ' + n + '/' + x.req.length + '</button><div style="flex:1;height:8px;background:#e8eefb;border-radius:99px;overflow:hidden"><div style="height:100%;width:' + pctAv + '%;background:#0792FE;border-radius:99px"></div></div></div></td><td>' + (completo ? '<span class="sem v">Completo</span>' : '<span class="sem a">Incompleto</span>') + '</td><td style="white-space:nowrap"><button class="btn btn-sec mini" onclick="docsmodToggle(\'' + x.e.id + '\')">' + (DOCSMOD.abiertos[x.e.id] ? 'Ocultar' : 'Detalle') + '</button>' + (soloLect ? '' : ' <button class="btn btn-sec mini" onclick="docsmodAbrirFicha(\'' + x.e.id + '\')">Perfil</button>') + '</td></tr>';
     if(DOCSMOD.abiertos[x.e.id]){
       const extras = (Array.isArray(x.e.documentos) ? x.e.documentos : []).filter(d=>!x.req.some(r=>r.nombre === d.categoria));
       h += '<tr><td></td><td colspan="5">' + (docsmodNivelTxt(x.curso) ? '<p class="ayuda" style="margin:0 0 6px">Nivel: ' + docsmodNivelTxt(x.curso) + '</p>' : '') + '<div style="display:flex;flex-wrap:wrap;gap:6px">' + x.req.map(r=>'<span class="sem ' + (r.ok ? 'v' : 'r') + '">' + (r.ok ? '✔ ' : '✖ ') + esc(r.nombre) + '</span>').join('') + '</div>' + (extras.length ? '<p class="ayuda" style="margin:8px 0 0">Otros documentos en la carpeta: ' + esc(extras.map(d=>d.nombre || d.categoria || 'Documento').join(', ')) + '</p>' : '') + '</td></tr>';
@@ -4271,6 +4271,78 @@ function docsmodPintarTabla(){
   cont.innerHTML = h;
 }
 function docsmodToggle(id){ DOCSMOD.abiertos[id] = !DOCSMOD.abiertos[id]; docsmodPintarTabla(); }
+let DOCSMOD_VENT = { id: '', slotIdx: -1 };
+function docsmodVentana(id){ DOCSMOD_VENT.id = id; docsmodPintarVentana(); }
+function docsmodCerrarVentana(){ const ov = document.getElementById('docsmod-modal'); if(ov) ov.remove(); DOCSMOD_VENT.id = ''; DOCSMOD_VENT.slotIdx = -1; }
+function docsmodPintarVentana(){
+  const e = DB.estudiantes.find(x=>x.id===DOCSMOD_VENT.id); if(!e){ docsmodCerrarVentana(); return; }
+  let ov = document.getElementById('docsmod-modal');
+  if(!ov){
+    ov = document.createElement('div'); ov.id = 'docsmod-modal';
+    ov.setAttribute('style', 'position:fixed;inset:0;background:rgba(10,18,32,.55);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:18px 12px;overflow:auto');
+    ov.addEventListener('click', ev => { if(ev.target === ov) docsmodCerrarVentana(); });
+    document.body.appendChild(ov);
+  }
+  const req = docsRequeridosDe(e);
+  const docs = Array.isArray(e.documentos) ? e.documentos : [];
+  const edita = puedeEditarFicha() && !docsmodSoloLectura();
+  const curso = cursoDe(e.cursoId);
+  const n = req.filter(r=>r.ok).length;
+  const filas = req.map((r, idx) => {
+    const ds = docs.filter(d => (d.categoria || '') === r.nombre);
+    const vers = ds.map(d => '<a href="#" onclick="docsmodVerDoc(\'' + d.id + '\');return false">' + (String(d.tipo || '').indexOf('image/') === 0 ? '🖼 ' : '📄 ') + esc(d.nombre || 'documento') + '</a>').join('<br>');
+    return '<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #edf1f8">'
+      + '<div style="flex:1;min-width:0"><div style="font-weight:700;color:' + (r.ok ? '#1a8f3c' : '#b97d10') + ';font-size:14.5px">' + (r.ok ? '✔' : '⬜') + ' ' + esc(r.nombre) + '</div>'
+      + (ds.length ? '<div style="margin-top:3px;font-size:13.5px">' + vers + '</div>' : '<div style="font-size:13px;color:#8a97a8">Pendiente por subir</div>')
+      + '</div>'
+      + (edita ? '<button type="button" class="btn mini" style="white-space:nowrap" onclick="docsmodElegirSlot(' + idx + ')">' + (r.ok ? '⬆ Agregar otro' : '⬆ Subir') + '</button>' : '')
+      + '</div>';
+  }).join('');
+  const extras = docs.filter(d => !req.some(r => r.nombre === (d.categoria || '')));
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:640px;width:100%;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.3)">'
+    + '<div style="display:flex;gap:10px;align-items:flex-start"><div style="flex:1;min-width:0"><div style="font-size:17px;font-weight:800;color:#13213F">📁 Documentos de ' + esc(e.nombre || '') + '</div>'
+    + '<div style="font-size:13.5px;color:#5A6B84">' + esc(curso ? curso.nombre : '') + ' · ' + n + ' de ' + req.length + ' documentos requeridos' + (docsmodSoloLectura() ? ' · Solo lectura' : '') + '</div></div>'
+    + '<button type="button" class="btn btn-sec mini" onclick="docsmodCerrarVentana()">✕ Cerrar</button></div>'
+    + '<div style="height:8px;background:#e8eefb;border-radius:99px;overflow:hidden;margin:12px 0 4px"><div style="height:100%;width:' + (req.length ? Math.round(n * 100 / req.length) : 0) + '%;background:#0792FE"></div></div>'
+    + filas
+    + (extras.length ? '<div style="margin-top:12px"><div style="font-weight:700;font-size:14px;color:#13213F;margin-bottom:4px">Otros documentos en la carpeta</div>' + extras.map(d => '<div style="font-size:13.5px;margin:3px 0"><a href="#" onclick="docsmodVerDoc(\'' + d.id + '\');return false">' + (String(d.tipo || '').indexOf('image/') === 0 ? '🖼 ' : '📄 ') + esc(d.nombre || 'documento') + '</a> <span style="color:#8a97a8">(' + esc(d.categoria || 'Otro') + ')</span></div>').join('') + '</div>' : '')
+    + '<div id="docsmod-vent-msg"></div>'
+    + '<input type="file" id="docsmod-vent-file" class="hidden" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" onchange="docsmodSubirVentana(this)">'
+    + '</div>';
+}
+function docsmodVerDoc(docId){
+  const e = DB.estudiantes.find(x=>x.id===DOCSMOD_VENT.id); if(!e) return;
+  const d = (e.documentos || []).find(x=>x.id===docId); if(d) abrirB64(d.nombre || 'documento', d.tipo || '', d.b64);
+}
+function docsmodElegirSlot(idx){ DOCSMOD_VENT.slotIdx = idx; const inp = document.getElementById('docsmod-vent-file'); if(inp){ inp.value = ''; inp.click(); } }
+async function docsmodSubirVentana(input){
+  const e = DB.estudiantes.find(x=>x.id===DOCSMOD_VENT.id);
+  const files = Array.prototype.slice.call(input.files || []); input.value = '';
+  if(!e || !files.length) return;
+  if(!puedeEditarFicha() || docsmodSoloLectura()){ alert('Tu perfil solo puede consultar los documentos.'); return; }
+  const req = docsRequeridosDe(e); const slot = req[DOCSMOD_VENT.slotIdx] && req[DOCSMOD_VENT.slotIdx].nombre;
+  if(!slot) return;
+  if(!Array.isArray(e.documentos)) e.documentos = [];
+  const yo = (perfilActual() || {}).nombre || '';
+  let okN = 0; const errores = [];
+  for(const f of files){
+    if(e.documentos.length >= DOC_MAX_N){ errores.push(f.name + ' (límite de ' + DOC_MAX_N + ' documentos por estudiante)'); break; }
+    const esImg = f.type && f.type.indexOf('image/') === 0;
+    if(!esImg && f.size > DOC_MAX_BYTES){ errores.push(f.name + ' (supera los 2 MB)'); continue; }
+    try{
+      const d = await leerDocumentoB64(f);
+      if(d && d.cancelado){ errores.push(f.name + ' (cancelado)'); continue; }
+      e.documentos.push({ id: 'doc' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36), nombre: d.nombre, tipo: d.tipo, b64: d.b64, categoria: slot, fecha: hoyISO(), por: yo, origen: 'Plataforma' });
+      okN++;
+    }catch(err){ errores.push(f.name + ' (no se pudo leer)'); }
+  }
+  if(okN){ guardar(); sincronizarConsultaTrasDocs(); }
+  docsmodPintarVentana();
+  renderDocumentos();
+  const m2 = document.getElementById('docsmod-vent-msg');
+  if(m2) m2.innerHTML = (okN ? '<p style="color:#1a8f3c;font-weight:600;margin:10px 0 0">✔ ' + okN + ' documento(s) guardados en «' + esc(slot) + '».</p>' : '') + (errores.length ? '<p style="color:#b03a2e;margin:10px 0 0">' + esc(errores.join(' · ')) + '</p>' : '');
+}
+
 function docsmodAbrirFicha(id){ if(docsmodSoloLectura()) return; verTab('cursos'); verFicha(id); }
 function imprimirDocsFaltantes(){
   const base = docsmodBase();
