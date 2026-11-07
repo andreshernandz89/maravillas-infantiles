@@ -667,20 +667,167 @@ function leerComprobante(f){
     }
   });
 }
+/* ============ Escáner de documentos (realce tipo escáner) ============
+ * Sin librerías: aplana la iluminación (quita sombras y luz desigual),
+ * recorta el fondo alrededor de la hoja, estira el contraste y enfoca.
+ * Conserva el color (las cédulas no se vuelven grises). Si algo falla o
+ * la mejora es mínima, se usa la imagen original. */
+function _escGrises(d, w, h){
+  const g = new Float32Array(w * h);
+  for(let i = 0, j = 0; i < g.length; i++, j += 4) g[i] = 0.299 * d[j] + 0.587 * d[j + 1] + 0.114 * d[j + 2];
+  return g;
+}
+function _escDesenfoque(src, w, h, r){
+  let a = src, b = new Float32Array(src.length);
+  for(let pasada = 0; pasada < 2; pasada++){
+    for(let y = 0; y < h; y++){
+      const f = y * w; let suma = 0;
+      for(let x = -r; x <= r; x++) suma += a[f + Math.min(w - 1, Math.max(0, x))];
+      for(let x = 0; x < w; x++){
+        b[f + x] = suma / (2 * r + 1);
+        suma += a[f + Math.min(w - 1, x + r + 1)] - a[f + Math.max(0, x - r)];
+      }
+    }
+    let tmp = a; a = b; b = tmp;
+    for(let x = 0; x < w; x++){
+      let suma = 0;
+      for(let y = -r; y <= r; y++) suma += a[Math.min(h - 1, Math.max(0, y)) * w + x];
+      for(let y = 0; y < h; y++){
+        b[y * w + x] = suma / (2 * r + 1);
+        suma += a[Math.min(h - 1, y + r + 1) * w + x] - a[Math.max(0, y - r) * w + x];
+      }
+    }
+    tmp = a; a = b; b = tmp;
+  }
+  return a;
+}
+function escanearPixeles(d, w, h){
+  if(w < 320 || h < 320) return { datos: new Uint8ClampedArray(d), ancho: w, alto: h, cambio: 0 };
+  const g = _escGrises(d, w, h);
+  const sw = Math.max(8, Math.round(w / 14)), sh = Math.max(8, Math.round(h / 14));
+  const mini = new Float32Array(sw * sh);
+  for(let y = 0; y < sh; y++) for(let x = 0; x < sw; x++)
+    mini[y * sw + x] = g[Math.min(h - 1, Math.floor((y + 0.5) * h / sh)) * w + Math.min(w - 1, Math.floor((x + 0.5) * w / sw))];
+  const fondoM = _escDesenfoque(mini, sw, sh, Math.max(2, Math.round(sw / 10)));
+  const fondoF = new Float32Array(w * h);
+  for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+    const fx = (x + 0.5) * sw / w - 0.5, fy = (y + 0.5) * sh / h - 0.5;
+    const x0 = Math.max(0, Math.min(sw - 1, Math.floor(fx))), y0 = Math.max(0, Math.min(sh - 1, Math.floor(fy)));
+    const x1 = Math.min(sw - 1, x0 + 1), y1 = Math.min(sh - 1, y0 + 1);
+    const tx = Math.max(0, Math.min(1, fx - x0)), ty = Math.max(0, Math.min(1, fy - y0));
+    fondoF[y * w + x] = (fondoM[y0 * sw + x0] * (1 - tx) + fondoM[y0 * sw + x1] * tx) * (1 - ty) + (fondoM[y1 * sw + x0] * (1 - tx) + fondoM[y1 * sw + x1] * tx) * ty;
+  }
+  let maxF = 0; for(let i = 0; i < fondoM.length; i++) if(fondoM[i] > maxF) maxF = fondoM[i];
+  const umbral = maxF * 0.60;
+  const filas = new Float32Array(h), cols = new Float32Array(w);
+  for(let y = 0; y < h; y++) for(let x = 0; x < w; x++) if(fondoF[y * w + x] > umbral){ filas[y]++; cols[x]++; }
+  let y0 = 0, y1 = h - 1, x0 = 0, x1 = w - 1;
+  while(y0 < y1 && filas[y0] <= w * 0.15) y0++;
+  while(y1 > y0 && filas[y1] <= w * 0.15) y1--;
+  while(x0 < x1 && cols[x0] <= h * 0.15) x0++;
+  while(x1 > x0 && cols[x1] <= h * 0.15) x1--;
+  const mg = 16;
+  x0 = Math.max(0, x0 - mg); y0 = Math.max(0, y0 - mg); x1 = Math.min(w - 1, x1 + mg); y1 = Math.min(h - 1, y1 + mg);
+  let cw = x1 - x0 + 1, ch = y1 - y0 + 1;
+  if(cw < w * 0.2 || ch < h * 0.2 || (cw * ch) > (w * h) * 0.95 || (cw * ch) < (w * h) * 0.15){ x0 = 0; y0 = 0; cw = w; ch = h; }
+  const plano = new Float32Array(cw * ch);
+  const hist = new Uint32Array(256);
+  let difPlano = 0;
+  for(let y = 0; y < ch; y++) for(let x = 0; x < cw; x++){
+    const gi = (y0 + y) * w + (x0 + x);
+    let v = g[gi] * 255 / Math.max(46, fondoF[gi]);
+    if(v > 255) v = 255;
+    plano[y * cw + x] = v; hist[Math.round(v)]++;
+    difPlano += Math.abs(v - g[gi]);
+  }
+  const total = cw * ch;
+  let acum = 0, pBajo = 0, pAlto = 255;
+  for(let i = 0; i < 256; i++){ acum += hist[i]; if(acum >= total * 0.01){ pBajo = i; break; } }
+  acum = 0;
+  for(let i = 255; i >= 0; i--){ acum += hist[i]; if(acum >= total * 0.005){ pAlto = i; break; } }
+  const rango = pAlto - pBajo, estirar = rango > 28 && rango < 250;
+  const lum2 = new Float32Array(cw * ch);
+  for(let i = 0; i < plano.length; i++){
+    let v = estirar ? (plano[i] - pBajo) * 255 / rango : plano[i];
+    lum2[i] = v < 0 ? 0 : (v > 255 ? 255 : v);
+  }
+  const suave = _escDesenfoque(lum2, cw, ch, 1);
+  const salida = new Uint8ClampedArray(cw * ch * 4);
+  for(let y = 0; y < ch; y++) for(let x = 0; x < cw; x++){
+    const i = y * cw + x, gi = (y0 + y) * w + (x0 + x), j = gi * 4, k = i * 4;
+    let lum = lum2[i] + 0.55 * (lum2[i] - suave[i]);
+    lum = lum < 0 ? 0 : (lum > 255 ? 255 : lum);
+    const f = 255 / Math.max(46, fondoF[gi]);
+    const esc = lum / Math.max(12, plano[i]);
+    salida[k] = Math.min(255, d[j] * f * esc);
+    salida[k + 1] = Math.min(255, d[j + 1] * f * esc);
+    salida[k + 2] = Math.min(255, d[j + 2] * f * esc);
+    salida[k + 3] = 255;
+  }
+  let cambio = difPlano / total;
+  if((cw * ch) < (w * h) * 0.93) cambio += 6;
+  return { datos: salida, ancho: cw, alto: ch, cambio: cambio };
+}
+function elegirVersionEscaneo(urlOrig, urlMej){
+  return new Promise(res => {
+    const viejo = document.getElementById('escaneo-modal'); if(viejo) viejo.remove();
+    const ov = document.createElement('div'); ov.id = 'escaneo-modal';
+    ov.setAttribute('style', 'position:fixed;inset:0;background:rgba(10,18,32,.62);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto');
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:760px;width:100%;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-family:inherit">'
+      + '<div style="font-size:17px;font-weight:800;color:#16283f;margin-bottom:4px">📄 Versión tipo escáner de tu documento</div>'
+      + '<p style="margin:0 0 12px;color:#5a6b84;font-size:14px">Aplané la luz, quité las sombras y subí el contraste. Elige cuál guardar:</p>'
+      + '<div style="display:flex;gap:12px;flex-wrap:wrap">'
+      + '<figure style="flex:1;min-width:210px;margin:0"><figcaption style="font-size:13px;font-weight:700;color:#5a6b84;margin-bottom:6px">Original</figcaption><img src="' + urlOrig + '" style="width:100%;max-height:42vh;object-fit:contain;background:#eef1f6;border-radius:8px"></figure>'
+      + '<figure style="flex:1;min-width:210px;margin:0"><figcaption style="font-size:13px;font-weight:700;color:#0f47b8;margin-bottom:6px">Mejorada (tipo escáner)</figcaption><img src="' + urlMej + '" style="width:100%;max-height:42vh;object-fit:contain;background:#eef1f6;border-radius:8px"></figure>'
+      + '</div>'
+      + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">'
+      + '<button type="button" data-v="M" style="flex:1;min-width:170px;background:#0f47b8;color:#fff;border:0;border-radius:9px;padding:12px;font-size:15px;font-weight:700;cursor:pointer">✓ Guardar la mejorada</button>'
+      + '<button type="button" data-v="O" style="flex:1;min-width:150px;background:#fff;color:#16283f;border:1.5px solid #c9d6f5;border-radius:9px;padding:12px;font-size:15px;font-weight:600;cursor:pointer">Guardar la original</button>'
+      + '<button type="button" data-v="X" style="background:#fff;color:#b03a2e;border:1.5px solid #e5b4ae;border-radius:9px;padding:12px 16px;font-size:15px;font-weight:600;cursor:pointer">Cancelar</button>'
+      + '</div></div>';
+    ov.addEventListener('click', e => {
+      const b = e.target && e.target.closest ? e.target.closest('button[data-v]') : null;
+      if(!b) return;
+      ov.remove();
+      res(b.getAttribute('data-v'));
+    });
+    document.body.appendChild(ov);
+  });
+}
+async function mejorarDocumentoImagen(cv){
+  const urlOrig = cv.toDataURL('image/jpeg', 0.8);
+  try{
+    const ctx = cv.getContext('2d');
+    const id = ctx.getImageData(0, 0, cv.width, cv.height);
+    const r = escanearPixeles(id.data, cv.width, cv.height);
+    if(r.cambio < 5) return urlOrig;
+    const out = document.createElement('canvas'); out.width = r.ancho; out.height = r.alto;
+    out.getContext('2d').putImageData(new ImageData(r.datos, r.ancho, r.alto), 0, 0);
+    const urlMej = out.toDataURL('image/jpeg', 0.85);
+    const v = await elegirVersionEscaneo(urlOrig, urlMej);
+    if(v === 'M') return urlMej;
+    if(v === 'O') return urlOrig;
+    return null;
+  }catch(e){ return urlOrig; }
+}
 function leerDocumentoPadre(f){
   return new Promise((res, rej) => {
     if(f.type && f.type.indexOf('image/') === 0){
       const url = URL.createObjectURL(f);
       const img = new Image();
       img.onload = () => {
-        try{
-          const max = 1400; const sc = Math.min(1, max / Math.max(img.width, img.height));
-          const cv = document.createElement('canvas'); cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
-          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-          URL.revokeObjectURL(url);
-          const base = (f.name || 'documento').replace(/\.[^.]+$/, '');
-          res({ nombre: base + '.jpg', tipo: 'image/jpeg', b64: cv.toDataURL('image/jpeg', 0.8).split(',')[1] });
-        }catch(e){ rej(e); }
+        (async () => {
+          try{
+            const max = 1400; const sc = Math.min(1, max / Math.max(img.width, img.height));
+            const cv = document.createElement('canvas'); cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+            cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+            URL.revokeObjectURL(url);
+            const base = (f.name || 'documento').replace(/\.[^.]+$/, '');
+            const durl = await mejorarDocumentoImagen(cv);
+            if(durl === null){ res(null); return; }
+            res({ nombre: base + '.jpg', tipo: 'image/jpeg', b64: durl.split(',')[1] });
+          }catch(e){ rej(e); }
+        })();
       };
       img.onerror = rej;
       img.src = url;
@@ -743,7 +890,8 @@ async function enviarDocumentosLista(files, categoria){
   msg.innerHTML = '<p class="nota">Enviando tus documentos…</p>';
   try{
     const adjuntos = [];
-    for(const f of files) adjuntos.push(await leerDocumentoPadre(f));
+    for(const f of files){ const d = await leerDocumentoPadre(f); if(d) adjuntos.push(d); }
+    if(!adjuntos.length){ pon('No se envió ningún documento.'); return; }
     const sol = { ts: Date.now(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: (((d.apellidos || '') + ' ' + (d.nombres || '')).trim()), grado: d.gradoActual || '', docTipo: d.docTipo || '', docNumero: d.docNumero || '', genero: d.genero || '', tipo: 'DOCUMENTO', valor: 0, categoria: categoria || 'Otro', adjuntos: adjuntos };
     const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
     if(!r.ok) throw new Error('HTTP ' + r.status);
@@ -814,7 +962,8 @@ async function enviarDocumentosAspLista(files, categoria){
   if(msg) msg.innerHTML = '<p class="nota">Enviando tu documento…</p>';
   try{
     const adjuntos = [];
-    for(const f of files) adjuntos.push(await leerDocumentoPadre(f));
+    for(const f of files){ const d = await leerDocumentoPadre(f); if(d) adjuntos.push(d); }
+    if(!adjuntos.length){ pon('No se envió ningún documento.'); return; }
     const sol = { ts: Date.now(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: p.nombre || '', grado: p.grado || '', docTipo: '', docNumero: DOC_CONSULTADO, genero: '', tipo: 'DOCUMENTO', valor: 0, categoria: categoria || 'Otro', adjuntos: adjuntos };
     const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
     if(!r.ok) throw new Error('HTTP ' + r.status);
