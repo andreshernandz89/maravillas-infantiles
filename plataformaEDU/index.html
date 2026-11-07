@@ -1574,7 +1574,7 @@ function matriTarjetaHTML(m){
         matriFilaHTML('Discapacidad (SIMAT)', e.simDiscapacidad) + matriFilaHTML('Tipo de discapacidad', e.simTipoDiscapacidad) +
         matriFilaHTML('Víctima del conflicto', e.simVictima) + matriFilaHTML('Capacidades excepcionales', e.simCapacidades) +
       '</div>';
-      h += matriDocsPanelHTML(m) + matriDocsGuardadosHTML(m);
+      h += matriDocsChecklistHTML(m) + matriDocsPanelHTML(m) + matriDocsGuardadosHTML(m);
     }
   return h + '</div>';
 }
@@ -2259,6 +2259,21 @@ function matriDocsPadresDe(m){
     .sort((a, b) => (a.ts || 0) - (b.ts || 0));
 }
 function matriDocsPanelVisible(m){ return !!m && m.tramite !== 'ACTUALIZACION' && etapaDe(m) !== 'IMPORTADA'; }
+function matriDocsChecklistHTML(m){
+  if(typeof matriDocsPanelVisible === 'function' && !matriDocsPanelVisible(m)) return '';
+  const req = matriDocsRequeridosDe(m);
+  if(!req.length) return '';
+  const porRevisar = {};
+  matriDocsPadresDe(m).forEach(s => { porRevisar[s.categoria || ''] = true; });
+  const nOk = req.filter(r => r.ok).length;
+  return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-top:12px"><strong>📋 Documentos requeridos: ' + nOk + ' de ' + req.length + '</strong>'
+    + req.map(r => {
+        if(r.ok) return '<div style="margin-top:5px">✔ ' + esc(r.nombre) + ' — <strong>Guardado</strong></div>';
+        if(porRevisar[r.nombre]) return '<div style="margin-top:5px">🕐 ' + esc(r.nombre) + ' — <strong>Enviado, por revisar</strong> (abajo puedes guardarlo)</div>';
+        return '<div style="margin-top:5px">⬜ ' + esc(r.nombre) + ' — <strong>Pendiente</strong> (la familia aún no lo envía)</div>';
+      }).join('')
+    + '</div>';
+}
 function matriDocsGuardadosHTML(m){
   const docs = Array.isArray(m.documentos) ? m.documentos : [];
   if(!docs.length) return '';
