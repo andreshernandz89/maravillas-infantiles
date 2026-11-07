@@ -311,7 +311,7 @@ async function consultar(){
   if(proceso && !datos){
     try{ localStorage.setItem('padres_doc', doc); }catch(e){} sesionIniciada();
     PROCESO_ACTUAL = proceso; DOC_CONSULTADO = ($('doc').value || '').trim();
-    res.innerHTML = procesoHTML(proceso) + documentosProcesoHTML(proceso);
+    res.innerHTML = procesoHTML(proceso) + documentosProcesoHTML(proceso) + firmaAutorizacionHTML(proceso);
     res.scrollIntoView({behavior:'smooth'});
     return;
   }
@@ -970,6 +970,127 @@ async function enviarDocumentosAspLista(files, categoria){
     if(msg) msg.innerHTML = '<p class="aviso-ok">✔ Documento enviado (' + (categoria || 'Otro') + '). El colegio lo revisará; vuelve a consultar más tarde para ver el estado.</p>';
   }catch(e){
     pon('No pudimos enviar tu documento en este momento. Escríbenos por WhatsApp al 302 285 2745 y te ayudamos.');
+  }
+}
+/* ---- Firma electrónica de la AUTORIZACIÓN DE USO DE IMAGEN (último paso de la matrícula) ----
+ * El acudiente lee el formato del colegio, escribe su nombre completo y su cédula, dibuja su
+ * firma y la envía: el documento firmado (HTML con la constancia: fecha, hora, código y hash
+ * SHA-256) entra al buzón de documentos del colegio con la categoría FIRMA_CATEGORIA, y de ahí
+ * el colegio lo guarda en la carpeta del aspirante/estudiante como cualquier otro documento. */
+const FIRMA_CATEGORIA = 'Autorización de uso de imagen (firmada)';
+const FIRMA_ESCUDO_URL = 'https://maravillasinfantiles.com/escudo.png';
+function autorizacionCuerpoHTML(d){
+  const lin = '________________________________';
+  const medios = ['Redes sociales institucionales del colegio (entre otras, Instagram y Facebook).',
+    'Página web institucional y demás sitios y plataformas de internet administrados por el colegio.',
+    'La plataforma educativa institucional, en el perfil del estudiante, el observador del estudiante, los boletines y las demás comunicaciones dirigidas a los acudientes.',
+    'Boletines informativos, circulares, anuarios, carteleras, informes y material impreso o digital de carácter institucional.',
+    'Material de divulgación y promoción institucional, incluidas las campañas de matrícula.',
+    'Publicaciones de medios de comunicación relacionadas con actividades, eventos y logros del colegio.'];
+  const conds = [['Gratuidad: ', 'esta autorización se otorga a título gratuito y no genera contraprestación económica alguna a favor del menor ni de quien la suscribe.'],
+    ['Interés superior del menor: ', 'las imágenes se usarán siempre respetando la dignidad, la intimidad y el interés superior del menor, conforme a los artículos 15 y 44 de la Constitución Política y a la Ley 1098 de 2006 (Código de la Infancia y la Adolescencia).'],
+    ['No cesión comercial: ', 'el colegio no cederá las imágenes a terceros con fines comerciales ajenos a la institución.'],
+    ['Vigencia y revocación: ', 'la autorización rige mientras el (la) menor se encuentre matriculado(a) en la institución y podrá ser revocada en cualquier momento, mediante comunicación escrita dirigida al colegio; la revocación producirá efectos hacia el futuro y no afectará las publicaciones realizadas antes de su radicación.'],
+    ['Protección de datos personales: ', 'conforme a la Ley 1581 de 2012 y al Decreto 1377 de 2013, autorizo el tratamiento de los datos personales del menor contenidos en las imágenes, de acuerdo con la Política de Tratamiento de Datos Personales del colegio. Como representante del titular, podré ejercer los derechos de conocer, actualizar, rectificar y revocar esta autorización, mediante comunicación al correo electrónico info@maravillasinfantiles.com o directamente en la sede de la institución en Barranquilla.'],
+    ['Firma electrónica: ', 'las partes acuerdan que este documento podrá suscribirse por medios electrónicos, con la misma validez y efectos jurídicos que la firma manuscrita, de conformidad con la Ley 527 de 1999 y el Decreto 2364 de 2012.']];
+  return '<div style="display:flex;gap:12px;align-items:center;border-bottom:2.5px solid #d9a62e;padding-bottom:10px;margin-bottom:14px">'
+    + (d.escudo ? '<img src="' + d.escudo + '" alt="" style="height:64px">' : '')
+    + '<div><div style="font-weight:700;font-size:1.05rem">CENTRO EDUCATIVO MARAVILLAS INFANTILES</div><div style="font-size:.85rem;color:#5A6B84">Barranquilla — Atlántico<br>Código DANE #308001000238 · Núcleo #11 · NIT 1.045.684.643-5</div></div></div>'
+    + '<p style="text-align:center;font-weight:700;margin:0 0 2px">AUTORIZACIÓN DE USO DE IMAGEN DE ESTUDIANTE MENOR DE EDAD</p>'
+    + '<p style="text-align:center;color:#5A6B84;margin:0 0 12px">Fotografías y producciones audiovisuales (videos)</p>'
+    + '<p style="text-align:justify">Yo, <strong>' + esc(d.firmante || lin) + '</strong>, identificado(a) con cédula de ciudadanía No. <strong>' + esc(d.cedula || lin) + '</strong>, actuando en mi calidad de padre, madre o acudiente y, en todo caso, como representante legal del (la) menor <strong>' + esc(d.menor || '') + '</strong>, identificado(a) con documento No. <strong>' + esc(d.docMenor || '') + '</strong>, estudiante del grado <strong>' + esc(d.grado || '') + '</strong> de esta institución, en ejercicio de la patria potestad (artículo 288 del Código Civil), de manera libre, previa, expresa e informada, <strong>AUTORIZO</strong> al CENTRO EDUCATIVO MARAVILLAS INFANTILES para captar, reproducir, publicar y divulgar las fotografías y grabaciones audiovisuales (videos) en las que aparezca el (la) menor, tomadas durante las actividades académicas, culturales, deportivas, recreativas e institucionales del colegio, en los siguientes medios y con fines exclusivamente educativos, informativos e institucionales:</p>'
+    + '<ol style="margin:6px 0;padding-left:22px">' + medios.map(m => '<li style="text-align:justify;margin-bottom:3px">' + m + '</li>').join('') + '</ol>'
+    + '<p style="margin:8px 0 4px">Declaro que conozco y acepto las siguientes condiciones:</p>'
+    + '<ul style="margin:6px 0;padding-left:22px">' + conds.map(c => '<li style="text-align:justify;margin-bottom:3px"><strong>' + c[0] + '</strong>' + c[1] + '</li>').join('') + '</ul>'
+    + '<p style="text-align:justify">Para constancia, se firma en Barranquilla, a los ' + esc(d.fechaTxt || '______') + '.</p>';
+}
+function firmaAutorizacionHTML(p){
+  if(!p || p.tramite === 'ACTUALIZACION') return '';
+  const idx = ETAPAS_PROC.findIndex(x => x.k === (p.etapa || 'NUEVA'));
+  if(idx < 1) return '';
+  const env = (Array.isArray(p.enviosDocs) ? p.enviosDocs : []).filter(x => (x.categoria || '') === FIRMA_CATEGORIA);
+  const guardada = env.find(x => x.estado === 'ATENDIDA');
+  const pendiente = env.find(x => x.estado === 'PENDIENTE');
+  let h = '<div class="card"><h2><span class="ico">✍️</span> Firmar autorización de uso de imagen</h2>';
+  if(guardada){ return h + '<div class="aviso-ok">✔ <strong>Autorización firmada y guardada por el colegio.</strong> ¡Gracias! Este paso de la matrícula ya está completo.</div></div>'; }
+  if(pendiente){ return h + '<div class="aviso-ok">🕐 <strong>Tu firma fue enviada</strong> el ' + new Date(pendiente.ts || Date.now()).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) + ' y está en revisión del colegio. No necesitas firmarla de nuevo.</div></div>'; }
+  if(env.length) h += '<div class="error" style="margin-bottom:10px">El colegio no pudo guardar la firma anterior. Por favor fírmala de nuevo.</div>';
+  h += '<p style="margin:0 0 8px">Para completar la matrícula, el padre, la madre o el acudiente debe firmar electrónicamente la <strong>autorización de uso de imagen</strong> del estudiante (fotos y videos en redes sociales, página web, la plataforma, el observador y el material institucional del colegio). Toma menos de dos minutos:</p>'
+    + '<ol style="margin:0 0 10px;padding-left:20px"><li>Lee la autorización.</li><li>Escribe tu nombre completo y tu cédula.</li><li>Dibuja tu firma con el dedo en el recuadro y pulsa «Firmar y enviar».</li></ol>'
+    + '<div style="border:1.5px solid #d7e0f0;border-radius:10px;padding:14px;max-height:320px;overflow:auto;background:#fbfcfe;font-size:.93rem;line-height:1.5">' + autorizacionCuerpoHTML({ menor: p.nombre || '', docMenor: DOC_CONSULTADO, grado: p.grado || '', escudo: FIRMA_ESCUDO_URL }) + '</div>'
+    + '<label style="display:flex;gap:8px;align-items:flex-start;margin:12px 0"><input type="checkbox" id="firma-acepto" style="margin-top:3px;width:auto"> <span>Declaro que soy el padre, la madre o el acudiente del estudiante, que leí y acepto esta autorización, y que firmo electrónicamente conforme a la Ley 527 de 1999 y el Decreto 2364 de 2012.</span></label>'
+    + '<p style="margin:8px 0 4px"><strong>Nombre completo de quien firma</strong></p><input id="firma-nombre" type="text" autocomplete="name" placeholder="Ej.: María Fernanda Pérez Gómez" style="width:100%;padding:10px;border:1.5px solid #c9d6f5;border-radius:9px;font-size:16px">'
+    + '<p style="margin:10px 0 4px"><strong>Cédula de ciudadanía de quien firma</strong></p><input id="firma-cedula" type="text" inputmode="numeric" placeholder="Ej.: 1045680000" style="width:100%;padding:10px;border:1.5px solid #c9d6f5;border-radius:9px;font-size:16px">'
+    + '<p style="margin:12px 0 4px"><strong>Dibuja tu firma aquí</strong></p>'
+    + '<canvas id="firma-lienzo" width="640" height="200" style="width:100%;height:180px;border:1.5px dashed #9db8dd;border-radius:10px;background:#fff;touch-action:none"></canvas>'
+    + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn-pri" style="flex:1;min-width:200px" onclick="enviarFirmaAutorizacion()">✍️ Firmar y enviar al colegio</button><button type="button" onclick="firmaLimpiar()" style="background:#fff;color:#16283f;border:1.5px solid #c9d6f5;border-radius:9px;padding:10px 16px;font-weight:600;cursor:pointer">Borrar firma</button></div>'
+    + '<div id="firma-msg"></div></div>';
+  setTimeout(firmaInitLienzo, 80);
+  return h;
+}
+let FIRMA_CTX = null, FIRMA_SUCIA = false;
+function firmaInitLienzo(){
+  const cv = document.getElementById('firma-lienzo'); if(!cv) return;
+  const ctx = cv.getContext('2d'); ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#12264a';
+  FIRMA_CTX = ctx; FIRMA_SUCIA = false;
+  let dibujando = false, ult = null;
+  const pos = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * cv.width / r.width, y: (e.clientY - r.top) * cv.height / r.height }; };
+  cv.addEventListener('pointerdown', e => { dibujando = true; ult = pos(e); try{ cv.setPointerCapture(e.pointerId); }catch(err){} });
+  cv.addEventListener('pointermove', e => { if(!dibujando) return; const p2 = pos(e); ctx.beginPath(); ctx.moveTo(ult.x, ult.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); ult = p2; FIRMA_SUCIA = true; });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => cv.addEventListener(ev, () => { dibujando = false; }));
+}
+function firmaLimpiar(){ const cv = document.getElementById('firma-lienzo'); if(cv && FIRMA_CTX){ FIRMA_CTX.clearRect(0, 0, cv.width, cv.height); FIRMA_SUCIA = false; } }
+let FIRMA_ESCUDO_CACHE = null;
+async function firmaEscudoURI(){
+  if(FIRMA_ESCUDO_CACHE !== null) return FIRMA_ESCUDO_CACHE;
+  try{
+    const r = await fetch(FIRMA_ESCUDO_URL); const b = await r.blob();
+    FIRMA_ESCUDO_CACHE = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(String(fr.result || '')); fr.onerror = () => res(''); fr.readAsDataURL(b); });
+  }catch(e){ FIRMA_ESCUDO_CACHE = ''; }
+  return FIRMA_ESCUDO_CACHE;
+}
+async function enviarFirmaAutorizacion(){
+  const msg = document.getElementById('firma-msg');
+  const pon = t => { if(msg) msg.innerHTML = '<div class="error">' + t + '</div>'; };
+  const p = PROCESO_ACTUAL; if(!p){ pon('Vuelve a consultar el documento del estudiante e inténtalo de nuevo.'); return; }
+  const nombre = (document.getElementById('firma-nombre').value || '').trim();
+  const cedula = (document.getElementById('firma-cedula').value || '').replace(/\D/g, '');
+  if(!document.getElementById('firma-acepto').checked){ pon('Marca la casilla de declaración y aceptación para poder firmar.'); return; }
+  if(nombre.split(/\s+/).filter(Boolean).length < 2){ pon('Escribe tu nombre completo (nombres y apellidos).'); return; }
+  if(cedula.length < 6){ pon('Escribe tu número de cédula.'); return; }
+  if(!FIRMA_SUCIA){ pon('Dibuja tu firma en el recuadro.'); return; }
+  const cv = document.getElementById('firma-lienzo');
+  const firmaURL = cv.toDataURL('image/png');
+  const ahora = new Date();
+  const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const fechaTxt = ahora.getDate() + ' días del mes de ' + meses[ahora.getMonth()] + ' de ' + ahora.getFullYear();
+  const fechaCorta = ahora.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  const horaTxt = ahora.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  const base = { menor: p.nombre || '', docMenor: DOC_CONSULTADO, grado: p.grado || '', firmante: nombre, cedula: cedula, ts: ahora.getTime() };
+  const huella = await sha256Hex(JSON.stringify(base) + '|' + firmaURL);
+  const codigo = huella.slice(0, 10).toUpperCase();
+  const escudo = await firmaEscudoURI();
+  const htmlDoc = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Autorización de uso de imagen firmada — ' + esc(base.menor) + '</title></head>'
+    + '<body style="font-family:Georgia,serif;color:#16283f;max-width:760px;margin:24px auto;padding:0 18px;line-height:1.55">'
+    + autorizacionCuerpoHTML({ menor: base.menor, docMenor: base.docMenor, grado: base.grado, firmante: nombre, cedula: cedula, fechaTxt: fechaTxt, escudo: escudo })
+    + '<div style="margin-top:18px"><img src="' + firmaURL + '" alt="Firma" style="height:90px;border-bottom:1.5px solid #16283f;padding:0 12px"><p style="margin:6px 0 0"><strong>' + esc(nombre) + '</strong><br>C.C. No. ' + esc(cedula) + '<br>Padre, madre o acudiente del estudiante</p></div>'
+    + '<div style="margin-top:22px;border:1.5px solid #c9d6f5;background:#f4f8ff;border-radius:10px;padding:12px 16px;font-size:.88rem;color:#33415c"><strong>Constancia de firma electrónica</strong> (Ley 527 de 1999 y Decreto 2364 de 2012)<br>'
+    + 'Documento firmado electrónicamente por <strong>' + esc(nombre) + '</strong>, C.C. ' + esc(cedula) + ', el ' + esc(fechaCorta) + ' a las ' + esc(horaTxt) + ' (hora de Colombia), a través de la Consulta para Padres de la plataforma institucional.<br>'
+    + 'Código de verificación: <strong>' + codigo + '</strong><br>Hash SHA-256 del contenido firmado: ' + huella + '</div>'
+    + '</body></html>';
+  const b64 = btoa(unescape(encodeURIComponent(htmlDoc)));
+  const sol = { ts: ahora.getTime(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: p.nombre || '', grado: p.grado || '', docTipo: '', docNumero: DOC_CONSULTADO, genero: '', tipo: 'DOCUMENTO', valor: 0, categoria: FIRMA_CATEGORIA, adjuntos: [{ nombre: 'Autorizacion-uso-imagen-firmada.html', tipo: 'text/html', b64: b64 }] };
+  if(msg) msg.innerHTML = '<p class="nota">Enviando tu firma…</p>';
+  try{
+    const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    if(!Array.isArray(p.enviosDocs)) p.enviosDocs = [];
+    p.enviosDocs.push({ ts: sol.ts, estado: 'PENDIENTE', categoria: FIRMA_CATEGORIA, archivos: ['Autorizacion-uso-imagen-firmada.html'] });
+    const res = document.getElementById('resultado');
+    if(res) res.innerHTML = procesoHTML(p) + documentosProcesoHTML(p) + firmaAutorizacionHTML(p);
+    alert('✔ ¡Firma enviada! El colegio la guardará en la carpeta del estudiante para completar la matrícula.');
+  }catch(e){
+    pon('No pudimos enviar tu firma en este momento. Revisa tu conexión e inténtalo de nuevo, o escríbenos por WhatsApp al 302 285 2745.');
   }
 }
 async function enviarSolicitudCert(){
