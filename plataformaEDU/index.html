@@ -602,7 +602,7 @@ button.btn:hover{ background:var(--azul-osc); }
       </div>
       <div class="card" id="card-correo">
         <h2>📧 Correo institucional</h2>
-        <p class="ayuda">Este es el correo oficial de la institución dentro de la plataforma: cualquier correo que se envíe desde aquí (avisos a padres, proceso de admisión, certificados y demás comunicaciones) sale desde esta cuenta. Se sincroniza instalando el puente de correo en la cuenta de Google de la institución (guía de instalación de PlataformaEDU).</p>
+        <p class="ayuda">Este es el correo oficial de la institución dentro de la plataforma: cualquier correo que se envíe desde aquí (avisos a padres, proceso de admisión, certificados y demás comunicaciones) sale con el nombre de la institución y las respuestas llegan a esta cuenta. No hay que sincronizar nada: la plataforma envía por su servicio central de correo. Si la institución prefiere enviar desde su propia cuenta de Google o Microsoft, puede conectarla con los botones de abajo.</p>
         <div class="fila">
           <div style="flex:1;min-width:240px"><label>Correo de la institución</label><input type="email" id="inst-correo" placeholder="Ej.: info@colegio.edu.co"></div>
           <div style="align-self:flex-end"><span id="correo-estado" class="sem">⚪ Sin sincronizar</span></div>
@@ -4751,7 +4751,7 @@ function correoProveedorActivo(){
   if(g && g.email) return 'google';
   if(localStorage.getItem('correoMicrosoft')) return 'microsoft';
   if(correoPuenteUrl()) return 'puente';
-  return '';
+  return 'central';
 }
 function correoConectado(){ return !!correoProveedorActivo(); }
 function pintarEstadoCorreo(){
@@ -4759,11 +4759,13 @@ function pintarEstadoCorreo(){
   const c = (DB.instituto && DB.instituto.correo) || '';
   const prov = correoProveedorActivo();
   if(prov){
-    const etiqueta = prov === 'google' ? 'Google' : prov === 'microsoft' ? 'Microsoft' : 'puente propio';
-    el.textContent = '🟢 Sincronizado (' + etiqueta + ')'; el.className = 'sem v';
-    ay.textContent = 'Sincronizado: todos los correos que se envíen desde la plataforma salen desde ' + (c || 'el correo de la institución') + '.';
+    const etiqueta = prov === 'google' ? 'Google' : prov === 'microsoft' ? 'Microsoft' : prov === 'puente' ? 'puente propio' : 'PlataformaEDU';
+    el.textContent = prov === 'central' ? '🟢 Envío central activo (PlataformaEDU)' : '🟢 Sincronizado (' + etiqueta + ')'; el.className = 'sem v';
+    ay.textContent = prov === 'central'
+      ? 'Sin sincronizar nada: la plataforma envía los correos por su servicio central, con el nombre de tu institución, y las respuestas de los padres llegan al correo institucional (' + (c || 'escribe el correo de la institución y guarda los datos') + '). Si prefieres enviar desde tu propia cuenta, conéctala con Google o Microsoft.'
+      : 'Sincronizado: todos los correos que se envíen desde la plataforma salen desde ' + (c || 'el correo de la institución') + '.';
     if(btn) btn.disabled = false;
-    if(desc) desc.classList.remove('hidden');
+    if(desc){ if(prov === 'central') desc.classList.add('hidden'); else desc.classList.remove('hidden'); }
   } else {
     el.textContent = '⚪ Sin sincronizar'; el.className = 'sem';
     ay.textContent = 'Todavía no hay un correo conectado en este equipo: pulsa «Conectar con Google». Sin conexión, los avisos se envían a mano desde el correo de quien los pulsa.';
@@ -4908,7 +4910,20 @@ async function correoEnviarPlataforma(para, asunto, cuerpo, html){
   if(prov === 'google') return await correoEnviarGoogle(para, asunto, cuerpo, html);
   if(prov === 'microsoft') return await correoEnviarMicrosoft(para, asunto, cuerpo, html);
   if(prov === 'puente') return await correoLlamarPuente({ accion: 'correoEnviar', para: para, asunto: asunto, cuerpo: cuerpo, html: html || '' });
-  throw new Error('Primero conecta el correo institucional con los botones de Google o Microsoft.');
+  if(prov === 'central') return await correoEnviarCentral(para, asunto, cuerpo, html);
+  throw new Error('No hay un medio de envío disponible.');
+}
+async function correoEnviarCentral(para, asunto, cuerpo, html){
+  if (typeof SIMULANDO !== 'undefined' && SIMULANDO) throw new Error('Estás simulando otro perfil (vista previa): el correo no se envía en este modo.');
+  const inst = DB.instituto || {};
+  if(FB_CONFIG.projectId.indexOf('demo') >= 0) return { ok: true, desde: inst.correo || '', simulado: true };
+  const u = FB_AUTH && FB_AUTH.currentUser;
+  if(!u) throw new Error('Tu sesión no está activa; sal y vuelve a entrar a la plataforma.');
+  const destino = String(para || '').trim();
+  if(!destino) throw new Error('El correo destino está vacío.');
+  const item = { para: destino, asunto: asunto || '', cuerpo: cuerpo || '', html: html || '', replyTo: (inst.correo || '').trim(), nombre: (inst.nombre || 'PlataformaEDU'), ts: Date.now(), estado: 'pendiente', intentos: 0 };
+  await FB_DB.ref('colaCorreos').push(item);
+  return { ok: true, desde: item.replyTo || 'PlataformaEDU' };
 }
 async function correoLlamarPuente(extra){
   const urlPuente = correoPuenteUrl();
@@ -4925,10 +4940,10 @@ async function correoProbarConexion(){
     const destino = (DB.instituto && DB.instituto.correo) || '';
     if(!destino){ alert('Primero escribe el correo de la institución o conéctalo con Google/Microsoft.'); return; }
     const inst = (DB.instituto && DB.instituto.nombre) || 'tu institución';
-    const textoPrueba = 'Este es un correo de prueba: la plataforma ya puede enviar correos desde la cuenta institucional ' + destino + '.';
+    const textoPrueba = 'Este es un correo de prueba de tu plataforma: los correos salen con el nombre de ' + inst + ' y las respuestas llegan a ' + destino + '.';
     const htmlPrueba = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14.5px;line-height:1.55;color:#1c2733"><p>' + textoPrueba + '</p>' + FIRMA_EDU_HTML + '</div>';
-    const resp = await correoEnviarPlataforma(destino, '✅ Correo sincronizado — ' + inst, textoPrueba + '\n\nPlataformaEDU', htmlPrueba);
-    if(resp && resp.ok) alert('✅ Correo sincronizado: la prueba se envió desde ' + (resp.desde || destino) + '. Revisa esa bandeja.');
+    const resp = await correoEnviarPlataforma(destino, '✅ Correo de prueba — ' + inst, textoPrueba + '\n\nPlataformaEDU', htmlPrueba);
+    if(resp && resp.ok) alert('✅ Correo de prueba enviado a ' + destino + ' con el nombre de tu institución. Revisa esa bandeja en unos segundos.');
     else alert('El envío respondió: ' + ((resp && resp.error) || 'sin respuesta'));
   }catch(err){ alert('No se pudo enviar la prueba: ' + err.message); }
 }
