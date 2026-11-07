@@ -1385,7 +1385,20 @@ function matriNivelTxtDeGrado(grado){
   const nivel = nivelPorNombreCurso(grado);
   return nivel === 'PREESCOLAR' ? 'Preescolar' : (nivel === 'PRIMARIA' ? 'Básica Primaria' : '');
 }
-function matriAvisoTexto(etapa, nombreEst, grado, inst){
+/* Usuario de padres de una solicitud: primero el del estudiante ya creado
+ * con ese documento (el de siempre); si aún no es estudiante, el asignado
+ * a la propia solicitud (se conserva al matricularse). */
+function matriAccesoDe(m){
+  if(!m) return '';
+  const e = m.estudiante || {};
+  const doc = normDocMatricula(e.docNumero || '');
+  if(doc){
+    const est = (DB.estudiantes || []).find(x => x.datos && normDocMatricula(x.datos.docNumero) === doc);
+    if(est){ const u = usuarioPadresDe(est); if(u) return u; }
+  }
+  return m.usuarioPadres || '';
+}
+function matriAvisoTexto(etapa, nombreEst, grado, inst, acceso){
   const nom = nombreEst || 'su hijo(a)';
   const gTxt = grado ? ('el grado ' + grado) : 'el grado solicitado';
   const asunto = 'Proceso de admisión 2027 de ' + nom + ' — ' + inst;
@@ -1395,7 +1408,7 @@ function matriAvisoTexto(etapa, nombreEst, grado, inst){
     const linT = ['Hola, familia de ' + nom + ':', '',
       'El proceso de admisión de ' + nom + ' para ' + gTxt + ' (año 2027) está en revisión por parte del colegio.', '',
       'Para avanzar en el proceso, por favor suban los documentos requeridos en la plataforma para padres:', URL_PADRES,
-      'Ingresan con el número de documento del estudiante, sin contraseña.', ''];
+      ...(acceso ? ['Ingresan con estos datos:', 'Usuario: ' + acceso, 'Contraseña: el número de documento del estudiante.', ''] : ['Ingresan con el usuario y la contraseña que les enviamos por correo.', ''])];
     if(reqT.length){ linT.push('Documentos requeridos' + (matriNivelTxtDeGrado(grado) ? ' (' + matriNivelTxtDeGrado(grado) + ')' : '') + ':'); reqT.forEach(d => linT.push('• ' + d)); linT.push(''); }
     linT.push('Les avisaremos en cuanto haya novedades.', '', 'Cordialmente,', inst);
     cuerpo = linT.join('\r\n');
@@ -1404,6 +1417,8 @@ function matriAvisoTexto(etapa, nombreEst, grado, inst){
     cuerpo = ['Hola, familia de ' + nom + ':', '',
       '¡Buenas noticias! ' + nom + ' fue ADMITIDO(A) en ' + inst + ' para ' + gTxt + ' del año 2027.', '',
       'El siguiente paso es formalizar la matrícula: por favor comuníquense con secretaría para completar el proceso.', '',
+      'También pueden seguir el estado del proceso en la plataforma para padres:', URL_PADRES,
+      ...(acceso ? ['Usuario: ' + acceso, 'Contraseña: el número de documento del estudiante.', ''] : ['Ingresan con el usuario y la contraseña que les enviamos por correo.', '']),
       'Cordialmente,', inst].join('\r\n');
     wa = 'Hola 🎉 ¡Buenas noticias de ' + inst + '! ' + nom + ' fue admitido(a) para ' + (grado || 'el grado solicitado') + ' en 2027. Comuníquense con secretaría para formalizar la matrícula.';
   } else if(etapa === 'IMPORTADA'){
@@ -1411,14 +1426,16 @@ function matriAvisoTexto(etapa, nombreEst, grado, inst){
       '¡Bienvenidos! ' + nom + ' ya quedó matriculado(a) en ' + gTxt + ' para el año 2027 en ' + inst + '.', '',
       'Les invitamos a usar la plataforma para padres, donde podrán acompañar el año escolar de ' + nom + ':',
       URL_PADRES,
-      'Ingresan con el número de documento del estudiante, sin contraseña.', '',
+      ...(acceso ? ['Recuerden sus datos de ingreso:', 'Usuario: ' + acceso, 'Contraseña: el número de documento del estudiante.', ''] : ['Ingresan con el usuario y la contraseña que les enviamos por correo.', '']),
       'Allí podrán: consultar las notas y los boletines publicados y la asistencia (estando al día en pagos); justificar faltas en línea; reportar pagos; solicitar certificados; ver tareas y actividades; y consultar el calendario institucional y el manual de convivencia.', '',
       'Cordialmente,', inst].join('\r\n');
     wa = 'Hola 🎓 Les escribimos de ' + inst + ': ' + nom + ' ya quedó matriculado(a) en ' + (grado || 'el grado solicitado') + ' para 2027. ¡Bienvenidos!\n' +
-      'Consulten notas, asistencia, tareas y más en la plataforma para padres: ' + URL_PADRES + ' (entran con el documento del estudiante).';
+      'Consulten notas, asistencia, tareas y más en la plataforma para padres: ' + URL_PADRES + ' (entran con su usuario y contraseña).';
   } else {
     cuerpo = ['Hola, familia de ' + nom + ':', '',
       'Recibimos el formulario de matrícula de ' + nom + ' para ' + gTxt + ' (año 2027). Nuestro equipo lo está revisando y les avisaremos cuando el proceso avance.', '',
+      'Mientras tanto, pueden seguir el estado del proceso en la plataforma para padres:', URL_PADRES,
+      ...(acceso ? ['Usuario: ' + acceso, 'Contraseña: el número de documento del estudiante.', ''] : ['Ingresan con el usuario y la contraseña que les enviamos por correo.', '']),
       'Cordialmente,', inst].join('\r\n');
     wa = 'Hola 👋 Les escribimos de ' + inst + ': recibimos el formulario de matrícula de ' + nom + (grado ? ' para ' + grado : '') + ' (2027) y ya lo estamos revisando.';
   }
@@ -1426,7 +1443,7 @@ function matriAvisoTexto(etapa, nombreEst, grado, inst){
 }
 /* Plantilla visual de los correos de admisión: la institución en grande
  * (logo y nombre), las 4 etapas con la actual destacada y un solo botón. */
-function matriAvisoHTML(etapa, nombreEst, grado, inst){
+function matriAvisoHTML(etapa, nombreEst, grado, inst, acceso){
   const nom = esc(nombreEst || 'su hijo(a)');
   const gTxt = esc(grado ? ('el grado ' + grado) : 'el grado solicitado');
   const color = (getComputedStyle(document.documentElement).getPropertyValue('--primario') || '#0f47b8').trim() || '#0f47b8';
@@ -1461,6 +1478,7 @@ function matriAvisoHTML(etapa, nombreEst, grado, inst){
     return '<td align="center" style="background:' + bg + ';color:' + col + ';' + extra + 'font-size:12.5px;padding:8px 4px;border-radius:20px">' + t + '</td>';
   }).join('<td style="width:6px"></td>');
   const parr = parrafos.map(function(p){ return '<p style="margin:0 0 14px;font-size:15.5px;line-height:1.6;color:#26324a">' + p + '</p>'; }).join('');
+  const accesoBox = acceso ? '<div style="background:#eef4ff;border:1px solid #c9d9fb;border-radius:10px;padding:12px 16px;margin:0 0 16px;font-size:14.5px;line-height:1.5;color:#26324a">🔑 <strong>Datos de ingreso a la plataforma para padres</strong><br>Usuario: <strong>' + esc(acceso) + '</strong> &nbsp;·&nbsp; Contraseña: el número de documento del estudiante</div>' : '';
   return '<div style="background:#f2f5fb;padding:28px 12px;font-family:Arial,Helvetica,sans-serif">' +
     '<table align="center" width="100%" style="max-width:560px;background:#ffffff;border:1px solid #dde5f2;border-radius:14px" cellpadding="0" cellspacing="0"><tr><td style="padding:30px 34px 26px">' +
       '<div style="padding-bottom:18px;border-bottom:3px solid #d9a62e;margin-bottom:22px">' +
@@ -1470,10 +1488,10 @@ function matriAvisoHTML(etapa, nombreEst, grado, inst){
         '</tr></table>' +
       '</div>' +
       '<p style="margin:0 0 16px;font-size:20px;font-weight:bold;color:#1a2a4a;text-align:center">' + titulo + '</p>' +
-      parr +
+      parr + accesoBox +
       '<table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 6px"><tr>' + celdas + '</tr></table>' +
       '<div style="text-align:center;margin:22px 0 4px"><a href="' + boton.url + '" style="display:inline-block;background:' + color + ';color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 26px;border-radius:24px">' + boton.texto + '</a>' +
-      '<div style="font-size:12.5px;color:#7a8699;margin-top:9px">Ingresan con el número de documento del estudiante, sin contraseña.</div></div>' +
+      '<div style="font-size:12.5px;color:#7a8699;margin-top:9px">' + (acceso ? 'Usuario: <strong>' + esc(acceso) + '</strong> · Contraseña: el número de documento del estudiante' : 'Ingresan con el usuario y la contraseña que les enviamos por correo.') + '</div></div>' +
       '<div style="border-top:1px solid #e4e9f4;margin-top:24px;padding-top:14px;text-align:center;font-size:12px;color:#8a94a6">' + esc(inst) + ' · Correo enviado desde su plataforma institucional</div>' +
       '<div style="text-align:center;margin-top:16px"><img src="https://plataformaedu.app/logo-correo.png" alt="PlataformaEDU" style="height:24px"><div style="font-size:11px;color:#8a94a6;margin-top:4px">Con tecnología de <a href="https://plataformaedu.app" style="color:#0f47b8;text-decoration:none;font-weight:bold">PlataformaEDU</a></div></div>' +
     '</td></tr></table></div>';
@@ -1484,7 +1502,7 @@ function matriTarjetaHTML(m){
   const esAct = m.tramite === 'ACTUALIZACION';
   const tel = telWhatsApp(a.telefono);
   const inst = (DB.instituto && DB.instituto.nombre) || 'el colegio';
-  const aviso = matriAvisoTexto(etapa, ((e.nombres || '') + ' ' + (e.apellidos || '')).trim(), m.grado || '', inst);
+  const aviso = matriAvisoTexto(etapa, ((e.nombres || '') + ' ' + (e.apellidos || '')).trim(), m.grado || '', inst, matriAccesoDe(m));
   const correoLimpio = String(e.correo || '').trim().replace(/["<>]/g, '');
   const correoHref = correoLimpio ? 'mailto:' + correoLimpio + '?subject=' + encodeURIComponent(aviso.asunto) + '&body=' + encodeURIComponent(aviso.cuerpo) : '';
   const waHref = tel ? 'https://wa.me/' + tel + '?text=' + encodeURIComponent(aviso.wa) : '';
@@ -2065,7 +2083,7 @@ function asignarUsuariosPadres(items, semilla){
   const usados = {}; const porDoc = {}; const res = {};
   (semilla || []).forEach(sd => { const d = String(sd.docNumero || ''); if (d && sd.usuarioPadres && !porDoc[d]) porDoc[d] = sd.usuarioPadres; });
   items.forEach(x => { const d = String((x.datos || {}).docNumero || ''); const u = (x.datos || {}).usuarioPadres; if (d && u && !porDoc[d]) porDoc[d] = u; });
-  items.forEach(x => { const d = String((x.datos || {}).docNumero || ''); const u = porDoc[d]; if (u && !usados[u]) { usados[u] = true; res[x.id] = u; } });
+  items.forEach(x => { const d = String((x.datos || {}).docNumero || ''); const u = porDoc[d]; if (u && (!usados[u] || usados[u] === d)) { usados[u] = d; res[x.id] = u; } });
   items.forEach(x => {
     if (res[x.id]) return;
     let base = usuarioPadresBase(x.nombre); if (!base) base = 'est' + String(x.clave || x.id || '').slice(0, 4);
@@ -2149,11 +2167,22 @@ async function sincronizarConsulta2027(forzar){
       const acceso = {};
       const itemsAct = (DB.estudiantes || []).filter(x => !estaRetirado(x) && x.datos && x.datos.docNumero && accesoClavePorId[x.id]).map(x => ({ id: x.id, nombre: x.nombre, datos: x.datos, clave: accesoClavePorId[x.id] }));
       const itemsArch = accesoArchivo.map((x, i) => ({ id: 'arch' + i, nombre: x.nombre, datos: { docNumero: x.docNumero || '', usuarioPadres: x.usuarioPadres || '' }, clave: x.clave }));
+      const vistosAsp = {};
+      const itemsAsp = [];
+      for(const m of matriLista()){
+        const ee = m.estudiante || {};
+        const docA = normDocMatricula(ee.docNumero || '');
+        if(!docA || etapaDe(m) === 'DESCONOCIDA' || vistosAsp[docA]) continue;
+        vistosAsp[docA] = true;
+        itemsAsp.push({ id: 'asp_' + m.id, matriId: m.id, nombre: (((ee.apellidos || '') + ', ' + (ee.nombres || '')).toUpperCase()), datos: { docNumero: ee.docNumero || '', usuarioPadres: m.usuarioPadres || '' }, clave: await sha256Hex(docA) });
+      }
       const semilla = (DB.estudiantes || []).filter(x => x.datos && x.datos.docNumero && x.datos.usuarioPadres).map(x => ({ docNumero: x.datos.docNumero, usuarioPadres: x.datos.usuarioPadres }));
-      const mapaU = asignarUsuariosPadres(itemsAct.concat(itemsArch), semilla);
+      matriLista().forEach(m => { if (m.usuarioPadres) semilla.push({ docNumero: (m.estudiante || {}).docNumero || '', usuarioPadres: m.usuarioPadres }); });
+      const mapaU = asignarUsuariosPadres(itemsAct.concat(itemsArch, itemsAsp), semilla);
       let cambioU = false;
       itemsAct.forEach(x => { const u = mapaU[x.id]; if (!u) return; acceso[u] = x.clave; const est = (DB.estudiantes || []).find(y => y.id === x.id); if (est && est.datos && est.datos.usuarioPadres !== u) { est.datos.usuarioPadres = u; cambioU = true; } });
       itemsArch.forEach(x => { const u = mapaU[x.id]; if (u) acceso[u] = x.clave; });
+      itemsAsp.forEach(x => { const u = mapaU[x.id]; if (!u) return; acceso[u] = x.clave; const mm = MATRI[x.matriId]; if (mm && mm.usuarioPadres !== u) { mm.usuarioPadres = u; cambioU = true; try{ FB_DB.ref('matriculas2027/' + x.matriId).update({ usuarioPadres: u }); }catch(e){} } });
       await FB_DB.ref('accesoPadres').set(acceso);
       if (cambioU) guardar();
     } catch (eAcc) {}
@@ -2282,7 +2311,7 @@ function matriCrearEstudiante(id){
   const nombre = ((e.apellidos || '') + ', ' + (e.nombres || '')).toUpperCase();
   if(!confirm('Crear el estudiante ' + nombre + ' en el curso ' + curso.nombre + ' con los datos de este formulario?')) return;
   DB.estudiantes.push({ id: uid(), nombre, cursoId: curso.id, documentos: (Array.isArray(m.documentos) ? m.documentos.map(d => Object.assign({}, d)) : []), datos: {
-    docTipo: e.docTipo || 'RC', docNumero: e.docNumero || '', fechaNacimiento: e.fechaNacimiento || '', genero: '',
+    docTipo: e.docTipo || 'RC', docNumero: e.docNumero || '', usuarioPadres: m.usuarioPadres || '', fechaNacimiento: e.fechaNacimiento || '', genero: '',
     direccion: e.direccion || '', acudiente: a.nombre || '', telAcudiente: a.telefono || '',
     correoAcudiente: e.correo || '', docTipoAcudiente: 'CC', docNumeroAcudiente: a.cc || '',
     simDeptoNac: e.simDeptoNac || '', simMuniNac: e.simMuniNac || '',
@@ -4929,11 +4958,13 @@ async function matriAvisarCorreo(id){
   const etapa = etapaDe(m);
   const inst = (DB.instituto && DB.instituto.nombre) || 'el colegio';
   const nombreEst = ((e.nombres || '') + ' ' + (e.apellidos || '')).trim();
-  const aviso = matriAvisoTexto(etapa, nombreEst, m.grado || '', inst);
+  let accesoAviso = matriAccesoDe(m);
+  if(!accesoAviso){ try{ await sincronizarConsulta2027(true); }catch(eSync){} accesoAviso = matriAccesoDe(m); }
+  const aviso = matriAvisoTexto(etapa, nombreEst, m.grado || '', inst, accesoAviso);
   const desde = (DB.instituto && DB.instituto.nombre) || 'el colegio';
   if(!confirm('Se enviará este correo a nombre de ' + desde + ' a ' + para + ':\n\nAsunto: ' + aviso.asunto + '\n\n' + aviso.cuerpo + '\n\n¿Enviar ahora?')) return;
   try{
-    const resp = await correoEnviarPlataforma(para, aviso.asunto, aviso.cuerpo, matriAvisoHTML(etapa, nombreEst, m.grado || '', inst));
+    const resp = await correoEnviarPlataforma(para, aviso.asunto, aviso.cuerpo, matriAvisoHTML(etapa, nombreEst, m.grado || '', inst, accesoAviso));
     if(!resp || !resp.ok) throw new Error((resp && resp.error) || 'El puente no respondió.');
     const marca = { etapa: etapa, ts: Date.now() };
     if(FB_DB) FB_DB.ref('matriculas2027/' + id).update({ avisoCorreoEtapa: marca });
