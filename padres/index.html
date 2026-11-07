@@ -247,6 +247,7 @@ async function consultar(){
   try{
     const clave = await sha256Hex(doc);
     CLAVE_ACTUAL = clave;
+    if (window.__vincularPush) window.__vincularPush(clave);
     const r = await fetch(RTDB + '/consulta2027/' + clave + '.json');
     if(r.ok){ const dj = await r.json(); if(esConsultaValida(dj)) datos = dj; }
     else if(r.status === 401 || r.status === 403) estadoConsulta = 'permiso';
@@ -901,7 +902,7 @@ async function estadoPush(){
   try {
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    if (sub){ b.disabled = true; b.textContent = '\u2714 Notificaciones activadas'; msgPush('Ya recibes los avisos del colegio en este dispositivo.', true); }
+    if (sub){ const card = document.getElementById('push-card'); if (card) card.style.display = 'none'; }
   } catch (e) {}
 }
 async function activarPush(){
@@ -926,11 +927,26 @@ async function activarPush(){
     if (!r.ok) throw new Error('guardar');
     b.textContent = '\u2714 Notificaciones activadas';
     msgPush('\u00A1Listo! Recibir\u00E1s los avisos del colegio en este dispositivo.', true);
+    setTimeout(() => { const card = document.getElementById('push-card'); if (card) card.style.display = 'none'; }, 2600);
   } catch (e) {
     msgPush('No se pudo activar. Int\u00E9ntalo de nuevo en un momento.', false);
     b.disabled = false; b.textContent = '\uD83D\uDD14 Activar notificaciones';
   }
 }
+window.__vincularPush = async function(clave){
+  try {
+    if (!clave || !pushSoportado()) return;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return;
+    const j = sub.toJSON();
+    const sid = await sha256Hex(j.endpoint);
+    await fetch(RTDB + '/pushSubs/' + clave + '/' + sid + '.json', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys, creado: Date.now(), ua: navigator.userAgent.slice(0, 120) })
+    });
+  } catch (e) {}
+};
 document.addEventListener('DOMContentLoaded', estadoPush);
 </script>
 </body>
