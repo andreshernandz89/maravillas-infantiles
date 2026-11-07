@@ -147,6 +147,12 @@
   .hoja .firma-sec img{ width:260px; display:block; }
   .hoja .firma-sec .linea2{ border-top:1.6px solid #111; }
   .hoja .firma-sec .cargo{ font-weight:700; font-size:13.5px; margin-top:5px; }
+  .hoja .cierre-final{ margin-top:18px; line-height:1.65; }
+  .hoja .cierre-final p{ margin:0 0 11px; }
+  .hoja .cierre-final .inasis{ margin-top:0; }
+  .hoja .cierre-final .obs-t{ margin-top:16px; }
+  .hoja .cierre-final .dado{ margin-top:16px; }
+  .hoja .cierre-final .firma-sec{ margin-top:14px; }
   .copyr{ font-size:.78rem; color:#8494ad; text-align:center; line-height:1.55; margin-top:14px }
   #print-area{ display:none; }
   @page{ size:Letter; margin:0; }
@@ -671,6 +677,7 @@ button.btn:hover{ background:var(--azul-osc); }
           <div><label>Tipo de documento</label>
             <select id="ficha-doctipo"><option value="">—</option><option value="TI">TI — Tarjeta de Identidad</option><option value="RC">RC — Registro Civil</option></select></div>
           <div><label>Número de documento</label><input type="text" id="ficha-docnum"></div>
+          <div style="grid-column:1/-1"><p class="ayuda" id="ficha-usuario-padres" style="margin:2px 0 0"></p></div>
           <div><label>Fecha de nacimiento</label><input type="date" id="ficha-nacimiento"></div>
           <div><label>Género</label>
             <select id="ficha-genero"><option value="">—</option><option value="MASCULINO">Masculino</option><option value="FEMENINO">Femenino</option></select></div>
@@ -2047,6 +2054,23 @@ async function renderRespaldoInfo(){
   }catch(e){ el.textContent = 'No se pudo consultar el historial de respaldos.'; }
 }
 
+function normUsuarioPadres(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ''); }
+function usuarioPadresBase(nombreCompleto){
+  const partes = String(nombreCompleto || '').split(',');
+  const nom = (partes[1] || '').trim().split(/\s+/)[0] || '';
+  const ape = (partes[0] || '').trim().split(/\s+/)[0] || '';
+  return normUsuarioPadres((nom.charAt(0) || '') + ape);
+}
+function usuarioPadresDe(e){
+  if (!e || !e.datos || !e.datos.docNumero) return '';
+  const usados = {}; let res = '';
+  (DB.estudiantes || []).filter(x => !estaRetirado(x) && x.datos && x.datos.docNumero).forEach(x => {
+    let base = usuarioPadresBase(x.nombre); if (!base) base = 'est' + String(x.id || '').slice(-4);
+    let u = base, n = 2; while (usados[u]) { u = base + n; n++; } usados[u] = true;
+    if (x.id === e.id) res = u;
+  });
+  return res;
+}
 async function sincronizarConsulta2027(forzar){
   if ((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)) return;
   if(!FB_DB) return;
@@ -2056,10 +2080,12 @@ async function sincronizarConsulta2027(forzar){
   CONSULTA_SYNC = true;
   try{
     const mapa = {};
+    const accesoClavePorId = {}; const accesoArchivo = [];
     await Promise.all(DB.estudiantes
       .filter(e => !estaRetirado(e) && e.datos && e.datos.docNumero)
       .map(async e => {
         const clave = await sha256Hex(normDocMatricula(e.datos.docNumero));
+        accesoClavePorId[e.id] = clave;
         const partes = String(e.nombre || '').split(',');
         const pgE = pagosParaPadres(e); const blqE = pgE.deuda > 0;
         mapa[clave] = {
@@ -2086,6 +2112,7 @@ async function sincronizarConsulta2027(forzar){
             if(!e.datos || !e.datos.docNumero) continue;
             const clave = await sha256Hex(normDocMatricula(e.datos.docNumero));
             if(mapa[clave]) continue;
+            accesoArchivo.push({ nombre: e.nombre, clave: clave });
             const cSnap = (snap.cursos || []).find(x => x.id === e.cursoId) || {};
             const partes = String(e.nombre || '').split(',');
             const pgS = pagosParaPadresSnap(e, snap); const blqS = pgS.deuda > 0;
@@ -2110,6 +2137,13 @@ async function sincronizarConsulta2027(forzar){
       Object.keys(mapa).forEach(cl => { const pv = previo[cl]; if(pv){ if(pv.certificados) mapa[cl].certificados = pv.certificados; if(pv.certAvisos) mapa[cl].certAvisos = pv.certAvisos; if(pv.justifAvisos) mapa[cl].justifAvisos = pv.justifAvisos; if(pv.pagoAvisos) mapa[cl].pagoAvisos = pv.pagoAvisos; } });
     }catch(ePrev){}
     await FB_DB.ref('consulta2027').set(mapa);
+    try {
+      const usadosU = {}; const acceso = {};
+      const asignarU = (nombreU, claveU) => { let base = usuarioPadresBase(nombreU); if (!base) base = 'est' + claveU.slice(0, 4); let u = base, n = 2; while (usadosU[u]) { u = base + n; n++; } usadosU[u] = true; acceso[u] = claveU; };
+      (DB.estudiantes || []).filter(x => !estaRetirado(x) && x.datos && x.datos.docNumero).forEach(x => { if (accesoClavePorId[x.id]) asignarU(x.nombre, accesoClavePorId[x.id]); });
+      accesoArchivo.forEach(x => asignarU(x.nombre, x.clave));
+      await FB_DB.ref('accesoPadres').set(acceso);
+    } catch (eAcc) {}
     const el = $('matri-sync-info');
     if(el) el.textContent = 'Datos de consulta sincronizados: ' + Object.keys(mapa).length + ' estudiantes pueden consultar su información (' + new Date().toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' }) + ').';
   }catch(err){ CONSULTA_SYNC = false; const el = $('matri-sync-info'); if(el) el.textContent = '⚠ No se pudieron sincronizar los datos de consulta: ' + err.message; }
@@ -2674,6 +2708,7 @@ function verFicha(id){
   const d = e.datos || {};
   $('ficha-nombre').value = e.nombre;
   $('ficha-doctipo').value = d.docTipo || ''; $('ficha-docnum').value = d.docNumero || '';
+  const upEl = $('ficha-usuario-padres'); if (upEl) { const uu = usuarioPadresDe(e); upEl.innerHTML = uu ? ('\uD83D\uDD11 <strong>Acceso de padres:</strong> usuario <strong>' + esc(uu) + '</strong> · contraseña: el número de documento del estudiante.') : ''; }
   $('ficha-nacimiento').value = d.fechaNacimiento || ''; $('ficha-genero').value = d.genero || '';
   $('ficha-direccion').value = d.direccion || ''; $('ficha-acudiente').value = d.acudiente || '';
   $('ficha-tel').value = d.telAcudiente || ''; $('ficha-correo').value = d.correoAcudiente || '';
@@ -3372,14 +3407,16 @@ function hojaFinal(e){
     <table><thead><tr><th style="text-align:left;width:170px">ASIGNATURA</th><th class="c" style="width:40px">IH</th><th class="c" style="width:48px">P1</th><th class="c" style="width:48px">P2</th><th class="c" style="width:48px">P3</th><th class="c" style="width:48px">P4</th>${pre ? '' : '<th class="c" style="width:76px">DEFINITIVA</th><th class="c" style="width:96px">DESEMPEÑO</th>'}</tr></thead><tbody>${filas}</tbody></table>
     ${pre ? tablaEscalaPreescolar() : tablaEscala()}
     ${pre ? '' : `<p class="inasis">PROMEDIO GENERAL FINAL: ${fmt(promFinal)} (${esc(desFinal)})</p>`}
+    <div class="cierre-final">
     <p class="inasis">Asistencias durante el año escolar: Justificadas ${esc(xf.inasJ||'___')} horas &nbsp;&nbsp; No justificadas: ${esc(xf.inasN||'___')} horas</p>
     <p><u>La institución se encuentra registrada en la Notaría octava, libro 6 Folio 138.</u></p>
     ${promoTxt ? `<p>${esc(promoTxt)}</p>` : ''}
     <p class="obs-t">OBSERVACIONES:</p>
     <p class="obs">${esc(xf.obs||'')}</p>
-    <p>${dadoEn}</p>
+    <p class="dado">${dadoEn}</p>
     <p>Atentamente.</p>
     <div class="firma-sec"><img src="/plataformaCEMI/firma-secretaria.png" alt="Firma de la secretaria"><div class="linea2"></div><div class="cargo">Secretaria (E).</div></div>
+    </div>
   </div>`;
 }
 function renderFinal(){
