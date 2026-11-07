@@ -448,7 +448,7 @@ async function consultar(){
   h += '<div class="card doc abierta" id="sec-manual"><div class="desp-cab"><h2>📘 Manual de Convivencia <a class="pdf-dl" href="/documentos/manual-convivencia.pdf" download onclick="event.stopPropagation()"><span class="pdf-ico">PDF</span> Descargar</a></h2></div><div class="desp-cuerpo">' + (datos.manualHtml || '<p class="nota">El manual aún no está publicado en este espacio.</p>') + '</div></div>';
 
   h += '<div class="card abierta" id="sec-documentos"><div class="desp-cab"><h2><span class="ico">📁</span> Documentos del estudiante</h2></div><div class="desp-cuerpo">'
-    + documentosConsultaHTML(datos)
+    + '<div id="docs-consulta-lista">' + documentosConsultaHTML(datos) + '</div>'
     + '<p class="nota" style="margin:0 0 8px">Si el colegio te pidió documentos de <strong>' + esc(nombre) + '</strong> (registro civil, tarjeta de identidad, tu documento de identidad, la EPS u otros), envíalos por aquí: el colegio los recibe y los guarda en el perfil del estudiante. Puedes elegir <strong>varios archivos a la vez</strong> (foto o PDF, máximo 2 MB cada uno).</p>'
     + '<label for="docs-tipo">Tipo de documento</label><select id="docs-tipo" style="width:100%;padding:12px;border:1.5px solid #C9D9F2;border-radius:16px;font-size:1.02rem"><option value="Certificado EPS">Certificado EPS</option><option value="Certificado de vacunas">Certificado de vacunas</option><option value="Registro civil">Registro civil</option><option value="Cédula de ciudadanía del padre y la madre">Cédula de ciudadanía del padre y la madre</option><option value="Retiro SIMAT">Retiro SIMAT</option><option value="Último boletín cursado">Último boletín cursado</option><option value="Observador del estudiante">Observador del estudiante</option><option value="Certificado de convivencia">Certificado de convivencia</option><option value="Tarjeta de identidad">Tarjeta de identidad</option><option value="Documento del acudiente">Documento del acudiente</option><option value="Foto">Foto</option><option value="Otro">Otro</option></select>'
     + '<label for="docs-files">Archivos</label><input type="file" id="docs-files" multiple accept="image/*,.pdf">'
@@ -851,7 +851,8 @@ function documentosConsultaHTML(d){
     s += req.map((r, i) => {
       const doc = docs.find(x => (x.categoria || '') === r.nombre);
       const pend = !r.ok && env.some(x => x.estado === 'PENDIENTE' && (x.categoria || '') === r.nombre);
-      let linea = '<p style="margin:5px 0">' + (r.ok ? '✔' : (pend ? '🕐' : '⬜')) + ' ' + esc(r.nombre) + ' — ' + (r.ok ? '<strong>Guardado</strong>' : (pend ? '<strong>En revisión</strong>' : '<strong>Pendiente</strong>'));
+      const desc = !r.ok && !pend && env.some(x => x.estado === 'DESCARTADO' && (x.categoria || '') === r.nombre);
+      let linea = '<p style="margin:5px 0">' + (r.ok ? '✔' : (pend ? '🕐' : (desc ? '⚠️' : '⬜'))) + ' ' + esc(r.nombre) + ' — ' + (r.ok ? '<strong>Aceptado</strong>' : (pend ? '<strong>Pendiente por revisión</strong>' : (desc ? '<strong>No aceptado</strong> — envíalo de nuevo, por favor' : '<strong>Pendiente por enviar</strong>')));
       if(r.ok && doc) linea += verBtn(doc);
       else if(!r.ok && !pend) linea += ' <button class="btn-pri" style="width:auto;padding:5px 14px;font-size:.9rem" onclick="enviarDocRanura(' + i + ')">Enviar</button>';
       return linea + '</p>';
@@ -863,7 +864,7 @@ function documentosConsultaHTML(d){
     s += '<p style="margin:10px 0 4px"><strong>📂 Otros documentos en el perfil:</strong></p>' + extras.map(doc => '<p style="margin:5px 0">' + (String(doc.tipo || '').indexOf('image/') === 0 ? '🖼' : '📄') + ' ' + esc(doc.nombre || 'documento') + (doc.categoria ? ' <span class="nota">(' + esc(doc.categoria) + ')</span>' : '') + verBtn(doc) + '</p>').join('');
   }
   if(env.length){
-    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + env.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Guardado en el perfil</strong>' : (x.estado === 'DESCARTADO' ? '✖ <strong>No guardado</strong> — escríbenos por WhatsApp si tienes dudas' : '🕐 <strong>En revisión</strong> por el colegio')) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
+    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + env.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Aceptado</strong> — ya está en el perfil del estudiante' : (x.estado === 'DESCARTADO' ? '✖ <strong>No aceptado</strong> — vuelve a enviarlo, por favor' : '🕐 <strong>Pendiente por revisión</strong> — el colegio lo está revisando')) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
   }
   if(s) s += '<hr style="border:none;border-top:1px solid #e3ecfb;margin:12px 0">';
   return s;
@@ -895,7 +896,12 @@ async function enviarDocumentosLista(files, categoria){
     const sol = { ts: Date.now(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: (((d.apellidos || '') + ' ' + (d.nombres || '')).trim()), grado: d.gradoActual || '', docTipo: d.docTipo || '', docNumero: d.docNumero || '', genero: d.genero || '', tipo: 'DOCUMENTO', valor: 0, categoria: categoria || 'Otro', adjuntos: adjuntos };
     const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
     if(!r.ok) throw new Error('HTTP ' + r.status);
-    msg.innerHTML = '<p class="aviso-ok">✔ Documentos enviados (' + (categoria || 'Otro') + '). El colegio los revisará y los guardará en el perfil del estudiante.</p>';
+    if(!Array.isArray(d.enviosDocs)) d.enviosDocs = [];
+    d.enviosDocs.push({ ts: sol.ts, estado: 'PENDIENTE', categoria: categoria || 'Otro', archivos: adjuntos.map(a => a.nombre || 'documento') });
+    const contD = document.getElementById('docs-consulta-lista');
+    if(contD) contD.innerHTML = documentosConsultaHTML(d);
+    const msgD = document.getElementById('docs-msg');
+    if(msgD) msgD.innerHTML = '<p class="aviso-ok">✔ Documentos enviados (' + (categoria || 'Otro') + '). Quedaron <strong>pendientes por revisión</strong>: cuando el colegio los acepte, aquí los verás como «Aceptado».</p>';
   }catch(e){
     pon('No pudimos enviar tus documentos en este momento. Escríbenos por WhatsApp al 302 285 2745 y te ayudamos.');
   }
@@ -930,12 +936,13 @@ function documentosProcesoHTML(p){
     + '<p style="margin:0 0 8px">Para avanzar en tu proceso de matrícula, envía estos documentos por aquí (foto o PDF, máximo 2 MB cada archivo; hasta 5 archivos por envío). El colegio los revisa y los guarda en la carpeta del aspirante.</p>';
   s += req.map((r, i) => {
     const pend = !r.ok && env.some(x => x.estado === 'PENDIENTE' && (x.categoria || '') === r.nombre);
-    let linea = '<p style="margin:5px 0">' + (r.ok ? '✔' : (pend ? '🕐' : '⬜')) + ' ' + esc(r.nombre) + ' — ' + (r.ok ? '<strong>Guardado</strong>' : (pend ? '<strong>En revisión</strong>' : '<strong>Pendiente</strong>'));
+    const desc = !r.ok && !pend && env.some(x => x.estado === 'DESCARTADO' && (x.categoria || '') === r.nombre);
+    let linea = '<p style="margin:5px 0">' + (r.ok ? '✔' : (pend ? '🕐' : (desc ? '⚠️' : '⬜'))) + ' ' + esc(r.nombre) + ' — ' + (r.ok ? '<strong>Aceptado</strong>' : (pend ? '<strong>Pendiente por revisión</strong>' : (desc ? '<strong>No aceptado</strong> — envíalo de nuevo, por favor' : '<strong>Pendiente por enviar</strong>')));
     if(!r.ok && !pend) linea += ' <button class="btn-pri" style="width:auto;padding:5px 14px;font-size:.9rem" onclick="enviarDocRanuraAsp(' + i + ')">Enviar</button>';
     return linea + '</p>';
   }).join('');
   if(env.length){
-    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + env.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Guardado</strong>' : (x.estado === 'DESCARTADO' ? '✖ <strong>No guardado</strong> — escríbenos por WhatsApp si tienes dudas' : '🕐 <strong>En revisión</strong> por el colegio')) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
+    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + env.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Aceptado</strong> — ya está en la carpeta del aspirante' : (x.estado === 'DESCARTADO' ? '✖ <strong>No aceptado</strong> — vuelve a enviarlo, por favor' : '🕐 <strong>Pendiente por revisión</strong> — el colegio lo está revisando')) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
   }
   s += '<div id="docs-asp-msg"></div><input type="file" id="docs-files-ranura-asp" style="display:none" multiple accept="image/*,.pdf" onchange="enviarArchivosRanuraAsp(this)"></div>';
   return s;
@@ -967,7 +974,12 @@ async function enviarDocumentosAspLista(files, categoria){
     const sol = { ts: Date.now(), estado: 'PENDIENTE', tipoSolicitud: 'DOCUMENTO', clave: CLAVE_ACTUAL, estudiante: p.nombre || '', grado: p.grado || '', docTipo: '', docNumero: DOC_CONSULTADO, genero: '', tipo: 'DOCUMENTO', valor: 0, categoria: categoria || 'Otro', adjuntos: adjuntos };
     const r = await fetch(RTDB + '/solicitudesCert.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sol) });
     if(!r.ok) throw new Error('HTTP ' + r.status);
-    if(msg) msg.innerHTML = '<p class="aviso-ok">✔ Documento enviado (' + (categoria || 'Otro') + '). El colegio lo revisará; vuelve a consultar más tarde para ver el estado.</p>';
+    if(!Array.isArray(p.enviosDocs)) p.enviosDocs = [];
+    p.enviosDocs.push({ ts: sol.ts, estado: 'PENDIENTE', categoria: categoria || 'Otro', archivos: adjuntos.map(a => a.nombre || 'documento') });
+    const resA = document.getElementById('resultado');
+    if(resA) resA.innerHTML = procesoHTML(p) + documentosProcesoHTML(p) + firmaAutorizacionHTML(p) + firmaContratoHTML(p);
+    const msgA = document.getElementById('docs-asp-msg');
+    if(msgA) msgA.innerHTML = '<p class="aviso-ok">✔ Documento enviado (' + (categoria || 'Otro') + '). Quedó <strong>pendiente por revisión</strong>: cuando el colegio lo acepte, aquí lo verás como «Aceptado».</p>';
   }catch(e){
     pon('No pudimos enviar tu documento en este momento. Escríbenos por WhatsApp al 302 285 2745 y te ayudamos.');
   }
