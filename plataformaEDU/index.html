@@ -1397,7 +1397,17 @@ function matriAccesoDe(m){
   }
   return m.usuarioPadres || '';
 }
-function matriAvisoTexto(etapa, nombreEst, grado, inst, acceso){
+function matriDocsPendientesTxt(m){
+  const req = matriDocsRequeridosDe(m);
+  const porRevisar = {};
+  matriDocsPadresDe(m).forEach(x => { porRevisar[x.categoria || ''] = true; });
+  return {
+    faltan: req.filter(r => !r.ok && !porRevisar[r.nombre]).map(r => r.nombre),
+    enRevision: req.filter(r => !r.ok && porRevisar[r.nombre]).map(r => r.nombre),
+    completos: req.length > 0 && req.every(r => r.ok)
+  };
+}
+function matriAvisoTexto(etapa, nombreEst, grado, inst, acceso, pend){
   const nom = nombreEst || 'su hijo(a)';
   const gTxt = grado ? ('el grado ' + grado) : 'el grado solicitado';
   const asunto = 'Proceso de admisión 2027 de ' + nom + ' — ' + inst;
@@ -1413,10 +1423,15 @@ function matriAvisoTexto(etapa, nombreEst, grado, inst, acceso){
     cuerpo = linT.join('\r\n');
     wa = 'Hola 👋 Les escribimos de ' + inst + ': el proceso de admisión de ' + nom + (grado ? ' (' + grado + ' 2027)' : '') + ' está en revisión. Pronto les tendremos novedades.';
   } else if(etapa === 'ADMITIDA'){
+    const pd = pend || { faltan: [], enRevision: [], completos: false };
+    const linDocs = [];
+    if(pd.faltan.length){ linDocs.push('DOCUMENTOS QUE AÚN DEBEN SUBIR en la plataforma para padres (sin estos documentos la matrícula no queda completa):', ...pd.faltan.map(d => '• ' + d), ''); }
+    if(pd.enRevision.length){ linDocs.push('Ya recibimos y estamos revisando: ' + pd.enRevision.join(', ') + '.', ''); }
+    if(pd.completos){ linDocs.push('Ya tienen TODOS los documentos requeridos guardados. ✔', ''); }
     cuerpo = ['Hola, familia de ' + nom + ':', '',
       '¡Buenas noticias! ' + nom + ' fue ADMITIDO(A) en ' + inst + ' para ' + gTxt + ' del año 2027.', '',
       'El siguiente paso es formalizar la matrícula: por favor comuníquense con secretaría para completar el proceso.', '',
-      'Para completar la matrícula, firmen electrónicamente en la plataforma para padres la AUTORIZACIÓN DE USO DE IMAGEN y el CONTRATO DE MATRÍCULA del estudiante (tarjetas «Firmar autorización de uso de imagen» y «Firmar contrato de matrícula»): escriben su nombre completo, su cédula y dibujan su firma en la pantalla.', '',
+      'Para completar la matrícula, firmen electrónicamente en la plataforma para padres la AUTORIZACIÓN DE USO DE IMAGEN y el CONTRATO DE MATRÍCULA del estudiante (tarjetas «Firmar autorización de uso de imagen» y «Firmar contrato de matrícula»): escriben su nombre completo, su cédula y dibujan su firma en la pantalla.', '', ...linDocs,
       'También pueden seguir el estado del proceso en la plataforma para padres:', URL_PADRES,
       ...(acceso ? ['Usuario: ' + acceso, 'Contraseña: el número de documento del estudiante.', ''] : ['Ingresan con el usuario y la contraseña que les enviamos por correo.', '']),
       'Cordialmente,', inst].join('\r\n');
@@ -1443,7 +1458,7 @@ function matriAvisoTexto(etapa, nombreEst, grado, inst, acceso){
 }
 /* Plantilla visual de los correos de admisión: la institución en grande
  * (logo y nombre), las 4 etapas con la actual destacada y un solo botón. */
-function matriAvisoHTML(etapa, nombreEst, grado, inst, acceso){
+function matriAvisoHTML(etapa, nombreEst, grado, inst, acceso, pend){
   const nom = esc(nombreEst || 'su hijo(a)');
   const gTxt = esc(grado ? ('el grado ' + grado) : 'el grado solicitado');
   const color = (getComputedStyle(document.documentElement).getPropertyValue('--primario') || '#0f47b8').trim() || '#0f47b8';
@@ -1459,7 +1474,12 @@ function matriAvisoHTML(etapa, nombreEst, grado, inst, acceso){
     boton = { texto: 'Ver el estado del proceso', url: URL_PADRES };
   } else if(etapa === 'ADMITIDA'){
     titulo = '¡Buenas noticias: fue admitido(a)!';
-    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', '<strong>' + nom + '</strong> fue <strong>ADMITIDO(A)</strong> en ' + esc(inst) + ' para <strong>' + gTxt + '</strong> del año 2027.', 'El siguiente paso es formalizar la matrícula: comuníquense con secretaría para completar el proceso.', 'También deben firmar electrónicamente en la plataforma para padres la <strong>autorización de uso de imagen</strong> y el <strong>contrato de matrícula</strong> del estudiante (tarjetas «✍️ Firmar autorización de uso de imagen» y «📝 Firmar contrato de matrícula»): toman pocos minutos y son requisito para completar la matrícula.'];
+    const pdH = pend || { faltan: [], enRevision: [], completos: false };
+    let docHtml = '';
+    if(pdH.faltan.length) docHtml = 'Les recordamos los <strong>documentos que aún están pendientes por subir</strong> en la plataforma para padres (sin ellos la matrícula no queda completa):<br>' + pdH.faltan.map(d => '• ' + esc(d)).join('<br>') + (pdH.enRevision.length ? '<br><br>Ya recibimos y estamos revisando: ' + pdH.enRevision.map(esc).join(', ') + '.' : '');
+    else if(pdH.enRevision.length) docHtml = 'Ya recibimos todos los documentos requeridos; estamos revisando: ' + pdH.enRevision.map(esc).join(', ') + '.';
+    else if(pdH.completos) docHtml = 'Ya tienen <strong>todos los documentos requeridos</strong> guardados. ✔';
+    parrafos = ['Hola, familia de <strong>' + nom + '</strong>:', '<strong>' + nom + '</strong> fue <strong>ADMITIDO(A)</strong> en ' + esc(inst) + ' para <strong>' + gTxt + '</strong> del año 2027.', 'El siguiente paso es formalizar la matrícula: comuníquense con secretaría para completar el proceso.', 'También deben firmar electrónicamente en la plataforma para padres la <strong>autorización de uso de imagen</strong> y el <strong>contrato de matrícula</strong> del estudiante (tarjetas «✍️ Firmar autorización de uso de imagen» y «📝 Firmar contrato de matrícula»): toman pocos minutos y son requisito para completar la matrícula.', ...(docHtml ? [docHtml] : [])];
     boton = { texto: 'Ver el estado del proceso', url: URL_PADRES };
   } else if(etapa === 'IMPORTADA'){
     titulo = '¡Bienvenidos! Ya está matriculado(a)';
@@ -1502,7 +1522,7 @@ function matriTarjetaHTML(m){
   const esAct = m.tramite === 'ACTUALIZACION';
   const tel = telWhatsApp(a.telefono);
   const inst = (DB.instituto && DB.instituto.nombre) || 'el colegio';
-  const aviso = matriAvisoTexto(etapa, ((e.nombres || '') + ' ' + (e.apellidos || '')).trim(), m.grado || '', inst, matriAccesoDe(m));
+  const aviso = matriAvisoTexto(etapa, ((e.nombres || '') + ' ' + (e.apellidos || '')).trim(), m.grado || '', inst, matriAccesoDe(m), matriDocsPendientesTxt(m));
   const correoLimpio = String(e.correo || '').trim().replace(/["<>]/g, '');
   const correoHref = correoLimpio ? 'mailto:' + correoLimpio + '?subject=' + encodeURIComponent(aviso.asunto) + '&body=' + encodeURIComponent(aviso.cuerpo) : '';
   const waHref = tel ? 'https://wa.me/' + tel + '?text=' + encodeURIComponent(aviso.wa) : '';
@@ -5343,11 +5363,11 @@ async function matriAvisarCorreo(id){
   const nombreEst = ((e.nombres || '') + ' ' + (e.apellidos || '')).trim();
   let accesoAviso = matriAccesoDe(m);
   if(!accesoAviso){ try{ await sincronizarConsulta2027(true); }catch(eSync){} accesoAviso = matriAccesoDe(m); }
-  const aviso = matriAvisoTexto(etapa, nombreEst, m.grado || '', inst, accesoAviso);
+  const aviso = matriAvisoTexto(etapa, nombreEst, m.grado || '', inst, accesoAviso, matriDocsPendientesTxt(m));
   const desde = (DB.instituto && DB.instituto.nombre) || 'el colegio';
   if(!confirm('Se enviará este correo a nombre de ' + desde + ' a ' + para + ':\n\nAsunto: ' + aviso.asunto + '\n\n' + aviso.cuerpo + '\n\n¿Enviar ahora?')) return;
   try{
-    const resp = await correoEnviarPlataforma(para, aviso.asunto, aviso.cuerpo, matriAvisoHTML(etapa, nombreEst, m.grado || '', inst, accesoAviso));
+    const resp = await correoEnviarPlataforma(para, aviso.asunto, aviso.cuerpo, matriAvisoHTML(etapa, nombreEst, m.grado || '', inst, accesoAviso, matriDocsPendientesTxt(m)));
     if(!resp || !resp.ok) throw new Error((resp && resp.error) || 'El puente no respondió.');
     const marca = { etapa: etapa, ts: Date.now() };
     if(FB_DB) FB_DB.ref('matriculas2027/' + id).update({ avisoCorreoEtapa: marca });
