@@ -1545,6 +1545,9 @@ function matriTarjetaHTML(m){
     h += (!esAct ? '<button class="btn mini" style="background:#0f47b8;color:#fff" onclick="matriCrearEstudiante(\'' + m.id + '\')"><span class="sim-mas">+</span> Crear estudiante</button>' : '') +
       '<button class="btn btn-sec mini" onclick="matriEstado(\'' + m.id + '\',\'PROCESO\')">↩ En proceso</button>';
   }
+  if(etapa === 'IMPORTADA' && !esAct){
+    h += '<button class="btn btn-sec mini" onclick="matriDevolverAdmitido(\'' + m.id + '\')">↩ Devolver a Admitido</button>';
+  }
   h += (esOwner() ? '<button class="btn btn-peligro mini" onclick="matriEliminar(\'' + m.id + '\')">🗑 Eliminar</button>' : '') +
     '</div>';
     if(MATRI_SEL === m.id){
@@ -2327,6 +2330,47 @@ function matriCrearEstudiante(id){
   matriEstado(id, 'IMPORTADA');
   sincronizarProceso2027();
   alert('✅ Estudiante creado: ' + nombre + ' en ' + curso.nombre + '. Ya aparece en Cursos y estudiantes con su ficha llena.');
+}
+function matriEstudianteConMovimientos(est){
+  const id = est.id; const que = [];
+  try{ const reg = DB.pagos && DB.pagos.reg ? DB.pagos.reg[id] : null; if(reg && Object.keys(reg).length) que.push('pagos registrados'); }catch(e){}
+  const buscar = (obj, prof) => {
+    if(!obj || typeof obj !== 'object' || prof > 7) return false;
+    if(Object.prototype.hasOwnProperty.call(obj, id)){
+      const v = obj[id];
+      if(typeof v === 'number') return true;
+      if(typeof v === 'string' && v !== '') return true;
+      if(v && typeof v === 'object' && Object.keys(v).length) return true;
+    }
+    return Object.keys(obj).some(k => buscar(obj[k], prof + 1));
+  };
+  try{ if(buscar(DB.notas, 0)) que.push('notas registradas'); }catch(e){}
+  try{ if(buscar(DB.asistencia, 0)) que.push('asistencia registrada'); }catch(e){}
+  try{ const ob = DB.observadores && DB.observadores[id]; if(ob && Object.keys(ob).length) que.push('registros en el observador'); }catch(e){}
+  return que;
+}
+function matriDevolverAdmitido(id){
+  if(MODO_ARCHIVO || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('Estás en una vista de solo lectura (año anterior o simulación de perfil). Vuelve a tu vista normal para hacer cambios.'); return; }
+  const m = MATRI[id]; if(!m) return;
+  if(m.tramite === 'ACTUALIZACION'){ alert('Esta solicitud es una actualización de datos de un estudiante que ya existía: no se creó una ficha nueva, así que no hay nada que devolver.'); return; }
+  const docN = normDocMatricula((m.estudiante || {}).docNumero || '');
+  const est = docN ? DB.estudiantes.find(x => x.datos && normDocMatricula(x.datos.docNumero || '') === docN) : null;
+  if(est){
+    const movs = matriEstudianteConMovimientos(est);
+    if(movs.length){
+      alert('No se puede devolver a Admitido: el estudiante creado (' + est.nombre + ') ya tiene ' + movs.join(', ') + '. Quitar su ficha borraría esa información. Si fue un error, pide ayuda para corregirlo sin perder datos.');
+      return;
+    }
+    if(!confirm('¿Devolver a «Admitido»?\n\nSe quitará la ficha de ' + est.nombre + ' de «Cursos y estudiantes» (fue creada desde esta matrícula y no tiene notas ni pagos) y la solicitud volverá a la etapa Admitidos. Los documentos que el colegio ya guardó quedan en la matrícula.\n\nOjo: si el aviso de «Matriculado» ya se envió a la familia, ellos ya lo recibieron.')) return;
+    DB.estudiantes = DB.estudiantes.filter(x => x.id !== est.id);
+    registrarCambio('Matrícula devuelta a Admitido; se retiró la ficha creada por error: ' + est.nombre);
+    guardar();
+  } else {
+    if(!confirm('¿Devolver esta solicitud a la etapa Admitidos? No se encontró la ficha del estudiante en «Cursos y estudiantes» (quizás ya fue retirada); solo cambiará la etapa.')) return;
+  }
+  matriEstado(id, 'ADMITIDA');
+  renderMatriculas();
+  alert('✅ Solicitud devuelta a Admitidos.');
 }
 function escucharNube(){ if(!FB_DB) return; FB_DB.ref('cemiDB').on('value', snap=>{ const datos = snap.val(); if(!datos) return; if(Date.now() - ultimoEnvioNube < 1500) return; const antes = hashDe(dbParaNube()); aplicarDatosNube(datos); if(hashDe(dbParaNube()) === antes) return; const ae = document.activeElement; if(ae && (ae.tagName==='TEXTAREA' || ae.tagName==='SELECT' || ae.tagName==='INPUT')) return; if(!$('app').classList.contains('hidden')){ refrescarSelectsCursos(); renderTodo(); const act = document.querySelector('nav.tabs button.activo'); if(act) verTab(act.dataset.tab); aplicarPermisos(); } }); }
 function restablecerClavePerfil(id){ const p = perfiles().find(x=>x.id===id); if(!p) return; alert('La contraseña de ' + p.nombre + ' solo la puede cambiar ella misma en «Mi perfil». Si la olvidó y no puede entrar, avísame por el chat y se la restablezco desde la consola.'); }
