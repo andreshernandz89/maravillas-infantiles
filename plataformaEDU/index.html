@@ -325,6 +325,7 @@ button.btn:hover{ background:var(--azul-osc); }
         <div id="panel-notificaciones"></div>
         <div id="panel-justif"></div>
         <div id="panel-avisos-padres"></div>
+        <div id="panel-push"></div>
         <div class="fila">
           <div><label>Periodo</label><select id="panel-periodo" onchange="PANEL_PERIODO=Number(this.value);renderPanel()"><option value="1">Periodo 1</option><option value="2">Periodo 2</option><option value="3">Periodo 3</option><option value="4">Periodo 4</option></select></div>
         </div>
@@ -3386,6 +3387,7 @@ function renderPanelDocente(){
   $('panel-periodo').value = String(P);
   if(typeof renderPanelEventos === 'function') renderPanelEventos();
   renderPanelNotificaciones();
+  if(typeof renderPanelPush === 'function') renderPanelPush();
   renderPanelJustif();
   const misCursos = cursosVisibles() || [];
   const curso = misCursos[0];
@@ -3448,6 +3450,7 @@ function renderPanel(){
   $('panel-periodo').value = String(P);
   if(typeof renderPanelEventos === 'function') renderPanelEventos();
   renderPanelNotificaciones();
+  if(typeof renderPanelPush === 'function') renderPanelPush();
   renderPanelJustif();
   const hoy = new Date();
   const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - ((hoy.getDay()+6)%7));
@@ -4233,6 +4236,57 @@ async function justifRechazar(id){
 
 
 
+/* ============ NOTIFICACIONES PUSH A PADRES (Web Push) ============ */
+let PUSH_CONTEO = null;
+async function renderPanelPush(){
+  const cont = $('panel-push'); if(!cont) return;
+  const p = perfilActual();
+  if(!p || (p.rol !== 'owner' && p.rol !== 'admin') || !FB_DB){ cont.innerHTML = ''; return; }
+  cont.innerHTML =
+    '<div style="border:1.5px solid #C9DBFA;background:linear-gradient(160deg,#fff 60%,#EAF4FF);border-radius:18px;padding:14px 16px;margin:14px 0">' +
+    '<h3 style="margin:0 0 4px">\uD83D\uDCE3 Notificación a los padres (celular)</h3>' +
+    '<p class="ayuda" style="margin:0 0 8px">Llega como notificación al celular de los padres que la activaron en la Consulta de Padres. <span id="push-conteo">Contando dispositivos\u2026</span></p>' +
+    '<label>Título</label><input id="push-titulo" maxlength="60" placeholder="Ej.: Aviso importante del colegio">' +
+    '<label>Mensaje</label><textarea id="push-cuerpo" rows="2" maxlength="240" placeholder="Ej.: Mañana viernes los estudiantes salen a las 10:30 a.m."></textarea>' +
+    '<div style="margin-top:10px"><button class="btn" id="btn-push-enviar" onclick="enviarPushPadres()">\uD83D\uDCF2 Enviar notificación</button></div>' +
+    '<div id="push-estado"></div><div id="push-historial" style="margin-top:8px"></div></div>';
+  try {
+    const s = await FB_DB.ref('pushSubs').once('value');
+    let n = 0; const v = s.val() || {};
+    Object.values(v).forEach(g => { if (g && typeof g === 'object') n += Object.keys(g).length; });
+    PUSH_CONTEO = n;
+    const c = $('push-conteo'); if (c) c.textContent = 'Dispositivos con notificaciones activadas: ' + n + '.';
+  } catch (e) { const c = $('push-conteo'); if (c) c.textContent = ''; }
+  try {
+    const s2 = await FB_DB.ref('pushEnvios').once('value');
+    const v2 = s2.val() || {};
+    const lista = Object.keys(v2).map(k => Object.assign({}, v2[k], { _id: k })).sort((a, b) => (b.fecha || 0) - (a.fecha || 0)).slice(0, 5);
+    const h = $('push-historial');
+    if (h && lista.length) h.innerHTML = '<p class="ayuda" style="margin:6px 0 2px"><strong>Últimos envíos</strong></p>' + lista.map(x => {
+      const f = x.fecha ? new Date(x.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+      const est = x.estado === 'enviado' ? '\u2714 Enviada' + (x.resultado ? ' a ' + (x.resultado.enviados || 0) + ' dispositivos' : '') : '\u23F3 En cola\u2026';
+      return '<p class="ayuda" style="margin:2px 0">\u00B7 ' + esc(f) + ' \u2014 <strong>' + esc(x.titulo || '') + '</strong> \u00B7 ' + est + '</p>';
+    }).join('');
+  } catch (e) {}
+}
+async function enviarPushPadres(){
+  const t = ($('push-titulo').value || '').trim();
+  const c = ($('push-cuerpo').value || '').trim();
+  const est = $('push-estado');
+  if (!t || !c) { alert('Escribe el título y el mensaje de la notificación.'); return; }
+  if (!confirm('¿Enviar esta notificación a los padres con las notificaciones activadas?' + (PUSH_CONTEO != null ? '\nDispositivos alcanzados: ' + PUSH_CONTEO : ''))) return;
+  const btn = $('btn-push-enviar'); if (btn) btn.disabled = true;
+  try {
+    const p = perfilActual() || {};
+    await FB_DB.ref('pushEnvios').push({ titulo: t, cuerpo: c, autor: p.nombre || p.usuario || '', fecha: Date.now(), estado: 'pendiente' });
+    if (est) est.innerHTML = '<div style="background:#E2F4E5;color:#1E7D32;border:1px solid #BFE6C6;border-radius:12px;padding:10px 12px;margin-top:10px">\u2714 Quedó en cola. El despachador la enviará en menos de un minuto.</div>';
+    $('push-titulo').value = ''; $('push-cuerpo').value = '';
+    setTimeout(() => { if (typeof renderPanelPush === 'function') renderPanelPush(); }, 1500);
+  } catch (e) {
+    console.error(e);
+    if (est) est.innerHTML = '<div style="background:#FDECEC;color:#8F1D1D;border:1px solid #F3C0BB;border-radius:12px;padding:10px 12px;margin-top:10px">No se pudo dejar en cola. Revisa tu conexión e inténtalo de nuevo; si persiste, avisa a soporte (puede faltar la regla pushEnvios en Firebase).</div>';
+  } finally { if (btn) btn.disabled = false; }
+}
 function renderPanelNotificaciones(){
   const cont = $('panel-notificaciones'); if(!cont) return;
   const p = perfilActual(); if(!p || p.rol === 'docente'){ cont.innerHTML = ''; return; }
