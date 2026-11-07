@@ -2299,6 +2299,7 @@ async function matriDescartarDocsPadres(mid, solId){
   sincronizarProceso2027();
   renderMatriculas();
 }
+const MATRI_ANIO_DESTINO = 2027; /* Año lectivo al que pertenecen TODAS las matrículas de este módulo. */
 function matriCrearEstudiante(id){
   if(MODO_ARCHIVO || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('Estás en una vista de solo lectura (año anterior o simulación de perfil). Vuelve a tu vista normal para hacer cambios.'); return; }
   const m = MATRI[id]; if(!m) return;
@@ -2310,6 +2311,10 @@ function matriCrearEstudiante(id){
   if(DB.estudiantes.some(x => x.datos && normDocMatricula(x.datos.docNumero) === docNormCrear)){
     alert('Ya existe un estudiante con el documento ' + e.docNumero + '. No se creó un duplicado; si es una actualización de datos, edita su ficha directamente.');
     return;
+  }
+  const anioPlataforma = Number(typeof anioDe === 'function' ? anioDe(DB) : ((DB.instituto || {}).anio || 0)) || 0;
+  if(anioPlataforma && anioPlataforma !== MATRI_ANIO_DESTINO){
+    if(!confirm('⚠️ OJO CON EL AÑO: esta matrícula es para el año ' + MATRI_ANIO_DESTINO + ', pero la plataforma está trabajando en el año ' + anioPlataforma + '.\n\nSi creas el estudiante ahora, su ficha quedará en el año ' + anioPlataforma + ' (listas, notas y contabilidad de ese año), NO en ' + MATRI_ANIO_DESTINO + '.\n\nLo correcto es crear los estudiantes cuando el año activo de la plataforma ya sea ' + MATRI_ANIO_DESTINO + '. ¿Crear de todos modos en ' + anioPlataforma + '?')) return;
   }
   const nombre = ((e.apellidos || '') + ', ' + (e.nombres || '')).toUpperCase();
   if(!confirm('Crear el estudiante ' + nombre + ' en el curso ' + curso.nombre + ' con los datos de este formulario?')) return;
