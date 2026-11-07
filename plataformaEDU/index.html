@@ -597,28 +597,23 @@ button.btn:hover{ background:var(--azul-osc); }
           <div style="flex:1;min-width:170px"><label>Valor de cada certificado ($)</label><input type="number" id="inst-precio-cert" min="0" step="500" placeholder="12000"></div>
           <p class="ayuda" style="flex:2;min-width:260px;margin:0">Llave Bre-B (sirve desde cualquier banco) o número Nequi donde los padres pagan los certificados desde su consulta, al valor indicado al lado. Solo se muestra a estudiantes que están al día en pagos.</p>
         </div>
-        <button class="btn" onclick="guardarInstituto()">Guardar datos</button>
+        <div class="fila">
+          <div style="flex:1;min-width:240px"><label>Correo de la institución</label><input type="email" id="inst-correo" placeholder="Ej.: info@colegio.edu.co"></div>
+          <p class="ayuda" style="flex:2;min-width:260px;margin:0">Correo oficial de la institución: a esta cuenta llegan las respuestas de los correos que envía la plataforma.</p>
+        </div>
+        \1
         <span id="inst-ok" class="ok-flash"></span>
       </div>
       <div class="card" id="card-correo">
-        <h2>📧 Correo institucional</h2>
-        <p class="ayuda">Este es el correo oficial de la institución dentro de la plataforma: cualquier correo que se envíe desde aquí (avisos a padres, proceso de admisión, certificados y demás comunicaciones) sale con el nombre de la institución y las respuestas llegan a esta cuenta. No hay que sincronizar nada: la plataforma envía por su servicio central de correo. Si la institución prefiere enviar desde su propia cuenta de Google o Microsoft, puede conectarla con los botones de abajo.</p>
+        <h2>📧 Envío de correos</h2>
+        <p class="ayuda">Todos los correos que se envían desde la plataforma (avisos a padres, proceso de admisión, certificados y demás comunicaciones) salen por el servicio central de PlataformaEDU, con el nombre de la institución como remitente, y las respuestas llegan al correo de la institución (el de la tarjeta «Datos del instituto»). No hay que conectar cuentas ni instalar nada.</p>
         <div class="fila">
-          <div style="flex:1;min-width:240px"><label>Correo de la institución</label><input type="email" id="inst-correo" placeholder="Ej.: info@colegio.edu.co"></div>
-          <div style="align-self:flex-end"><span id="correo-estado" class="sem">⚪ Sin sincronizar</span></div>
+          <span id="correo-estado" class="sem">🟢 Envío central activo (PlataformaEDU)</span>
         </div>
-        <div class="fila">
-          <button class="btn-google" id="btn-google" onclick="correoConectarGoogle()"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C36.9 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>Conectar con Google</button>
-          <button class="btn btn-sec hidden" id="btn-correo-desconectar" onclick="correoDesconectar()">Desconectar</button>
-        </div>
-                <div class="fila">
-          <div style="flex:1;min-width:260px"><label>Dirección de conexión del puente (URL)</label><input type="url" id="inst-correo-puente" placeholder="https://script.google.com/macros/s/…/exec"></div>
-        </div>
-        <p class="ayuda"><strong>Opción avanzada — puente propio para el envío automático (solo cuentas Google):</strong> 1) En la cuenta de Google del correo institucional, sigue la guía de instalación para crear el puente de correo. 2) Desplégalo como aplicación web y copia la dirección que termina en <strong>/exec</strong>. 3) Pégala en el campo de arriba, pulsa «Guardar datos» y envía el correo de prueba.</p>
         <p class="ayuda" id="correo-ayuda"></p>
         <div class="fila">
           <button class="btn btn-sec" id="btn-correo-probar" onclick="correoProbarConexion()">📨 Enviar correo de prueba</button>
-          <span class="ayuda">El correo institucional se guarda con el botón «Guardar datos» de la tarjeta de arriba. La prueba llega a la propia bandeja del correo institucional.</span>
+          <span class="ayuda">La prueba llega al correo de la institución.</span>
         </div>
       </div>
       <div class="card" id="card-apis">
@@ -2629,11 +2624,11 @@ function cargarInstitutoEnForm(){
   const i = DB.instituto;
   $('inst-nombre').value=i.nombre||''; $('inst-ciudad').value=i.ciudad||''; $('inst-anio').value=i.anio||'';
   $('inst-licencia').value=i.licencia||''; $('inst-sede').value=i.sede||''; $('inst-nivel').value=i.nivel||'';
-  $('inst-jornada').value=i.jornada||''; $('inst-rector').value=i.rector||''; $('inst-nequi').value=i.nequiCert||''; $('inst-precio-cert').value=i.precioCert||12000; $('inst-correo').value=i.correo||''; $('inst-correo-puente').value=i.correoPuenteUrl||''; pintarEstadoCorreo();
+  $('inst-jornada').value=i.jornada||''; $('inst-rector').value=i.rector||''; $('inst-nequi').value=i.nequiCert||''; $('inst-precio-cert').value=i.precioCert||12000; $('inst-correo').value=i.correo||''; pintarEstadoCorreo();
   $('head-inst').textContent = i.nombre||'';
 }
 function guardarInstituto(){
-  DB.instituto = { nombre:$('inst-nombre').value.trim(), ciudad:$('inst-ciudad').value.trim(), anio:$('inst-anio').value.trim(), licencia:$('inst-licencia').value.trim(), sede:$('inst-sede').value.trim(), nivel:$('inst-nivel').value.trim(), jornada:$('inst-jornada').value.trim(), rector:$('inst-rector').value.trim(), nequiCert:$('inst-nequi').value.trim(), precioCert:(parseInt($('inst-precio-cert').value,10)||12000), correo:$('inst-correo').value.trim(), correoPuenteUrl:$('inst-correo-puente').value.trim(), correoProveedor:(DB.instituto && DB.instituto.correoProveedor) || '' };
+  DB.instituto = { nombre:$('inst-nombre').value.trim(), ciudad:$('inst-ciudad').value.trim(), anio:$('inst-anio').value.trim(), licencia:$('inst-licencia').value.trim(), sede:$('inst-sede').value.trim(), nivel:$('inst-nivel').value.trim(), jornada:$('inst-jornada').value.trim(), rector:$('inst-rector').value.trim(), nequiCert:$('inst-nequi').value.trim(), precioCert:(parseInt($('inst-precio-cert').value,10)||12000), correo:$('inst-correo').value.trim(), correoPuenteUrl:'', correoProveedor:(DB.instituto && DB.instituto.correoProveedor) || '' };
   guardar(); $('head-inst').textContent = DB.instituto.nombre; $('inst-ok').textContent = '✔ Guardado';
   setTimeout(()=>$('inst-ok').textContent='', 2000);
 }
@@ -4736,11 +4731,14 @@ function initInstitutoDesplegables(){
     }
   });
 }
-/* ===== Correo institucional: conexión directa con Google o Microsoft =====
- * La conexión vive entre la plataforma del colegio y su proveedor de
- * correo: no pasa por servidores de PlataformaEDU ni de terceros, y no
- * depende de nadie más. Los ID de cliente son los de la aplicación de
- * PlataformaEDU registrada una sola vez en Google y en Microsoft. */
+/* ===== Correo de la institución: servicio central de PlataformaEDU =====
+ * Los correos salen por el puente central PROPIO de PlataformaEDU
+ * (Apps Script de la empresa + Resend): la plataforma le pide el envío
+ * con el token de sesión del usuario, el puente lo realiza desde
+ * contacto@plataformaedu.app con el NOMBRE de la institución y
+ * Reply-To a su correo. Ningún colegio conecta cuentas ni instala
+ * nada, y el servicio NO depende de ningún asistente: vive en la
+ * infraestructura de PlataformaEDU. */
 const FIRMA_EDU_HTML = '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:18px"><tr><td style="vertical-align:middle"><img src="https://plataformaedu.app/logo-correo.png" alt="PlataformaEDU" style="height:36px;width:auto;display:block"></td><td style="vertical-align:middle;padding-left:10px"><span style="font-size:15px;font-weight:bold;color:#0f47b8">PlataformaEDU</span><br><span style="font-size:12px;color:#7a8798">Plataforma de gesti\u00f3n acad\u00e9mica</span></td></tr></table>';
 const GOOGLE_CLIENT_ID = '251585550501-275ektpp7k0rtjgs6skugahmt3a28g7j.apps.googleusercontent.com'; // App de PlataformaEDU en Google (se llena al registrarla).
 const MS_CLIENT_ID = '';     // App de PlataformaEDU en Microsoft (se llena al registrarla).
@@ -4748,32 +4746,14 @@ let googleTokenClient = null, msalApp = null;
 
 function correoPuenteUrl(){ return ((DB.instituto && DB.instituto.correoPuenteUrl) || PUENTE_CORREO_URL || '').trim(); }
 function correoGoogleGuardado(){ try{ return JSON.parse(localStorage.getItem('correoGoogle') || 'null'); }catch(e){ return null; } }
-function correoProveedorActivo(){
-  const g = correoGoogleGuardado();
-  if(g && g.email) return 'google';
-  if(localStorage.getItem('correoMicrosoft')) return 'microsoft';
-  if(correoPuenteUrl()) return 'puente';
-  return 'central';
-}
+function correoProveedorActivo(){ return 'central'; }
 function correoConectado(){ return !!correoProveedorActivo(); }
 function pintarEstadoCorreo(){
-  const el = $('correo-estado'), ay = $('correo-ayuda'), btn = $('btn-correo-probar'), desc = $('btn-correo-desconectar'); if(!el) return;
+  const el = $('correo-estado'), ay = $('correo-ayuda'), btn = $('btn-correo-probar'); if(!el) return;
   const c = (DB.instituto && DB.instituto.correo) || '';
-  const prov = correoProveedorActivo();
-  if(prov){
-    const etiqueta = prov === 'google' ? 'Google' : prov === 'microsoft' ? 'Microsoft' : prov === 'puente' ? 'puente propio' : 'PlataformaEDU';
-    el.textContent = prov === 'central' ? '🟢 Envío central activo (PlataformaEDU)' : '🟢 Sincronizado (' + etiqueta + ')'; el.className = 'sem v';
-    ay.textContent = prov === 'central'
-      ? 'Sin sincronizar nada: la plataforma envía los correos por su servicio central, con el nombre de tu institución, y las respuestas de los padres llegan al correo institucional (' + (c || 'escribe el correo de la institución y guarda los datos') + '). Si prefieres enviar desde tu propia cuenta, conéctala con Google o Microsoft.'
-      : 'Sincronizado: todos los correos que se envíen desde la plataforma salen desde ' + (c || 'el correo de la institución') + '.';
-    if(btn) btn.disabled = false;
-    if(desc){ if(prov === 'central') desc.classList.add('hidden'); else desc.classList.remove('hidden'); }
-  } else {
-    el.textContent = '⚪ Sin sincronizar'; el.className = 'sem';
-    ay.textContent = 'Todavía no hay un correo conectado en este equipo: pulsa «Conectar con Google». Sin conexión, los avisos se envían a mano desde el correo de quien los pulsa.';
-    if(btn) btn.disabled = true;
-    if(desc) desc.classList.add('hidden');
-  }
+  el.textContent = '🟢 Envío central activo (PlataformaEDU)'; el.className = 'sem v';
+  ay.textContent = 'Sin conectar cuentas ni instalar nada: la plataforma envía los correos por el servicio central de PlataformaEDU, con el nombre de tu institución, y las respuestas de los padres llegan al correo de la institución' + (c ? ' (' + c + ')' : '') + '.';
+  if(btn) btn.disabled = false;
 }
 async function cargarScript(src){
   return new Promise((res, rej) => {
@@ -4915,6 +4895,7 @@ async function correoEnviarPlataforma(para, asunto, cuerpo, html){
   if(prov === 'central') return await correoEnviarCentral(para, asunto, cuerpo, html);
   throw new Error('No hay un medio de envío disponible.');
 }
+const PUENTE_CENTRAL_URL = 'https://script.google.com/macros/s/AKfycbzH2kijh_2wmn4yXEWELP3QNMCfcwyN4TLYrCC7UO93y4zFiQivYrIKk-jxOMBUysM/exec'; // Puente central de correos de PlataformaEDU (Apps Script de la empresa).
 async function correoEnviarCentral(para, asunto, cuerpo, html){
   if (typeof SIMULANDO !== 'undefined' && SIMULANDO) throw new Error('Estás simulando otro perfil (vista previa): el correo no se envía en este modo.');
   const inst = DB.instituto || {};
@@ -4923,9 +4904,11 @@ async function correoEnviarCentral(para, asunto, cuerpo, html){
   if(!u) throw new Error('Tu sesión no está activa; sal y vuelve a entrar a la plataforma.');
   const destino = String(para || '').trim();
   if(!destino) throw new Error('El correo destino está vacío.');
-  const item = { para: destino, asunto: asunto || '', cuerpo: cuerpo || '', html: html || '', replyTo: (inst.correo || '').trim(), nombre: (inst.nombre || 'PlataformaEDU'), ts: Date.now(), estado: 'pendiente', intentos: 0 };
-  await FB_DB.ref('colaCorreos').push(item);
-  return { ok: true, desde: item.replyTo || 'PlataformaEDU' };
+  const idToken = await u.getIdToken();
+  const r = await fetch(PUENTE_CENTRAL_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ idToken: idToken, accion: 'correoEnviar', para: destino, asunto: asunto || '', cuerpo: cuerpo || '', html: html || '', replyTo: (inst.correo || '').trim(), nombre: (inst.nombre || 'PlataformaEDU') }) });
+  const resp = await r.json().catch(() => null);
+  if(resp && resp.ok) return { ok: true, desde: resp.desde || 'contacto@plataformaedu.app' };
+  throw new Error((resp && resp.error) || ('El servicio central de correo no respondió (' + r.status + ').'));
 }
 async function correoLlamarPuente(extra){
   const urlPuente = correoPuenteUrl();
@@ -4940,7 +4923,7 @@ async function correoLlamarPuente(extra){
 async function correoProbarConexion(){
   try{
     const destino = (DB.instituto && DB.instituto.correo) || '';
-    if(!destino){ alert('Primero escribe el correo de la institución o conéctalo con Google/Microsoft.'); return; }
+    if(!destino){ alert('Primero escribe el correo de la institución en la tarjeta «Datos del instituto» y guarda los datos.'); return; }
     const inst = (DB.instituto && DB.instituto.nombre) || 'tu institución';
     const textoPrueba = 'Este es un correo de prueba de tu plataforma: los correos salen con el nombre de ' + inst + ' y las respuestas llegan a ' + destino + '.';
     const htmlPrueba = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14.5px;line-height:1.55;color:#1c2733"><p>' + textoPrueba + '</p>' + FIRMA_EDU_HTML + '</div>';
@@ -4958,15 +4941,15 @@ async function matriAvisarCorreo(id){
   const inst = (DB.instituto && DB.instituto.nombre) || 'el colegio';
   const nombreEst = ((e.nombres || '') + ' ' + (e.apellidos || '')).trim();
   const aviso = matriAvisoTexto(etapa, nombreEst, m.grado || '', inst);
-  const desde = (DB.instituto && DB.instituto.correo) || 'el correo institucional';
-  if(!confirm('Se enviará este correo DESDE ' + desde + ' a ' + para + ':\n\nAsunto: ' + aviso.asunto + '\n\n' + aviso.cuerpo + '\n\n¿Enviar ahora?')) return;
+  const desde = (DB.instituto && DB.instituto.nombre) || 'el colegio';
+  if(!confirm('Se enviará este correo a nombre de ' + desde + ' a ' + para + ':\n\nAsunto: ' + aviso.asunto + '\n\n' + aviso.cuerpo + '\n\n¿Enviar ahora?')) return;
   try{
     const resp = await correoEnviarPlataforma(para, aviso.asunto, aviso.cuerpo, matriAvisoHTML(etapa, nombreEst, m.grado || '', inst));
     if(!resp || !resp.ok) throw new Error((resp && resp.error) || 'El puente no respondió.');
     const marca = { etapa: etapa, ts: Date.now() };
     if(FB_DB) FB_DB.ref('matriculas2027/' + id).update({ avisoCorreoEtapa: marca });
     m.avisoCorreoEtapa = marca;
-    alert('✅ Correo enviado a ' + para + ' desde ' + desde + '.');
+    alert('✅ Correo enviado a ' + para + ' a nombre de ' + desde + '.');
     renderMatriculas();
   }catch(err){ alert('No se pudo enviar: ' + err.message); }
 }
