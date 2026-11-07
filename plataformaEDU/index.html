@@ -1646,7 +1646,10 @@ function matriEnviosDocsDe(m){
     });
   }
   (Array.isArray(m.docsEnvios) ? m.docsEnvios : []).forEach(x => { if(x && (x.ts || 0) && !porTs[x.ts]) porTs[x.ts] = { ts: x.ts || 0, estado: x.estado || 'PENDIENTE', tsResolucion: x.tsResolucion || 0, categoria: x.categoria || 'Documentos', archivos: Array.isArray(x.archivos) ? x.archivos : [] }; });
-  return Object.keys(porTs).map(k => porTs[k]).sort((a, b) => a.ts - b.ts);
+  const catsGuardadas = {};
+  (Array.isArray(m.documentos) ? m.documentos : []).forEach(d => { catsGuardadas[d.categoria || ''] = true; });
+  return Object.keys(porTs).map(k => porTs[k]).sort((a, b) => a.ts - b.ts)
+    .map(x => (x.estado === 'ATENDIDA' && !catsGuardadas[x.categoria || ''] ? Object.assign({}, x, { estado: 'RETIRADO' }) : x));
 }
 async function sincronizarProceso2027(){
   if(!FB_DB) return;
