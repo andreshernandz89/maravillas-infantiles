@@ -153,6 +153,21 @@
   .hoja .cierre-final .obs-t{ margin-top:16px; }
   .hoja .cierre-final .dado{ margin-top:16px; }
   .hoja .cierre-final .firma-sec{ margin-top:14px; }
+  /* Informe Academico Final: formato oficial tipo certificado */
+  .hoja-final{ font-family:'Times New Roman',Times,serif; font-size:15.5px; line-height:1.5; color:#000; }
+  .hoja-final .enc-final{ display:flex; gap:18px; align-items:flex-start; }
+  .hoja-final .enc-final img{ width:92px; height:auto; }
+  .hoja-final .enc-txt{ flex:1; text-align:center; }
+  .hoja-final .enc-txt .inst{ font-size:19px; font-weight:700; letter-spacing:.2px; }
+  .hoja-final .enc-txt div{ margin:1px 0; }
+  .hoja-final .tit-final{ font-weight:700; font-size:16.5px; margin-top:6px; }
+  .hoja-final .certifican{ text-align:center; font-weight:700; margin:28px 0 18px; }
+  .hoja-final .cuerpo{ text-align:justify; margin:0 0 14px; }
+  .hoja-final table.tabla-final{ width:76%; margin:22px auto 10px; border-collapse:collapse; font-size:15px; }
+  .hoja-final table.tabla-final th, .hoja-final table.tabla-final td{ border:1.2px solid #000; padding:5px 10px; }
+  .hoja-final table.tabla-final th{ background:#fff; }
+  .hoja-final .cierre-final{ margin-top:36px; }
+  .hoja-final .cierre-final .promo{ text-align:justify; }
   .copyr{ font-size:.78rem; color:#8494ad; text-align:center; line-height:1.55; margin-top:14px }
   #print-area{ display:none; }
   @page{ size:Letter; margin:0; }
@@ -853,15 +868,13 @@ button.btn:hover{ background:var(--azul-osc); }
     <section id="tab-final" class="hidden">
       <div class="card">
         <h2>Informe final del año</h2>
-        <p class="ayuda">Consolida los cuatro periodos con el mismo formato del colegio: nota por periodo y definitiva por asignatura, promedio general final y concepto de promoción (promovido si el promedio final es 3,0 o más).</p>
+        <p class="ayuda">Genera el Informe Academico Final con el formato oficial del colegio: la certificación, las valoraciones finales por asignatura con su intensidad horaria y el cierre con asistencias, promoción y la firma de la Secretaría (promovido si el promedio final es 3,0 o más). Digita las horas de inasistencia del estudiante elegido.</p>
         <div class="fila">
           <div><label>Curso</label><select id="fin-curso" onchange="renderFinal()"></select></div>
           <div><label>Estudiante</label><select id="fin-estudiante" onchange="renderFinal()"></select></div>
           <button class="btn" id="btn-imprimir-fin" onclick="imprimir('final')">🖨️ Imprimir / PDF</button>
         </div>
         <div class="fila">
-          <div style="flex:1;min-width:280px"><label>Observaciones del informe final (estudiante elegido)</label>
-          <textarea id="fin-obs" placeholder="Observaciones finales…" oninput="guardarObsFinal()"></textarea></div>
           <div><label>Inasistencias justificadas (horas)</label><input type="number" id="fin-inasj" min="0" oninput="guardarObsFinal()"></div>
           <div><label>Inasistencias NO justificadas (horas)</label><input type="number" id="fin-inasn" min="0" oninput="guardarObsFinal()"></div>
         </div>
@@ -3369,50 +3382,65 @@ function renderBoletines(){
 /* ================= INFORME FINAL ================= */
 function hojaFinal(e){
   const curso = cursoDe(e.cursoId); if(!curso) return '';
+  const inst = DB.instituto || {};
   const pre = esPreescolar(curso);
   const asigs = asignaturasDe(curso);
-  const porAsig = asigs.map(a=>{
-    if(pre){ const ps = [1,2,3,4].map(p=>letraDe(e.id, p, a.id)); return { a, ps, prom: null }; }
+  const PALABRA_PRE = { I:'INSUFICIENTE', A:'ACEPTABLE', S:'SOBRESALIENTE', E:'EXCELENTE' };
+  const sinAcentos = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const filas = asigs.map(a=>{
+    if(pre){
+      const ps = [1,2,3,4].map(p=>letraDe(e.id, p, a.id)).filter(Boolean);
+      const ult = ps.length ? ps[ps.length-1] : '';
+      return { a, vf: PALABRA_PRE[ult] || '' };
+    }
     const ps = [1,2,3,4].map(p=>notaDe(e.id, p, a.id));
-    return { a, ps, prom: promedio(ps) };
+    return { a, vf: promedio(ps) };
   });
-  const promFinal = promedio(porAsig.map(x=>x.prom));
-  const [desFinal] = desempeno(promFinal);
-  const concepto = promFinal==null ? '' : (promFinal>=3.0 ? 'PROMOVIDO(A) AL SIGUIENTE GRADO' : 'NO PROMOVIDO(A)');
-  const filas = porAsig.map(x=>{
-    const [d] = desempeno(x.prom);
-    return `<tr><td><strong>${esc(x.a.nombre)}</strong></td><td class="c">${x.a.ih!=null?x.a.ih:''}</td>${x.ps.map(v=>`<td class="c">${pre ? esc(v||'') : fmt(v)}</td>`).join('')}${pre ? '' : `<td class="c"><strong>${fmt(x.prom)}</strong></td><td class="c">${esc(d)}</td>`}</tr>`;
-  }).join('');
-  const xf = extraDe(e.id, 'F');
+  const promFinal = pre ? null : promedio(filas.map(x=>x.vf));
+  const promovido = pre ? true : (promFinal != null && promFinal >= 3.0);
   const GRADOS_CANON = ['PÁRVULO','PRE-JARDÍN','JARDÍN','TRANSICIÓN','PRIMERO','SEGUNDO','TERCERO','CUARTO','QUINTO','SEXTO'];
   const ORDINAL_G = { PRIMERO:'1º', SEGUNDO:'2º', TERCERO:'3º', CUARTO:'4º', QUINTO:'5º', SEXTO:'6º' };
-  const claveG = s => String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z-]/g,'');
+  const claveG = s => sinAcentos(String(s||'').toUpperCase()).replace(/[^A-Z-]/g,'');
   const iG = GRADOS_CANON.findIndex(g => claveG(g) === claveG(curso.nombre));
   const gAct = iG >= 0 ? GRADOS_CANON[iG] : String(curso.nombre||'').toUpperCase();
   const gSig = iG >= 0 ? GRADOS_CANON[iG+1] : null;
-  const fraseSig = gSig ? (ORDINAL_G[gSig] ? 'grado ' + ORDINAL_G[gSig] + ' (' + gSig + ') de Educación ' + (gSig==='SEXTO' ? 'Básica Secundaria' : 'Básica Primaria') : 'grado ' + gSig + ' de Educación Preescolar') : '';
-  const promovidoF = pre ? true : (promFinal != null && promFinal >= 3.0);
-  let promoTxt = '';
-  if(gSig && (pre || promFinal != null)){
-    promoTxt = promovidoF
-      ? 'Alcanzó los logros propuestos para el grado ' + gAct + ' de ' + (pre ? 'Educación Preescolar' : 'Educación Básica') + ' que lo(a) promociona para cursar ' + fraseSig + '.'
-      : 'No alcanzó los logros propuestos para el grado ' + gAct + ' de Educación Básica, por lo cual no es promovido(a) al siguiente grado.';
+  let fraseSig = '', fraseSigHtml = '';
+  if(gSig){
+    if(ORDINAL_G[gSig]){ fraseSig = 'grado ' + ORDINAL_G[gSig] + ' (' + gSig + ') de Educación Básica ' + (gSig==='SEXTO' ? 'Secundaria' : 'Primaria'); fraseSigHtml = 'grado ' + ORDINAL_G[gSig] + ' <strong>(' + gSig + ')</strong> de Educación Básica <strong>' + (gSig==='SEXTO' ? 'Secundaria' : 'Primaria') + '</strong>'; }
+    else { fraseSig = 'grado ' + gSig + ' de Educación Preescolar'; fraseSigHtml = 'grado <strong>' + gSig + '</strong> de Educación Preescolar'; }
   }
+  let promoHtml = '';
+  if(gSig && (pre || promFinal != null)){
+    promoHtml = promovido
+      ? 'Alcanzo los logros propuestos para el grado <strong>' + gAct + '</strong> de ' + (pre ? 'Educación Preescolar' : 'Educación Básica') + ' que lo promociona para cursar ' + fraseSigHtml + '.'
+      : 'No alcanzo los logros propuestos para el grado <strong>' + gAct + '</strong> de Educación Básica, por lo cual no es promovido al siguiente grado.';
+  }
+  const xf = extraDe(e.id, 'F');
   const MESES_F = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const hoyImp = new Date();
-  const dadoEn = 'Dado en Barranquilla, ' + (hoyImp.getDate() === 1 ? 'al 1 día' : 'a los ' + hoyImp.getDate() + ' días') + ' del mes de ' + MESES_F[hoyImp.getMonth()] + ' del ' + hoyImp.getFullYear() + '.';
-  return `<div class="hoja">${encabezadoHoja(e, curso)}
-    <div class="titulo">Informe final</div>
-    <div class="seccion">Aspectos del plan de formación — Consolidado del año</div>
-    <table><thead><tr><th style="text-align:left;width:170px">ASIGNATURA</th><th class="c" style="width:40px">IH</th><th class="c" style="width:48px">P1</th><th class="c" style="width:48px">P2</th><th class="c" style="width:48px">P3</th><th class="c" style="width:48px">P4</th>${pre ? '' : '<th class="c" style="width:76px">DEFINITIVA</th><th class="c" style="width:96px">DESEMPEÑO</th>'}</tr></thead><tbody>${filas}</tbody></table>
-    ${pre ? tablaEscalaPreescolar() : tablaEscala()}
-    ${pre ? '' : `<p class="inasis">PROMEDIO GENERAL FINAL: ${fmt(promFinal)} (${esc(desFinal)})</p>`}
+  const dadoEn = 'Dado en ' + (inst.ciudad || 'Barranquilla') + ', ' + (hoyImp.getDate() === 1 ? 'al 1 día' : 'a los ' + hoyImp.getDate() + ' días') + ' del mes de ' + MESES_F[hoyImp.getMonth()] + ' del ' + hoyImp.getFullYear() + '.';
+  const nombreDoc = String(e.nombre || '').replace(/,/g, '').replace(/\s+/g, ' ').trim();
+  const gradoFrase = pre
+    ? 'el Grado <strong>' + gAct + '</strong> de Educación Preescolar'
+    : 'el Grado <strong>' + gAct + '</strong>' + (ORDINAL_G[gAct] ? ' (' + ORDINAL_G[gAct] + ')' : '') + ' de Educación Básica Primaria';
+  const jornadaTxt = String(inst.jornada || 'MAÑANA').toUpperCase().includes('TARDE') ? 'de la tarde' : 'de la mañana';
+  const filasHtml = filas.map(x=>'<tr><td><strong>' + esc(sinAcentos(String(x.a.nombre || '').toUpperCase())) + '</strong></td><td class="c">' + (x.a.ih != null ? x.a.ih : '') + '</td><td class="c"><strong>' + (pre ? esc(x.vf || '') : (x.vf == null ? '' : Number(x.vf).toFixed(1))) + '</strong></td></tr>').join('');
+  return `<div class="hoja hoja-final">
+    <div class="enc-final"><img src="../escudo.png" alt="Escudo"><div class="enc-txt">
+      <div class="inst">${esc(String(inst.nombre || '').toUpperCase())}</div>
+      <div>${esc(inst.licencia || '')}</div>
+      <div>Código de Dane #308001000238 Núcleo # 11 Nit. 1.045.684.643-5</div>
+      <div>Decreto 1290 del 16 de Abril de 2009</div>
+      <div class="tit-final">INFORME ACADEMICO FINAL</div>
+    </div></div>
+    <p class="certifican">CERTIFICAN:</p>
+    <p class="cuerpo">Que el/la alumno(a) <strong>${esc(nombreDoc)}</strong>, ${promovido ? 'cursó y aprobó' : 'cursó'} en esta Institución Educativa ${gradoFrase} en el año ${esc(inst.anio || '')}, Jornada ${jornadaTxt}, calendario escolar A.</p>
+    <p class="cuerpo">A continuación, se especifican las valoraciones del periodo final e intensidad horaria:</p>
+    <table class="tabla-final"><thead><tr><th style="text-align:left">AREAS Y ASIGNATURAS</th><th class="c" style="width:110px">INTENS. HORARIA</th><th class="c" style="width:190px">VALORACION FINAL</th></tr></thead><tbody>${filasHtml}</tbody></table>
     <div class="cierre-final">
     <p class="inasis">Asistencias durante el año escolar: Justificadas ${esc(xf.inasJ||'___')} horas &nbsp;&nbsp; No justificadas: ${esc(xf.inasN||'___')} horas</p>
-    <p><u>La institución se encuentra registrada en la Notaría octava, libro 6 Folio 138.</u></p>
-    ${promoTxt ? `<p>${esc(promoTxt)}</p>` : ''}
-    <p class="obs-t">OBSERVACIONES:</p>
-    <p class="obs">${esc(xf.obs||'')}</p>
+    <p><u>La institución se encuentra registrada en la Notaria octava, libro 6 Folio 138.</u></p>
+    ${promoHtml ? `<p class="promo">${promoHtml}</p>` : ''}
     <p class="dado">${dadoEn}</p>
     <p>Atentamente.</p>
     <div class="firma-sec"><img src="/plataformaCEMI/firma-secretaria.png" alt="Firma de la secretaria"><div class="linea2"></div><div class="cargo">Secretaria (E).</div></div>
@@ -3424,17 +3452,14 @@ function renderFinal(){
   refrescarSelectsEstudiantes();
   const cursoId = $('fin-curso').value, sel = $('fin-estudiante').value;
   const lista = estudiantesDe(cursoId).filter(e=>!estaRetirado(e));
-  const obsEl = $('fin-obs');
   if(sel && sel!=='all'){
     const e = DB.estudiantes.find(s=>s.id===sel);
-    obsEl.disabled = false; obsEl.value = e ? (extraDe(e.id,'F').obs||'') : '';
     const xf2 = e ? extraDe(e.id,'F') : {};
     const ijA = $('fin-inasj'), inA = $('fin-inasn');
     if(ijA){ ijA.disabled = false; ijA.value = xf2.inasJ||''; }
     if(inA){ inA.disabled = false; inA.value = xf2.inasN||''; }
     $('final-out').innerHTML = e ? hojaFinal(e) : '';
   } else {
-    obsEl.value=''; obsEl.disabled = true; obsEl.placeholder = 'Elige un estudiante específico para escribir sus observaciones finales.';
     const ijB = $('fin-inasj'), inB = $('fin-inasn');
     if(ijB){ ijB.value=''; ijB.disabled = true; }
     if(inB){ inB.value=''; inB.disabled = true; }
@@ -3443,7 +3468,7 @@ function renderFinal(){
 }
 function guardarObsFinal(){
   const sel = $('fin-estudiante').value; if(!sel || sel==='all') return;
-  const x = asegurarExtra(sel, 'F'); x.obs = $('fin-obs').value; const ijG = $('fin-inasj'), inG = $('fin-inasn'); if(ijG) x.inasJ = ijG.value; if(inG) x.inasN = inG.value; guardar();
+  const x = asegurarExtra(sel, 'F'); const ijG = $('fin-inasj'), inG = $('fin-inasn'); if(ijG) x.inasJ = ijG.value; if(inG) x.inasN = inG.value; guardar();
   const e = DB.estudiantes.find(s=>s.id===sel);
   if(e) $('final-out').innerHTML = hojaFinal(e);
 }
