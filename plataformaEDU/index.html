@@ -101,7 +101,7 @@
   .sem.r{ background:#ffebee; color:#c62828; }
   .sem.b{ background:#e8eefb; color:var(--azul-osc); }
   .sem.c{ background:#e0f2f1; color:#00695c; }
-  /* ---------- Pipeline de admisiones (Matrículas 2027) ---------- */
+  /* ---------- Pipeline de admisiones (Matrículas) ---------- */
   .pipe{ display:grid; grid-template-columns:repeat(4, minmax(260px,1fr)); gap:12px; overflow-x:auto; align-items:start; padding-bottom:6px; }
   .pipe-col{ background:var(--fondo); border:1px solid var(--borde); border-radius:12px; padding:10px; min-width:260px; }
   .pipe-col h3{ font-size:14px; color:var(--azul-osc); margin:0 0 10px; display:flex; align-items:center; gap:6px; }
@@ -335,7 +335,7 @@ button.btn:hover{ background:var(--azul-osc); }
       <button data-tab="instituto" onclick="verTab('instituto')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V9.5L12 4l8 5.5V21"/><path d="M2.5 21h19"/><path d="M10 21v-3.8a2 2 0 014 0V21"/><path d="M8 11.5h.01"/><path d="M16 11.5h.01"/></svg> Instituto</button>
       <button data-tab="documentos" onclick="verTab('documentos')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Documentos</button>
       <button data-tab="perfiles" onclick="verTab('perfiles')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M4.3 20c.6-3.2 2.8-5 5.7-5 1.1 0 2.2.3 3 .8"/><path d="M18.6 14.8v6"/><path d="M15.6 17.8h6"/></svg> Perfiles</button>
-      <button data-tab="matriculas" onclick="verTab('matriculas')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13.5L6.2 5h11.6L20 13.5V19a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 19z"/><path d="M4 13.5h4.8l1.4 2.2h3.6l1.4-2.2H20"/></svg> Matrículas 2027</button>
+      <button data-tab="matriculas" onclick="verTab('matriculas')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13.5L6.2 5h11.6L20 13.5V19a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 19z"/><path d="M4 13.5h4.8l1.4 2.2h3.6l1.4-2.2H20"/></svg> Matrículas</button>
     </div>
   </nav>
 
@@ -503,7 +503,7 @@ button.btn:hover{ background:var(--azul-osc); }
 
     <section id="tab-matriculas" class="hidden">
       <div class="card">
-        <h2>📥 Matrículas 2027 — respuestas del formulario</h2>
+        <h2>📥 Matrículas — respuestas del formulario</h2>
         <p class="ayuda">Aquí llegan los formularios que los padres diligencian en <strong>maravillasinfantiles.com/matricula2027</strong> (el enlace que se comparte por WhatsApp). Revisa cada respuesta, contacta al acudiente y muévela por las etapas de admisión (Inscrito → En proceso → Admitido); en Admitidos creas el estudiante con los datos ya digitados y la respuesta pasa a Matriculados.</p>
         <div id="matri-resumen" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"></div>
         <div style="margin:8px 0"><button class="btn btn-sec mini" onclick="sincronizarConsulta2027(true)">🔄 Sincronizar datos de actualización</button> <span class="ayuda" id="matri-sync-info">Cuando un estudiante antiguo elige «Actualización de datos», el formulario le pide su número de documento y le trae la información que ya tenemos guardada. Esos datos de consulta se sincronizan solos al abrir esta pestaña.</span></div>
@@ -1027,7 +1027,7 @@ button.btn:hover{ background:var(--azul-osc); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 /* ================= CONFIGURACIÓN ================= */
-const MODULOS = [ ['panel','Panel de control'], ['rector','Panel del rector'], ['instituto','Instituto'], ['cursos','Cursos y estudiantes'], ['asignaturas','Asignaturas y logros'], ['notas','Registro de notas'], ['boletines','Boletines'], ['final','Informe final'], ['asistencia','Asistencia diaria'], ['planeador','Planeador semanal'], ['observador','Observador'], ['tareas','Tareas y actividades'], ['certificados','Certificados'], ['documentos','Documentos'], ['pagos','Matrículas y pensiones'], ['facturacion','Facturación electrónica'], ['nomina','Nómina'], ['transacciones','Transacciones (Wallet)'], ['matriculas','Matrículas 2027'], ['perfiles','Perfiles'], ['archivo','Años anteriores (filtro de año)'] ];
+const MODULOS = [ ['panel','Panel de control'], ['rector','Panel del rector'], ['instituto','Instituto'], ['cursos','Cursos y estudiantes'], ['asignaturas','Asignaturas y logros'], ['notas','Registro de notas'], ['boletines','Boletines'], ['final','Informe final'], ['asistencia','Asistencia diaria'], ['planeador','Planeador semanal'], ['observador','Observador'], ['tareas','Tareas y actividades'], ['certificados','Certificados'], ['documentos','Documentos'], ['pagos','Matrículas y pensiones'], ['facturacion','Facturación electrónica'], ['nomina','Nómina'], ['transacciones','Transacciones (Wallet)'], ['matriculas','Matrículas'], ['perfiles','Perfiles'], ['archivo','Años anteriores (filtro de año)'] ];
 const MODULOS_TODOS = MODULOS.map(m=>m[0]);
 const PERFILES_BASE = [
   { id:'p-andres', nombre:'Andrés Hernández', usuario:'andres', email:'andres.hernandz89@gmail.com', rol:'owner', rolTxt:'Dueño (Owner)', cursoNombre:'', clave:'', modulos: MODULOS_TODOS.slice() },
