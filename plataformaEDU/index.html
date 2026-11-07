@@ -599,22 +599,11 @@ button.btn:hover{ background:var(--azul-osc); }
         </div>
         <div class="fila">
           <div style="flex:1;min-width:240px"><label>Correo de la institución</label><input type="email" id="inst-correo" placeholder="Ej.: info@colegio.edu.co"></div>
-          <p class="ayuda" style="flex:2;min-width:260px;margin:0">Correo oficial de la institución: a esta cuenta llegan las respuestas de los correos que envía la plataforma.</p>
+          <div style="align-self:flex-end"><button class="btn btn-sec" id="btn-correo-probar" onclick="correoProbarConexion()">📨 Enviar correo de prueba</button></div>
+          <p class="ayuda" style="flex:2;min-width:260px;margin:0">Correo oficial de la institución: los correos que envía la plataforma salen con el nombre de la institución por el servicio central de PlataformaEDU y las respuestas llegan a esta cuenta. Con el botón puedes enviar una prueba a este mismo correo.</p>
         </div>
         <button class="btn" onclick="guardarInstituto()">Guardar datos</button>
         <span id="inst-ok" class="ok-flash"></span>
-      </div>
-      <div class="card" id="card-correo">
-        <h2>📧 Envío de correos</h2>
-        <p class="ayuda">Todos los correos que se envían desde la plataforma (avisos a padres, proceso de admisión, certificados y demás comunicaciones) salen por el servicio central de PlataformaEDU, con el nombre de la institución como remitente, y las respuestas llegan al correo de la institución (el de la tarjeta «Datos del instituto»). No hay que conectar cuentas ni instalar nada.</p>
-        <div class="fila">
-          <span id="correo-estado" class="sem">🟢 Envío central activo (PlataformaEDU)</span>
-        </div>
-        <p class="ayuda" id="correo-ayuda"></p>
-        <div class="fila">
-          <button class="btn btn-sec" id="btn-correo-probar" onclick="correoProbarConexion()">📨 Enviar correo de prueba</button>
-          <span class="ayuda">La prueba llega al correo de la institución.</span>
-        </div>
       </div>
       <div class="card" id="card-apis">
         <h2>🔌 Integraciones y APIs</h2>
