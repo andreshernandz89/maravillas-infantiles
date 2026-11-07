@@ -939,12 +939,13 @@ function documentosProcesoHTML(p){
   s += req.map((r, i) => {
     const pend = !r.ok && env.some(x => x.estado === 'PENDIENTE' && (x.categoria || '') === r.nombre);
     const desc = !r.ok && !pend && env.some(x => x.estado === 'DESCARTADO' && (x.categoria || '') === r.nombre);
-    let linea = '<p style="margin:5px 0">' + (r.ok ? '✔' : (pend ? '🕐' : (desc ? '⚠️' : '⬜'))) + ' ' + esc(r.nombre) + ' — ' + (r.ok ? '<strong>Aceptado</strong>' : (pend ? '<strong>Pendiente por revisión</strong>' : (desc ? '<strong>No aceptado</strong> — envíalo de nuevo, por favor' : '<strong>Pendiente por enviar</strong>')));
+    const ret = !r.ok && !pend && !desc && env.some(x => x.estado === 'RETIRADO' && (x.categoria || '') === r.nombre);
+    let linea = '<p style="margin:5px 0">' + (r.ok ? '✔' : (pend ? '🕐' : (desc || ret ? '⚠️' : '⬜'))) + ' ' + esc(r.nombre) + ' — ' + (r.ok ? '<strong>Aceptado</strong>' : (pend ? '<strong>Pendiente por revisión</strong>' : (desc ? '<strong>No aceptado</strong> — envíalo de nuevo, por favor' : (ret ? '<strong>Retirado por el colegio</strong> — envíalo de nuevo, por favor' : '<strong>Pendiente por enviar</strong>'))));
     if(!r.ok && !pend) linea += ' <button class="btn-pri" style="width:auto;padding:5px 14px;font-size:.9rem" onclick="enviarDocRanuraAsp(' + i + ')">Enviar</button>';
     return linea + '</p>';
   }).join('');
   if(envVis.length){
-    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + envVis.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Aceptado</strong> — ya está en la carpeta del aspirante' : (x.estado === 'DESCARTADO' ? '✖ <strong>No aceptado</strong> — vuelve a enviarlo, por favor' : '🕐 <strong>Pendiente por revisión</strong> — el colegio lo está revisando')) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
+    s += '<p style="margin:10px 0 4px"><strong>📤 Tus envíos de documentos:</strong></p>' + envVis.map(x => '<p style="margin:5px 0">' + (x.estado === 'ATENDIDA' ? '✔ <strong>Aceptado</strong> — ya está en la carpeta del aspirante' : (x.estado === 'DESCARTADO' ? '✖ <strong>No aceptado</strong> — vuelve a enviarlo, por favor' : (x.estado === 'RETIRADO' ? '⚠️ <strong>Retirado por el colegio</strong> — debes enviarlo de nuevo, por favor' : '🕐 <strong>Pendiente por revisión</strong> — el colegio lo está revisando'))) + ' · ' + esc(x.categoria || 'Documentos') + ' · ' + new Date(x.ts || Date.now()).toLocaleDateString('es-CO') + (x.archivos && x.archivos.length ? ' <span class="nota">(' + x.archivos.map(esc).join(', ') + ')</span>' : '') + '</p>').join('');
   }
   s += '<div id="docs-asp-msg"></div><input type="file" id="docs-files-ranura-asp" style="display:none" multiple accept="image/*,.pdf" onchange="enviarArchivosRanuraAsp(this)"></div>';
   return s;
@@ -1027,7 +1028,7 @@ function firmaAutorizacionHTML(p){
   if(guardada){ return h + '<div class="aviso-ok">✔ <strong>Autorización firmada y guardada por el colegio.</strong> ¡Gracias! Este paso de la matrícula ya está completo.</div></div>'; }
   if(pendiente){ return h + '<div class="aviso-ok">🕐 <strong>Tu firma fue enviada</strong> el ' + new Date(pendiente.ts || Date.now()).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) + ' y está en revisión del colegio. No necesitas firmarla de nuevo.</div></div>'; }
   if((p.etapa || 'NUEVA') !== 'ADMITIDA') return '';
-  if(env.length) h += '<div class="error" style="margin-bottom:10px">El colegio no pudo guardar la firma anterior. Por favor fírmala de nuevo.</div>';
+  if(env.length) h += '<div class="error" style="margin-bottom:10px">' + (env.some(x => x.estado === 'RETIRADO') ? 'El colegio retiró la autorización firmada que estaba guardada. Por favor fírmala de nuevo.' : 'El colegio no pudo guardar la firma anterior. Por favor fírmala de nuevo.') + '</div>';
   h += '<p style="margin:0 0 8px">Para completar la matrícula, el padre, la madre o el acudiente debe firmar electrónicamente la <strong>autorización de uso de imagen</strong> del estudiante (fotos y videos en redes sociales, página web, la plataforma, el observador y el material institucional del colegio). Toma menos de dos minutos:</p>'
     + '<ol style="margin:0 0 10px;padding-left:20px"><li>Lee la autorización.</li><li>Escribe tu nombre completo y tu cédula.</li><li>Dibuja tu firma con el dedo en el recuadro y pulsa «Firmar y enviar».</li></ol>'
     + '<div style="border:1.5px solid #d7e0f0;border-radius:10px;padding:14px;max-height:320px;overflow:auto;background:#fbfcfe;font-size:.93rem;line-height:1.5">' + autorizacionCuerpoHTML({ menor: p.nombre || '', docMenor: DOC_CONSULTADO, grado: p.grado || '', escudo: FIRMA_ESCUDO_URL }) + '</div>'
@@ -1149,7 +1150,7 @@ function firmaContratoHTML(p){
   if(guardada){ return h + '<div class="aviso-ok">✔ <strong>Contrato de matrícula firmado y guardado por el colegio.</strong> ¡Gracias! Este paso de la matrícula ya está completo.</div></div>'; }
   if(pendiente){ return h + '<div class="aviso-ok">🕐 <strong>Tu contrato firmado fue enviado</strong> el ' + new Date(pendiente.ts || Date.now()).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) + ' y está en revisión del colegio. No necesitas firmarlo de nuevo.</div></div>'; }
   if((p.etapa || 'NUEVA') !== 'ADMITIDA') return '';
-  if(env.length) h += '<div class="error" style="margin-bottom:10px">El colegio no pudo guardar el contrato firmado anterior. Por favor fírmalo de nuevo.</div>';
+  if(env.length) h += '<div class="error" style="margin-bottom:10px">' + (env.some(x => x.estado === 'RETIRADO') ? 'El colegio retiró el contrato firmado que estaba guardado. Por favor fírmalo de nuevo.' : 'El colegio no pudo guardar el contrato firmado anterior. Por favor fírmalo de nuevo.') + '</div>';
   h += '<p style="margin:0 0 8px">¡Tu hijo(a) fue admitido(a)! Para completar la matrícula, el padre, la madre o el acudiente debe firmar electrónicamente el <strong>contrato de matrícula del año lectivo 2027</strong>:</p>'
     + '<ol style="margin:0 0 10px;padding-left:20px"><li>Lee el contrato completo.</li><li>Escribe tu nombre completo y tu cédula.</li><li>Dibuja tu firma con el dedo en el recuadro y pulsa «Firmar y enviar».</li></ol>'
     + '<div style="border:1.5px solid #d7e0f0;border-radius:10px;padding:14px;max-height:320px;overflow:auto;background:#fbfcfe;font-size:.93rem;line-height:1.5">' + contratoCuerpoHTML({ menor: p.nombre || '', docMenor: DOC_CONSULTADO, grado: p.grado || '', escudo: FIRMA_ESCUDO_URL }) + '</div>'

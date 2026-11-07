@@ -2308,7 +2308,14 @@ async function matriEliminarDocGuardado(mid, i){
   const d = m.documentos[i]; if(!d) return;
   if(!confirm('¿Eliminar «' + (d.nombre || 'documento') + '» (' + (d.categoria || 'sin categoría') + ') de esta matrícula?\n\nEl requisito volverá a quedar PENDIENTE y la familia tendrá que enviarlo de nuevo desde su consulta.')) return;
   m.documentos.splice(i, 1);
-  try{ await FB_DB.ref('matriculas2027/' + mid).update({ documentos: m.documentos }); }
+  const quedaOtro = m.documentos.some(x => (x.categoria || '') === (d.categoria || ''));
+  let enviosTocados = false;
+  if(!quedaOtro && Array.isArray(m.docsEnvios)){
+    m.docsEnvios.forEach(en => { if((en.categoria || '') === (d.categoria || '') && en.estado === 'ATENDIDA'){ en.estado = 'RETIRADO'; en.tsResolucion = Date.now(); enviosTocados = true; } });
+  }
+  const cambiosPlat = { documentos: m.documentos };
+  if(enviosTocados) cambiosPlat.docsEnvios = m.docsEnvios;
+  try{ await FB_DB.ref('matriculas2027/' + mid).update(cambiosPlat); }
   catch(err){ alert('No se pudo guardar el cambio: ' + err.message); return; }
   registrarCambio('Documento eliminado de una matrícula (' + (d.categoria || '') + ': ' + (d.nombre || '') + '); el requisito vuelve a pendiente');
   guardar();
