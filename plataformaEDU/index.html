@@ -868,15 +868,11 @@ button.btn:hover{ background:var(--azul-osc); }
     <section id="tab-final" class="hidden">
       <div class="card">
         <h2>Informe final del año</h2>
-        <p class="ayuda">Genera el Informe Academico Final con el formato oficial del colegio: la certificación, las valoraciones finales por asignatura con su intensidad horaria y el cierre con asistencias, promoción y la firma de la Secretaría (promovido si el promedio final es 3,0 o más). Digita las horas de inasistencia del estudiante elegido.</p>
+        <p class="ayuda">Genera el Informe Academico Final con el formato oficial del colegio: la certificación, las valoraciones finales por asignatura con su intensidad horaria y el cierre con la promoción y la firma de la Secretaría (promovido si el promedio final es 3,0 o más).</p>
         <div class="fila">
           <div><label>Curso</label><select id="fin-curso" onchange="renderFinal()"></select></div>
           <div><label>Estudiante</label><select id="fin-estudiante" onchange="renderFinal()"></select></div>
           <button class="btn" id="btn-imprimir-fin" onclick="imprimir('final')">🖨️ Imprimir / PDF</button>
-        </div>
-        <div class="fila">
-          <div><label>Inasistencias justificadas (horas)</label><input type="number" id="fin-inasj" min="0" oninput="guardarObsFinal()"></div>
-          <div><label>Inasistencias NO justificadas (horas)</label><input type="number" id="fin-inasn" min="0" oninput="guardarObsFinal()"></div>
         </div>
       </div>
       <div id="final-out"></div>
@@ -3415,7 +3411,6 @@ function hojaFinal(e){
       ? 'Alcanzo los logros propuestos para el grado <strong>' + gAct + '</strong> de ' + (pre ? 'Educación Preescolar' : 'Educación Básica') + ' que lo promociona para cursar ' + fraseSigHtml + '.'
       : 'No alcanzo los logros propuestos para el grado <strong>' + gAct + '</strong> de Educación Básica, por lo cual no es promovido al siguiente grado.';
   }
-  const xf = extraDe(e.id, 'F');
   const MESES_F = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const hoyImp = new Date();
   const dadoEn = 'Dado en ' + (inst.ciudad || 'Barranquilla') + ', ' + (hoyImp.getDate() === 1 ? 'al 1 día' : 'a los ' + hoyImp.getDate() + ' días') + ' del mes de ' + MESES_F[hoyImp.getMonth()] + ' del ' + hoyImp.getFullYear() + '.';
@@ -3438,7 +3433,6 @@ function hojaFinal(e){
     <p class="cuerpo">A continuación, se especifican las valoraciones del periodo final e intensidad horaria:</p>
     <table class="tabla-final"><thead><tr><th style="text-align:left">AREAS Y ASIGNATURAS</th><th class="c" style="width:110px">INTENS. HORARIA</th><th class="c" style="width:190px">VALORACION FINAL</th></tr></thead><tbody>${filasHtml}</tbody></table>
     <div class="cierre-final">
-    <p class="inasis">Asistencias durante el año escolar: Justificadas ${esc(xf.inasJ||'___')} horas &nbsp;&nbsp; No justificadas: ${esc(xf.inasN||'___')} horas</p>
     <p><u>La institución se encuentra registrada en la Notaria octava, libro 6 Folio 138.</u></p>
     ${promoHtml ? `<p class="promo">${promoHtml}</p>` : ''}
     <p class="dado">${dadoEn}</p>
@@ -3454,23 +3448,10 @@ function renderFinal(){
   const lista = estudiantesDe(cursoId).filter(e=>!estaRetirado(e));
   if(sel && sel!=='all'){
     const e = DB.estudiantes.find(s=>s.id===sel);
-    const xf2 = e ? extraDe(e.id,'F') : {};
-    const ijA = $('fin-inasj'), inA = $('fin-inasn');
-    if(ijA){ ijA.disabled = false; ijA.value = xf2.inasJ||''; }
-    if(inA){ inA.disabled = false; inA.value = xf2.inasN||''; }
     $('final-out').innerHTML = e ? hojaFinal(e) : '';
   } else {
-    const ijB = $('fin-inasj'), inB = $('fin-inasn');
-    if(ijB){ ijB.value=''; ijB.disabled = true; }
-    if(inB){ inB.value=''; inB.disabled = true; }
     $('final-out').innerHTML = lista.map(e=>hojaFinal(e)).join('') || '<p style="text-align:center;color:#666">Este curso aún no tiene estudiantes.</p>';
   }
-}
-function guardarObsFinal(){
-  const sel = $('fin-estudiante').value; if(!sel || sel==='all') return;
-  const x = asegurarExtra(sel, 'F'); const ijG = $('fin-inasj'), inG = $('fin-inasn'); if(ijG) x.inasJ = ijG.value; if(inG) x.inasN = inG.value; guardar();
-  const e = DB.estudiantes.find(s=>s.id===sel);
-  if(e) $('final-out').innerHTML = hojaFinal(e);
 }
 
 /* ================= PANEL DE CONTROL ================= */
@@ -4353,8 +4334,9 @@ async function renderPanelPush(){
     '<div id="push-estado"></div><div id="push-historial" style="margin-top:8px"></div></div>';
   try {
     const s = await FB_DB.ref('pushSubs').once('value');
-    let n = 0; const v = s.val() || {};
-    Object.values(v).forEach(g => { if (g && typeof g === 'object') n += Object.keys(g).length; });
+    const v = s.val() || {}; const epsPush = new Set();
+    Object.values(v).forEach(g => { if (g && typeof g === 'object') Object.values(g).forEach(x => { if (x && x.endpoint) epsPush.add(x.endpoint); }); });
+    const n = epsPush.size;
     PUSH_CONTEO = n;
     const c = $('push-conteo'); if (c) c.textContent = 'Dispositivos con notificaciones activadas: ' + n + '.';
   } catch (e) { const c = $('push-conteo'); if (c) c.textContent = ''; }
