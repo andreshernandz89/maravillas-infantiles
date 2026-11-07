@@ -1,7 +1,7 @@
 /* Service worker de la Consulta para Padres (PWA instalable).
    Conservador a propósito: la red manda siempre para la página y los datos;
    la caché solo guarda los íconos/manifiesto y sirve de respaldo sin conexión. */
-const CACHE = 'padres-pwa-v1';
+const CACHE = 'padres-pwa-v2';
 const ESTATICOS = ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', e => {
@@ -33,4 +33,36 @@ self.addEventListener('fetch', e => {
   if (ESTATICOS.some(f => url.pathname.endsWith('/' + f))) {
     e.respondWith(caches.match(req).then(m => m || fetch(req)));
   }
+});
+
+/* ---------- Notificaciones push (Web Push) ---------- */
+self.addEventListener('push', e => {
+  const d = { title: 'Maravillas Infantiles', body: 'Tienes un aviso nuevo de tu colegio.', url: '/padres/' };
+  try {
+    if (e.data) Object.assign(d, e.data.json());
+  } catch (_) {
+    if (e.data) d.body = e.data.text();
+  }
+  e.waitUntil(self.registration.showNotification(d.title, {
+    body: d.body,
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    data: { url: d.url || '/padres/' }
+  }));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/padres/';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(ws => {
+      for (const w of ws) {
+        if (w.url.includes('/padres') && 'focus' in w) {
+          if (w.navigate) w.navigate(url).catch(() => {});
+          return w.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
 });
