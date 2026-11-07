@@ -176,8 +176,8 @@
     body *{ visibility:hidden; }
     #print-area, #print-area *{ visibility:visible; }
     #print-area{ display:block; position:absolute; inset:0; padding:0; }
-    .hoja{ border:none; max-width:none; margin:0; page-break-after:always; page-break-inside:avoid; break-inside:avoid; }
-    .hoja:last-child{ page-break-after:auto; }
+    .hoja{ border:none; max-width:none; margin:0; page-break-after:always; break-after:page; page-break-inside:avoid; break-inside:avoid; }
+    #print-area .hoja + .hoja{ page-break-before:always; break-before:page; }
   }
 
   /* ---------- Chat de soporte PlataformaEDU ---------- */
