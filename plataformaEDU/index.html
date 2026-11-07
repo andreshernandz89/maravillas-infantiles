@@ -1048,7 +1048,7 @@ function guardarNube(){ if(!FB_DB || !NUBE_LISTA) return; const datos = dbParaNu
 function programarGuardarNube(){ if(timerNube) clearTimeout(timerNube); timerNube = setTimeout(guardarNube, 600); }
 function migrarModulosPerfiles(){ if(!Array.isArray(DB.perfiles)) return; const ACADEMICOS = ['panel','instituto','cursos','asignaturas','notas','boletines','final','asistencia','planeador','observador']; DB.perfiles.forEach(p=>{ if(!p || p.rol==='owner' || p.modulosV3) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ ACADEMICOS.forEach(add); add('certificados'); add('matriculas'); } p.modulosV3 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV4) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('tareas'); add('rector'); } else if(p.rol==='docente'){ add('tareas'); } p.modulosV4 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV5) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('documentos'); } p.modulosV5 = true; }); }
 function saneamientoNube(){ migrarModulosPerfiles(); if(!DB.parciales) DB.parciales = {}; if(!DB.asistencia) DB.asistencia = {}; if(!DB.planeadores) DB.planeadores = {}; if(!DB.observadores) DB.observadores = {}; if(!Array.isArray(DB.auditoria)) DB.auditoria = []; if(!Array.isArray(DB.perfiles)) DB.perfiles = []; if(!Array.isArray(DB.perfilesEliminados)) DB.perfilesEliminados = []; if(!Array.isArray(DB.cursos)) DB.cursos = []; if(!Array.isArray(DB.estudiantes)) DB.estudiantes = []; if(!DB.notas) DB.notas = {}; if(!DB.extra) DB.extra = {}; Object.values(DB.asistencia||{}).forEach(pc=>Object.values(pc).forEach(dia=>{ Object.keys(dia).forEach(id=>{ if(dia[id]==='R') dia[id]='P'; }); }));  }
-function aplicarDatosNube(datos){ if (typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) return; DB = datos; if(!Array.isArray(DB.tareas)) DB.tareas = []; saneamientoNube(); if(typeof respaldoAutomatico === 'function') respaldoAutomatico(); if(typeof fusionarPagosWallet === 'function') fusionarPagosWallet(); if(typeof sincronizarConsulta2027 === 'function') sincronizarConsulta2027(false); try{ localStorage.setItem(LS_KEY, JSON.stringify(DB)); }catch(e){} const d = dbParaNube(); CLAVES_NUBE.forEach(k=>{ hashNube[k] = hashDe(d[k]); }); }
+function aplicarDatosNube(datos){ if (typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) return; NUBE_YA_APLICO = true; DB = datos; if(!Array.isArray(DB.tareas)) DB.tareas = []; saneamientoNube(); if(typeof respaldoAutomatico === 'function') respaldoAutomatico(); if(typeof fusionarPagosWallet === 'function') fusionarPagosWallet(); if(typeof sincronizarConsulta2027 === 'function') sincronizarConsulta2027(false); guardarCopiaLocal(); const d = dbParaNube(); CLAVES_NUBE.forEach(k=>{ hashNube[k] = hashDe(d[k]); }); }
 let MATRI = {}, MATRI_ACTIVO = false, MATRI_SEL = '';
 let CERTSOL = {}, CERTSOL_ACTIVO = false;
 const PRECIO_CERT = 12000;
@@ -2423,7 +2423,80 @@ function fusionarSemillaExtra(){
 }
 normalizarDB();
 function cargar(){ try{ const d = JSON.parse(localStorage.getItem(LS_KEY)); if(d && d.instituto && d.cursos){ if(!d.parciales) d.parciales = {}; try{ const mapa = {}; semilla().estudiantes.forEach(e=>{ if(e.datos) mapa[e.id] = e.datos; }); (d.estudiantes||[]).forEach(e=>{ if(!e.datos && mapa[e.id]) e.datos = mapa[e.id]; }); }catch(e){} return d; } return null; }catch(e){ return null; } }
-function guardar(){ if ((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)) return; try{ localStorage.setItem(LS_KEY, JSON.stringify(DB)); }catch(e){ console.error('No se pudo guardar la copia local', e); if(typeof window !== 'undefined' && typeof window.mostrarToast === 'function') window.mostrarToast('⚠️ Este equipo no pudo guardar la copia local (¿almacenamiento lleno?). Tus cambios se subirán a la nube de todos modos.', 'error'); } actualizarBannerDemo(); programarGuardarNube(); }
+/* ===== Copia local amplia (IndexedDB) =====
+ * localStorage admite ~5 MB por sitio y la base del colegio ya lo supera (documentos
+ * con fotos en base64), así que la copia local también se guarda en IndexedDB, que
+ * admite cientos de MB: si localStorage no cabe, IndexedDB respalda y el aviso de
+ * «no se pudo guardar la copia local» solo aparece si AMBOS fallan. Al abrir, si no
+ * hubo copia en localStorage, cargarDesdeIDB() trae la de IndexedDB (una sola vez y
+ * solo si la nube aún no ha aplicado datos). */
+let NUBE_YA_APLICO = false;
+const IDB_NOMBRE = 'plataformaedu_local', IDB_CLAVE = 'db_v3';
+let IDB_LISTO = null;
+function idbAbrir(){
+  if(IDB_LISTO) return IDB_LISTO;
+  IDB_LISTO = new Promise((res, rej) => {
+    try{
+      const r = indexedDB.open(IDB_NOMBRE, 1);
+      r.onupgradeneeded = () => { try{ r.result.createObjectStore('kv'); }catch(e){} };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    }catch(e){ rej(e); }
+  });
+  return IDB_LISTO;
+}
+async function idbPoner(clave, valor){
+  const db = await idbAbrir();
+  return new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(valor, clave); tx.oncomplete = () => res(true); tx.onerror = () => rej(tx.error); });
+}
+async function idbLeer(clave){
+  const db = await idbAbrir();
+  return new Promise((res, rej) => { const rq = db.transaction('kv', 'readonly').objectStore('kv').get(clave); rq.onsuccess = () => res(rq.result || null); rq.onerror = () => rej(rq.error); });
+}
+async function idbBorrar(clave){
+  try{ const db = await idbAbrir(); return new Promise(res => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').delete(clave); tx.oncomplete = () => res(true); tx.onerror = () => res(false); }); }catch(e){ return false; }
+}
+let IDB_ULTIMO = 0, IDB_TIMER = null, IDB_PENDIENTE = null, IDB_ENLS = false;
+function escribirIDB(){
+  IDB_ULTIMO = Date.now();
+  const txt = IDB_PENDIENTE, enLS = IDB_ENLS; IDB_PENDIENTE = null;
+  if(txt == null) return;
+  idbPoner(IDB_CLAVE, txt).catch(() => {
+    if(!enLS && typeof window !== 'undefined' && typeof window.mostrarToast === 'function') window.mostrarToast('⚠️ Este equipo no pudo guardar la copia local (¿almacenamiento lleno?). Tus cambios se subirán a la nube de todos modos.', 'error');
+  });
+}
+function guardarCopiaLocal(){
+  const txt = JSON.stringify(DB);
+  let enLS = false;
+  try{ localStorage.setItem(LS_KEY, txt); enLS = true; }catch(e){}
+  IDB_PENDIENTE = txt; IDB_ENLS = enLS;
+  const espera = 4000 - (Date.now() - IDB_ULTIMO);
+  if(espera <= 0){ escribirIDB(); }
+  else if(!IDB_TIMER){ IDB_TIMER = setTimeout(() => { IDB_TIMER = null; escribirIDB(); }, espera); }
+  return enLS;
+}
+let IDB_HIDRATADO = false;
+async function cargarDesdeIDB(){
+  try{
+    if(IDB_HIDRATADO) return; IDB_HIDRATADO = true;
+    let hayLS = false; try{ hayLS = !!localStorage.getItem(LS_KEY); }catch(e){}
+    if(hayLS) return;
+    const txt = await idbLeer(IDB_CLAVE);
+    if(!txt || NUBE_YA_APLICO) return;
+    const d = JSON.parse(txt);
+    if(!d || !d.instituto || !d.cursos) return;
+    if(!d.parciales) d.parciales = {};
+    DB = d;
+    const app = $('app');
+    if(app && !app.classList.contains('hidden')){
+      refrescarSelectsCursos(); renderTodo();
+      const act = document.querySelector('nav.tabs button.activo'); if(act) verTab(act.dataset.tab);
+      aplicarPermisos();
+    }
+  }catch(e){}
+}
+cargarDesdeIDB();
+function guardar(){ if ((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)) return; guardarCopiaLocal(); actualizarBannerDemo(); programarGuardarNube(); }
 function uid(){ return 'id' + Math.random().toString(36).slice(2,9); }
 
 function semilla(){
@@ -2562,7 +2635,7 @@ async function olvideClave(e){
     $('gate-error').textContent = 'Te enviamos un enlace para restablecer tu contraseña al correo registrado. Revisa tu bandeja de entrada y sigue el enlace.';
   }catch(err){ console.error(err); $('gate-error').textContent = 'No se pudo enviar el restablecimiento. Inténtalo de nuevo en un momento.'; }
 }
-function salir(){ try{ if(FB_AUTH) FB_AUTH.signOut(); }catch(e){} try{ localStorage.removeItem(LS_KEY); Object.keys(localStorage).filter(k=>/^(cemi|edu)_(menu_grupos|pulso)$/.test(k)).forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); }catch(e){} sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perfil'); sessionStorage.removeItem('bol_perfil_real'); location.reload(); }
+function salir(){ try{ if(FB_AUTH) FB_AUTH.signOut(); }catch(e){} try{ localStorage.removeItem(LS_KEY); idbBorrar(IDB_CLAVE); Object.keys(localStorage).filter(k=>/^(cemi|edu)_(menu_grupos|pulso)$/.test(k)).forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); }catch(e){} sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perfil'); sessionStorage.removeItem('bol_perfil_real'); location.reload(); }
 function aplicarPermisos(){
   const p = perfilActual(); if(!p) return;
   $('user-chip').textContent = '👤 ' + p.nombre + ' · ' + (p.rolTxt||p.rol) + ((p.rol==='docente' && gradosDelDocente(p).length) ? ' · ' + gradosDelDocente(p).join(', ') : (p.cursoNombre ? ' · ' + p.cursoNombre : ''));
