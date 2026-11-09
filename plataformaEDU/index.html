@@ -476,6 +476,7 @@ button.btn:hover{ background:var(--azul-osc); }
           </div>
           <div class="fila"><div style="flex:1"><label>Detalle (opcional)</label><input type="text" id="cal-detalle" placeholder="Ej. 8:00 a. m., en el colegio"></div></div>
         </div>
+        <div id="cal-calendario" style="margin-top:14px"></div>
         <div id="cal-lista" style="margin-top:12px"></div>
       </div>
       <div class="card" id="cal-card-documento">
@@ -1876,8 +1877,76 @@ function pagosParaPadresSnap(e, snap){
 function puedeEditarCalendario(){ const p = perfilActual(); return !!(p && ['owner','coord','admin'].includes(p.rol)); }
 let CAL_VER_PASADOS = false;
 function calAlternarPasados(){ CAL_VER_PASADOS = !CAL_VER_PASADOS; renderCalendario(); }
+/* ===== CALENDARIO INSTITUCIONAL EN REJILLA (mes con eventos) ===== */
+let CALEND_MES = '';
+let CAL_DIA_SEL = '';
+function calNav(delta){
+  const base = CALEND_MES || fechaHoyISO().slice(0, 7);
+  const d = new Date(base + '-15T12:00:00');
+  d.setMonth(d.getMonth() + delta);
+  CALEND_MES = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  renderCalendarioGrid();
+}
+function calIrADia(fecha){
+  CAL_DIA_SEL = fecha;
+  CALEND_MES = fecha.slice(0, 7);
+  const fi = $('cal-fecha');
+  if (fi && puedeEditarCalendario()) fi.value = fecha;
+  renderCalendarioGrid();
+}
+function renderCalendarioGrid(){
+  const cont = $('cal-calendario'); if(!cont) return;
+  const hoy = fechaHoyISO();
+  if(!CALEND_MES) CALEND_MES = hoy.slice(0, 7);
+  const anio = Number(CALEND_MES.slice(0, 4)), mes = Number(CALEND_MES.slice(5, 7));
+  const porFecha = {};
+  (DB.calendario || []).forEach(ev => { if (ev && ev.fecha){ (porFecha[ev.fecha] = porFecha[ev.fecha] || []).push(ev); } });
+  Object.values(porFecha).forEach(l => l.sort((a, b) => String(a.titulo || '').localeCompare(String(b.titulo || ''))));
+  if (!CAL_DIA_SEL && porFecha[hoy] && porFecha[hoy].length) CAL_DIA_SEL = hoy;
+  const primerDia = new Date(anio, mes - 1, 1);
+  const offset = (primerDia.getDay() + 6) % 7;
+  const diasMes = new Date(anio, mes, 0).getDate();
+  const nombreMes = primerDia.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+  let celdas = '';
+  for (let i = 0; i < offset; i++) celdas += '<div></div>';
+  for (let d = 1; d <= diasMes; d++){
+    const f = CALEND_MES + '-' + String(d).padStart(2, '0');
+    const evs = porFecha[f] || [];
+    const dow = new Date(anio, mes - 1, d).getDay();
+    const finde = (dow === 0 || dow === 6);
+    const esSel = f === CAL_DIA_SEL, esHoy = f === hoy, pasado = f < hoy;
+    const bg = esSel ? '#EAF4FF' : (finde ? '#F7F9FC' : '#fff');
+    const borde = esSel ? 'border:2px solid #13213F' : 'border:1px solid #E2E8F0';
+    let chips = '';
+    evs.slice(0, 3).forEach(ev => { chips += '<div title="' + esc(ev.titulo || '') + '" style="background:#EAF4FF;border-left:3px solid #0792FE;border-radius:4px;padding:1px 4px;font-size:10.5px;line-height:1.35;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' + (pasado ? ';opacity:.55' : '') + '">' + esc(ev.titulo || '') + '</div>'; });
+    if (evs.length > 3) chips += '<div style="font-size:10px;color:#5A6B84;margin-top:2px">+ ' + (evs.length - 3) + ' más</div>';
+    celdas += '<div onclick="calIrADia(\'' + f + '\')" title="Ver los eventos de este día" style="cursor:pointer;' + borde + ';border-radius:10px;padding:6px 7px;min-height:78px;background:' + bg + '">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:' + (esHoy ? '800' : '600') + ';font-size:14px;color:#13213F">' + d + '</span>'
+      + (esHoy ? '<span style="font-size:9px;background:#13213F;color:#fff;border-radius:99px;padding:1px 6px">HOY</span>' : '') + '</div>'
+      + chips + '</div>';
+  }
+  let detalle = '';
+  if (CAL_DIA_SEL){
+    const evs = porFecha[CAL_DIA_SEL] || [];
+    const fTxt = new Date(CAL_DIA_SEL + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    detalle = '<div style="margin-top:12px;border:1px solid #C9DBFA;border-radius:12px;padding:10px 12px;background:#FBFDFF"><strong style="text-transform:capitalize">' + esc(fTxt) + '</strong>'
+      + (evs.length ? evs.map(ev => '<div class="fila" style="justify-content:space-between;align-items:flex-start;margin-top:8px"><div><div>' + esc(ev.titulo || '') + '</div>' + (calDetalleVisible(ev.detalle) ? '<div class="ayuda">' + esc(calDetalleVisible(ev.detalle)) + '</div>' : '') + '</div>' + (puedeEditarCalendario() ? '<button class="btn btn-sec mini" onclick="calEliminar(\'' + ev.id + '\')">🗑 Quitar</button>' : '') + '</div>').join('')
+        : '<p class="ayuda" style="margin:6px 0 0">No hay eventos este día.' + (puedeEditarCalendario() ? ' La fecha ya quedó puesta en el formulario de arriba: escribe el título y toca «Agregar evento».' : '') + '</p>')
+      + '</div>';
+  }
+  cont.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">'
+    + '<button type="button" class="btn btn-sec mini" onclick="calNav(-1)">◀</button>'
+    + '<strong style="font-size:16px;text-transform:capitalize">' + esc(nombreMes) + '</strong>'
+    + '<button type="button" class="btn btn-sec mini" onclick="calNav(1)">▶</button>'
+    + '<button type="button" class="btn btn-sec mini" onclick="calIrADia(\'' + hoy + '\')">Hoy</button>'
+    + '<span class="ayuda" style="margin:0">Toca un día para ver sus eventos o agregar uno nuevo.</span></div>'
+    + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">'
+    + ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(x => '<div style="text-align:center;font-size:11px;font-weight:700;color:#5A6B84">' + x + '</div>').join('')
+    + celdas + '</div>' + detalle;
+}
 function renderCalendario(){
   const cont = $('cal-lista'); if(!cont) return;
+  renderCalendarioGrid();
   const form = $('cal-form'); if(form) form.classList.toggle('hidden', !puedeEditarCalendario());
   ['cal-card-documento','cal-card-simat','cal-card-respaldo'].forEach(id=>{ const el = $(id); if(el) el.classList.toggle('hidden', !puedeEditarCalendario()); });
   const hoy = fechaHoyISO();
