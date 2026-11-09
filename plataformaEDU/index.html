@@ -320,6 +320,7 @@ button.btn:hover{ background:var(--azul-osc); }
       <button data-tab="planeador" onclick="verTab('planeador')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M7 14h3"/><path d="M14 14h3"/><path d="M7 17.5h3"/></svg> Planeador semanal</button>
       <button data-tab="observador" onclick="verTab('observador')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg> Observador</button>
       <button data-tab="tareas" onclick="verTab('tareas')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.8-5.5"/></svg> Tareas y actividades</button>
+      <button data-tab="novedades" onclick="verTab('novedades')"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4h3l6 5V5L7 10H4z"/><path d="M16.5 8.5a5 5 0 010 7"/><path d="M19 6a8.5 8.5 0 010 12"/></svg> Novedades del curso</button>
     </div>
     <div class="menu-grupo">
       <div class="menu-titulo" onclick="alternarMenuGrupo(this)">Contabilidad</div>
@@ -381,6 +382,22 @@ button.btn:hover{ background:var(--azul-osc); }
       </div>
     </section>
 
+    <section id="tab-novedades" class="hidden">
+      <div class="card">
+        <h2>📣 Novedades del curso</h2>
+        <p class="ayuda">Publica los avisos y fotos del día de un curso: solo los ven los acudientes de ese curso en su «Consulta para padres».</p>
+        <div class="fila">
+          <div><label>Curso</label><select id="nov-curso" onchange="renderNovedades()"></select></div>
+        </div>
+        <div style="margin-top:10px"><label>¿Qué quieres contar?</label><textarea id="nov-texto" rows="3" placeholder="Ej.: Hoy trabajamos las vocales con una actividad de pintura 🎨"></textarea></div>
+        <div class="fila" style="margin-top:10px;align-items:flex-end;gap:12px;flex-wrap:wrap">
+          <div><label>Foto (opcional)</label><input type="file" id="nov-foto" accept="image/*" onchange="novFotoElegida(this)"><div class="ayuda">Se reduce sola para que cargue rápido en los celulares.</div></div>
+          <div id="nov-foto-prev"></div>
+          <div style="margin-left:auto"><button class="btn" onclick="novPublicar()">📣 Publicar novedad</button></div>
+        </div>
+      </div>
+      <div id="novedades-lista" style="margin-top:14px"></div>
+    </section>
     <section id="tab-tareas" class="hidden">
       <div class="card">
         <h2>📌 Tareas y actividades</h2>
@@ -1029,7 +1046,7 @@ button.btn:hover{ background:var(--azul-osc); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 /* ================= CONFIGURACIÓN ================= */
-const MODULOS = [ ['panel','Panel de control'], ['rector','Panel del rector'], ['instituto','Instituto'], ['cursos','Cursos y estudiantes'], ['asignaturas','Asignaturas y logros'], ['notas','Registro de notas'], ['boletines','Boletines'], ['final','Informe final'], ['asistencia','Asistencia diaria'], ['planeador','Planeador semanal'], ['observador','Observador'], ['tareas','Tareas y actividades'], ['certificados','Certificados'], ['documentos','Documentos'], ['pagos','Matrículas y pensiones'], ['facturacion','Facturación electrónica'], ['nomina','Nómina'], ['transacciones','Transacciones (Wallet)'], ['matriculas','Matrículas'], ['perfiles','Perfiles'], ['archivo','Años anteriores (filtro de año)'] ];
+const MODULOS = [ ['panel','Panel de control'], ['rector','Panel del rector'], ['instituto','Instituto'], ['cursos','Cursos y estudiantes'], ['asignaturas','Asignaturas y logros'], ['notas','Registro de notas'], ['boletines','Boletines'], ['final','Informe final'], ['asistencia','Asistencia diaria'], ['planeador','Planeador semanal'], ['observador','Observador'], ['tareas','Tareas y actividades'], ['novedades','Novedades del curso'], ['certificados','Certificados'], ['documentos','Documentos'], ['pagos','Matrículas y pensiones'], ['facturacion','Facturación electrónica'], ['nomina','Nómina'], ['transacciones','Transacciones (Wallet)'], ['matriculas','Matrículas'], ['perfiles','Perfiles'], ['archivo','Años anteriores (filtro de año)'] ];
 const MODULOS_TODOS = MODULOS.map(m=>m[0]);
 const PERFILES_BASE = [
   { id:'p-andres', nombre:'Andrés Hernández', usuario:'andres', email:'andres.hernandz89@gmail.com', rol:'owner', rolTxt:'Dueño (Owner)', cursoNombre:'', clave:'', modulos: MODULOS_TODOS.slice() },
@@ -1042,13 +1059,13 @@ const LS_KEY = 'cemi_boletines_v3';
 const FB_CONFIG = { apiKey: "AIzaSyD8JESH5rhMkgmSjy-0h6p-zObQg-XAzQ0", authDomain: "plataforma-cemi.firebaseapp.com", databaseURL: "https://plataforma-cemi-default-rtdb.firebaseio.com", projectId: "plataforma-cemi", storageBucket: "plataforma-cemi.firebasestorage.app", messagingSenderId: "59598932057", appId: "1:59598932057:web:24cb8ee45a831374a4c948" };
 let FB_AUTH = null, FB_DB = null, NUBE_LISTA = false, ultimoEnvioNube = 0, timerNube = null, CLAVES_VIS = {};
 try{ firebase.initializeApp(FB_CONFIG); FB_AUTH = firebase.auth(); FB_DB = firebase.database(); }catch(e){ console.error('Firebase no cargó', e); }
-const CLAVES_NUBE = ['instituto','cursos','estudiantes','notas','extra','parciales','asistencia','planeadores','observadores','perfiles','perfilesEliminados','auditoria','pagos','nomina','facturacion','calendario','cierres','tareas','faltaMarca','faltaAvisos'];
+const CLAVES_NUBE = ['instituto','cursos','estudiantes','notas','extra','parciales','asistencia','planeadores','observadores','perfiles','perfilesEliminados','auditoria','pagos','nomina','facturacion','calendario','cierres','tareas','faltaMarca','faltaAvisos','novedades','cumpleAvisos'];
 function hashDe(v){ try{ return JSON.stringify(v === undefined ? null : v); }catch(e){ return ''; } }
 let hashNube = {};
 function dbParaNube(){ const o = {}; CLAVES_NUBE.forEach(k=>{ if(k==='perfiles'){ o[k] = (DB.perfiles||[]).map(p=>{ const q = Object.assign({}, p); delete q.clave; return q; }); } else { o[k] = (DB[k] === undefined ? null : DB[k]); } }); o.demo = false; return o; }
 function guardarNube(){ if(!FB_DB || !NUBE_LISTA) return; const datos = dbParaNube(); const cambios = {}; const enviados = []; CLAVES_NUBE.forEach(k=>{ const h = hashDe(datos[k]); if(hashNube[k] !== h){ cambios[k] = datos[k]; enviados.push([k, h]); } }); if(!enviados.length) return; ultimoEnvioNube = Date.now(); FB_DB.ref('cemiDB').update(cambios).then(()=>{ enviados.forEach(par=>{ hashNube[par[0]] = par[1]; }); }).catch(err=>{ console.error('Error subiendo a la nube', err); if(typeof window !== 'undefined' && typeof window.mostrarToast === 'function') window.mostrarToast('⚠️ No se pudieron subir tus cambios a la nube. Quedan en este equipo y la subida se reintentará automáticamente al volver la conexión.', 'error'); }); }
 function programarGuardarNube(){ if(timerNube) clearTimeout(timerNube); timerNube = setTimeout(guardarNube, 600); }
-function migrarModulosPerfiles(){ if(!Array.isArray(DB.perfiles)) return; const ACADEMICOS = ['panel','instituto','cursos','asignaturas','notas','boletines','final','asistencia','planeador','observador']; DB.perfiles.forEach(p=>{ if(!p || p.rol==='owner' || p.modulosV3) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ ACADEMICOS.forEach(add); add('certificados'); add('matriculas'); } p.modulosV3 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV4) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('tareas'); add('rector'); } else if(p.rol==='docente'){ add('tareas'); } p.modulosV4 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV5) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('documentos'); } p.modulosV5 = true; }); }
+function migrarModulosPerfiles(){ if(!Array.isArray(DB.perfiles)) return; const ACADEMICOS = ['panel','instituto','cursos','asignaturas','notas','boletines','final','asistencia','planeador','observador']; DB.perfiles.forEach(p=>{ if(!p || p.rol==='owner' || p.modulosV3) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ ACADEMICOS.forEach(add); add('certificados'); add('matriculas'); } p.modulosV3 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV4) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('tareas'); add('rector'); } else if(p.rol==='docente'){ add('tareas'); } p.modulosV4 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV5) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('documentos'); } p.modulosV5 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV6) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('novedades'); } else if(p.rol==='docente'){ add('novedades'); } p.modulosV6 = true; }); }
 function saneamientoNube(){ migrarModulosPerfiles(); if(!DB.parciales) DB.parciales = {}; if(!DB.asistencia) DB.asistencia = {}; if(!DB.faltaMarca) DB.faltaMarca = {}; if(!DB.faltaAvisos) DB.faltaAvisos = {}; if(!DB.planeadores) DB.planeadores = {}; if(!DB.observadores) DB.observadores = {}; if(!Array.isArray(DB.auditoria)) DB.auditoria = []; if(!Array.isArray(DB.perfiles)) DB.perfiles = []; if(!Array.isArray(DB.perfilesEliminados)) DB.perfilesEliminados = []; if(!Array.isArray(DB.cursos)) DB.cursos = []; if(!Array.isArray(DB.estudiantes)) DB.estudiantes = []; if(!DB.notas) DB.notas = {}; if(!DB.extra) DB.extra = {}; Object.values(DB.asistencia||{}).forEach(pc=>Object.values(pc).forEach(dia=>{ Object.keys(dia).forEach(id=>{ if(dia[id]==='R') dia[id]='P'; }); }));  }
 function aplicarDatosNube(datos){ if (typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) return; NUBE_YA_APLICO = true; DB = datos; if(!Array.isArray(DB.tareas)) DB.tareas = []; saneamientoNube(); if(typeof respaldoAutomatico === 'function') respaldoAutomatico(); if(typeof fusionarPagosWallet === 'function') fusionarPagosWallet(); if(typeof sincronizarConsulta2027 === 'function') sincronizarConsulta2027(false); guardarCopiaLocal(); const d = dbParaNube(); CLAVES_NUBE.forEach(k=>{ hashNube[k] = hashDe(d[k]); }); }
 let MATRI = {}, MATRI_ACTIVO = false, MATRI_SEL = '';
@@ -1877,6 +1894,120 @@ function pagosParaPadresSnap(e, snap){
 function puedeEditarCalendario(){ const p = perfilActual(); return !!(p && ['owner','coord','admin'].includes(p.rol)); }
 let CAL_VER_PASADOS = false;
 function calAlternarPasados(){ CAL_VER_PASADOS = !CAL_VER_PASADOS; renderCalendario(); }
+/* ===== CUMPLEAÑOS AUTOMÁTICOS: push + correo (plantilla festiva) al acudiente ===== */
+let CUMPLE_ULTIMA_REVISION = 0;
+function esCumpleHoy(e, hoy){
+  const fn = String((e && e.datos && e.datos.fechaNacimiento) || '');
+  return /^\d{4}-\d{2}-\d{2}$/.test(fn) && fn.slice(5) === String(hoy || '').slice(5);
+}
+function edadQueCumple(e, hoy){
+  const fn = String((e.datos && e.datos.fechaNacimiento) || '');
+  const d = parseInt(String(hoy || '').slice(0, 4), 10) - parseInt(fn.slice(0, 4), 10);
+  return isFinite(d) && d > 0 ? d : 0;
+}
+function nombreCortoEst(e){
+  const partes = String((e && e.nombre) || '').split(',').map(s => s.trim()).filter(Boolean);
+  return partes[1] || partes[0] || 'tu hijo(a)';
+}
+function cumpleTextoPlano(e, edad){
+  const inst = (DB.instituto || {}).nombre || 'el colegio';
+  return '¡Feliz cumpleaños, ' + nombreCortoEst(e) + '!\n\nHoy ' + nombreCortoEst(e) + ' cumple ' + (edad ? edad + ' años' : 'años') + ' y en ' + inst + ' estamos de fiesta. Le deseamos un día lleno de juegos, risas y momentos felices, y un año nuevo de vida con mucha salud y sueños cumplidos.\n\nCon cariño,\n' + inst + '\n\nMensaje automático de la plataforma del colegio.';
+}
+function cumpleHtml(e, edad){
+  const inst = esc((DB.instituto || {}).nombre || 'Tu colegio');
+  const nom = esc(nombreCortoEst(e));
+  let escudo = '';
+  try{ escudo = new URL('../escudo.png', location.href).href; }catch(err){}
+  return '<!DOCTYPE html><html lang="es"><body style="margin:0;padding:0;background:#F2F6FC">'
+    + '<table width="600" cellpadding="0" cellspacing="0" style="border-collapse:collapse;max-width:600px;width:100%;margin:0 auto;font-family:Arial,Helvetica,sans-serif">'
+    + '<tr><td style="background:#7B61C9;background:linear-gradient(120deg,#0792FE,#7B61C9 60%,#E86AA8);padding:30px 30px 24px;text-align:center">'
+    + '<div style="font-size:34px;line-height:1">🎈🎉🎈</div>'
+    + '<div style="color:#ffffff;font-size:30px;font-weight:bold;margin-top:8px">¡Feliz cumpleaños,</div>'
+    + '<div style="color:#FFE45C;font-size:32px;font-weight:bold">' + nom + '!</div></td></tr>'
+    + '<tr><td style="background:#ffffff;padding:24px 40px 4px;text-align:center"><span style="display:inline-block;background:#FFF3CD;border:2px dashed #E0A800;color:#7A5B00;font-weight:bold;font-size:16px;border-radius:999px;padding:8px 22px">⭐ Hoy cumple ' + (edad || '') + ' años ⭐</span></td></tr>'
+    + '<tr><td style="background:#ffffff;padding:18px 40px 4px;font-size:15px;line-height:1.65;color:#33475B;text-align:center">¡Hoy estamos de fiesta! ' + nom + ' cumple un año más de vida y en su colegio queremos celebrarlo con toda su familia. Que este nuevo año le traiga muchos juegos, amigos, aprendizajes y momentos felices.</td></tr>'
+    + '<tr><td style="background:#ffffff;padding:16px 40px 28px;text-align:center">' + (escudo ? '<img src="' + escudo + '" alt="Escudo" width="46" style="display:block;margin:0 auto 6px">' : '') + '<div style="font-size:14px;color:#5A6B84">Con cariño, su familia del<br><strong style="color:#13213F">' + inst + '</strong></div></td></tr>'
+    + '<tr><td style="background:#F2F6FC;padding:12px 30px;text-align:center;color:#8A97A8;font-size:12px">Mensaje automático de la plataforma del colegio · 🎂</td></tr>'
+    + '</table></body></html>';
+}
+async function revisarCumpleanos(){
+  if ((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)) return;
+  const ahora = Date.now();
+  if (ahora - CUMPLE_ULTIMA_REVISION < 30 * 60000) return;
+  CUMPLE_ULTIMA_REVISION = ahora;
+  const hoy = fechaHoyISO();
+  if (!DB.cumpleAvisos || typeof DB.cumpleAvisos !== 'object' || Array.isArray(DB.cumpleAvisos)) DB.cumpleAvisos = {};
+  if (!Array.isArray(DB.pushEnvios)) DB.pushEnvios = [];
+  const delDia = (DB.estudiantes || []).filter(e => e && !estaRetirado(e) && esCumpleHoy(e, hoy) && !DB.cumpleAvisos[e.id + '|' + hoy.slice(0, 4)]);
+  if (!delDia.length) return;
+  const inst = DB.instituto || {};
+  for (const e of delDia){
+    DB.cumpleAvisos[e.id + '|' + hoy.slice(0, 4)] = Date.now();
+    const nom = nombreCortoEst(e), edad = edadQueCumple(e, hoy);
+    try{
+      const clave = await sha256Hex(normDocMatricula(e.datos && e.datos.docNumero));
+      DB.pushEnvios.push({ id: uid(), ts: Date.now(), titulo: '🎂 ¡Feliz cumpleaños, ' + nom + '!', cuerpo: 'Hoy ' + nom + ' cumple ' + (edad ? edad + ' años' : 'años') + '. En ' + (inst.nombre || 'el colegio') + ' lo celebramos con ustedes. 🎉', clave: clave, destino: 'Acudiente de ' + (e.nombre || ''), tipo: 'CUMPLEAÑOS', autor: 'Automático · Cumpleaños', url: padresUrlPublica() });
+    }catch(err){}
+    const correo = String((e.datos && e.datos.correoAcudiente) || '').trim();
+    if (correo && correo.indexOf('@') > 0){
+      try{ await correoEnviarPlataforma(correo, '🎂 ¡Feliz cumpleaños, ' + nom + '! — ' + (inst.nombre || 'Tu colegio'), cumpleTextoPlano(e, edad), cumpleHtml(e, edad)); }catch(err){ console.warn('Correo de cumpleaños no enviado:', err); }
+    }
+  }
+  guardar();
+}
+setInterval(revisarCumpleanos, 60000);
+
+/* ===== NOVEDADES DEL CURSO: avisos y fotos para los acudientes del curso ===== */
+let NOV_FOTO = '';
+function novedadesDelCurso(cursoId){ return (Array.isArray(DB.novedades) ? DB.novedades : []).filter(n => n.cursoId === cursoId).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)); }
+function novCursosVisibles(){
+  const p = perfilActual(); if (!p) return [];
+  const todos = (DB.cursos || []).filter(c => c.anio === anioActivo());
+  if (p.rol === 'docente'){ const gs = gradosDelDocente(p); return todos.filter(c => gs.includes(c.nombre)); }
+  return todos;
+}
+function renderNovedades(){
+  const sel = $('nov-curso'); if (!sel) return;
+  const cursos = novCursosVisibles();
+  const prev = sel.value;
+  sel.innerHTML = cursos.length ? cursos.map(c => '<option value="' + c.id + '">' + esc(c.nombre) + '</option>').join('') : '<option value="">(sin cursos)</option>';
+  if (prev && cursos.some(c => c.id === prev)) sel.value = prev;
+  const lista = $('novedades-lista'); if (!lista) return;
+  const p = perfilActual();
+  const items = sel.value ? novedadesDelCurso(sel.value) : [];
+  lista.innerHTML = items.length ? items.map(n => '<div class="card" style="margin-bottom:10px"><div class="fila" style="justify-content:space-between;align-items:flex-start"><span class="ayuda">' + esc(new Date(n.ts || Date.now()).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })) + ' · por ' + esc(n.autor || '') + '</span>' + ((p && (p.rol !== 'docente' || n.autor === p.nombre)) ? '<button class="btn btn-sec mini" onclick="novEliminar(\'' + n.id + '\')">🗑 Quitar</button>' : '') + '</div><div style="margin-top:6px;white-space:pre-wrap">' + esc(n.texto || '') + '</div>' + (n.foto ? '<img src="' + n.foto + '" alt="Foto de la novedad" style="margin-top:8px;max-width:100%;border-radius:10px">' : '') + '</div>').join('') : '<div class="vacio">Todavía no hay novedades en este curso. ¡Publica la primera!</div>';
+}
+function novFotoElegida(inp){
+  const f = inp.files && inp.files[0]; if (!f) return;
+  const url = URL.createObjectURL(f); const img = new Image();
+  img.onload = () => { try{ const max = 900; const k = Math.min(1, max / Math.max(img.width, img.height)); const cv = document.createElement('canvas'); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); NOV_FOTO = cv.toDataURL('image/jpeg', 0.78); const prev = $('nov-foto-prev'); if (prev) prev.innerHTML = '<img src="' + NOV_FOTO + '" alt="Vista previa de la foto" style="max-width:140px;border-radius:8px">'; }catch(e){} URL.revokeObjectURL(url); };
+  img.src = url;
+}
+function novPublicar(){
+  if ((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('Estás en una vista de solo lectura. Vuelve a tu vista normal para publicar.'); return; }
+  const sel = $('nov-curso'); const cursoId = sel ? sel.value : '';
+  const texto = ($('nov-texto').value || '').trim();
+  if (!cursoId){ alert('Elige el curso.'); return; }
+  if (!texto && !NOV_FOTO){ alert('Escribe la novedad o adjunta una foto.'); return; }
+  if (!Array.isArray(DB.novedades)) DB.novedades = [];
+  DB.novedades.push({ id: uid(), cursoId: cursoId, texto: texto, foto: NOV_FOTO || '', autor: nombreAutorPush(), ts: Date.now() });
+  if (DB.novedades.length > 300) DB.novedades = DB.novedades.slice(-300);
+  registrarCambio('Novedad publicada para el curso ' + ((cursoDe(cursoId) || {}).nombre || ''));
+  $('nov-texto').value = ''; NOV_FOTO = ''; const fi = $('nov-foto'); if (fi) fi.value = ''; const prev = $('nov-foto-prev'); if (prev) prev.innerHTML = '';
+  guardar(); renderNovedades();
+  sincronizarConsulta2027(true);
+}
+function novEliminar(id){
+  if ((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)) return;
+  if (!confirm('¿Quitar esta novedad? Dejará de verse en la consulta de los padres.')) return;
+  DB.novedades = (Array.isArray(DB.novedades) ? DB.novedades : []).filter(n => n.id !== id);
+  guardar(); renderNovedades();
+  sincronizarConsulta2027(true);
+}
+function novedadesParaPadres(e){
+  return novedadesDelCurso(e.cursoId).slice(0, 8).map(n => ({ texto: n.texto || '', foto: n.foto || '', autor: n.autor || '', ts: n.ts || 0 }));
+}
+
 /* ===== CALENDARIO INSTITUCIONAL EN REJILLA (mes con eventos) ===== */
 let CALEND_MES = '';
 let CAL_DIA_SEL = '';
@@ -2332,7 +2463,7 @@ async function sincronizarConsulta2027(forzar){
           fechaNacimiento: e.datos.fechaNacimiento || '', docTipo: e.datos.docTipo || 'RC', docNumero: e.datos.docNumero || '',
           direccion: e.datos.direccion || '', correo: e.datos.correoAcudiente || '',
           acudienteNombre: e.datos.acudiente || '', acudienteTel: e.datos.telAcudiente || '', acudienteCC: e.datos.docNumeroAcudiente || '',
-          gradoActual: (cursoDe(e.cursoId) || {}).nombre || '', tareas: tareasParaPadres(e),
+          gradoActual: (cursoDe(e.cursoId) || {}).nombre || '', tareas: tareasParaPadres(e), novedades: novedadesParaPadres(e), cumpleanosHoy: esCumpleHoy(e, fechaHoyISO()),
           anio: String((DB.instituto || {}).anio || ''),
           notas: blqE ? null : notasParaPadres(e), asistencia: blqE ? null : asistenciaParaPadres(e), pagos: pgE, bloqueado: blqE, calendario: calendarioParaPadres(),
           manualHtml: MANUAL_CONVIVENCIA_HTML, genero: e.datos.genero || '', nequiCert: (DB.instituto || {}).nequiCert || '', precioCert: precioCertificado(),
@@ -3056,7 +3187,7 @@ function verTab(tab){
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('activo', b.dataset.tab===tab));
   expandirGrupoDe(tab);
   $('user-chip').classList.toggle('en-miperfil', tab==='miperfil');
-  ['panel','rector','certificados','pagos','facturacion','nomina','instituto','cursos','asignaturas','notas','boletines','final','asistencia','planeador','observador','tareas','perfiles','miperfil','matriculas','transacciones','calendario','certpadres','documentos'].forEach(t=>$('tab-'+t).classList.toggle('hidden', t!==tab));
+  ['panel','rector','certificados','pagos','facturacion','nomina','instituto','cursos','asignaturas','notas','boletines','final','asistencia','planeador','observador','tareas','novedades','perfiles','miperfil','matriculas','transacciones','calendario','certpadres','documentos'].forEach(t=>$('tab-'+t).classList.toggle('hidden', t!==tab));
   if(tab==='cursos') renderEstudiantes();
   if(tab==='asignaturas') renderAsignaturas();
   if(tab==='notas'){ renderNotas(); }
@@ -3064,6 +3195,7 @@ function verTab(tab){
   if(tab==='final') renderFinal();
   if(tab==='asistencia') renderAsistencia();
   if(tab==='tareas') renderTareas();
+  if(tab==='novedades') renderNovedades();
   if(tab==='rector') renderRector();
   if(tab==='perfiles') renderPerfiles();
   if(tab==='planeador') renderPlaneador();

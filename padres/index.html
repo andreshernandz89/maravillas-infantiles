@@ -344,6 +344,18 @@ async function consultar(){
     const a = datos.asistencia;
     h += '<div class="card"><h2><span class="ico">📋</span> Asistencia</h2><p style="margin:0">Presentes: <strong>' + a.presentes + '</strong> · Faltas: <strong>' + (a.faltas + a.justificadas) + '</strong> (' + a.justificadas + ' justificadas · ' + a.faltas + ' sin justificar)</p></div>';
   }
+  if(datos.cumpleanosHoy){
+    h += '<div class="card" style="background:linear-gradient(120deg,#FFF7E0,#FFE9F3);border:1.5px solid #F2B134;text-align:center"><div style="font-size:30px">🎂🎉</div><h2 style="margin:4px 0">¡Feliz cumpleaños, ' + esc(datos.nombres || '') + '!</h2><p style="margin:0">Hoy es un día muy especial: en el colegio celebramos su cumpleaños y le deseamos un año lleno de alegría, juegos y aprendizajes. 🥳</p></div>';
+  }
+  if(datos.novedades && datos.novedades.length){
+    h += '<div class="card" id="sec-novedades"><h2><span class="ico">📣</span> Novedades del curso</h2>'
+      + datos.novedades.map(n => '<div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin:8px 0">'
+          + '<div style="color:#555;font-size:12px">' + esc(n.autor || '') + (n.ts ? ' · ' + new Date(n.ts).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : '') + '</div>'
+          + (n.texto ? '<div style="font-size:14px;margin-top:2px;white-space:pre-wrap">' + esc(n.texto) + '</div>' : '')
+          + (n.foto ? '<img src="' + n.foto + '" alt="Foto de la novedad" style="margin-top:8px;max-width:100%;border-radius:10px">' : '')
+          + '</div>').join('')
+      + '<p class="nota">Novedades publicadas por la docente en la plataforma del colegio.</p></div>';
+  }
   if(datos.tareas && datos.tareas.length){
     const hoyT = hoyISO();
     h += '<div class="card" id="sec-tareas"><h2><span class="ico">📌</span> Tareas y actividades</h2>'
@@ -462,7 +474,7 @@ async function consultar(){
 }
 
 
-const MODULOS = ['sec-tareas', 'sec-justificar', 'sec-pagos', 'sec-certs', 'sec-eventos', 'sec-manual', 'sec-documentos'];
+const MODULOS = ['sec-tareas', 'sec-novedades', 'sec-justificar', 'sec-pagos', 'sec-certs', 'sec-eventos', 'sec-manual', 'sec-documentos'];
 let MOD_ACTIVO = null;
 function irSeccion(id){
   const el = document.getElementById(id); if(!el) return;
@@ -513,6 +525,7 @@ function diaHTML(d, blq){
 function botonesHTML(d){
   const b = [];
   if(Array.isArray(d.tareas)) b.push('<button class="btn-grande" onclick="irSeccion(\'sec-tareas\')"><span class="bg-ico">📌</span>Tareas</button>');
+  if(Array.isArray(d.novedades) && d.novedades.length) b.push('<button class="btn-grande" onclick="irSeccion(\'sec-novedades\')"><span class="bg-ico">📣</span>Novedades</button>');
   b.push('<button class="btn-grande verde" onclick="irSeccion(\'sec-justificar\')"><span class="bg-ico">✉️</span>Justificar una falta</button>');
   if(d.pagos) b.push('<button class="btn-grande naranja" onclick="irSeccion(\'sec-pagos\')"><span class="bg-ico">💰</span>Pensiones y pagos</button>');
   b.push('<button class="btn-grande morado" onclick="irSeccion(\'sec-certs\')"><span class="bg-ico">📜</span>Certificados</button>');
