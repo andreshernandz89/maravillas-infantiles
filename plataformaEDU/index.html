@@ -4861,22 +4861,22 @@ function renderAsisCalendario(){
   const porCurso = (DB.asistencia || {})[cursoId] || {};
   const totalEst = estudiantesDe(cursoId).filter(e => !estaRetirado(e)).length;
   const primerDia = new Date(anio, mes - 1, 1);
-  const offset = (primerDia.getDay() + 6) % 7;
   const diasMes = new Date(anio, mes, 0).getDate();
   const hoy = fechaHoyISO();
   const nombreMes = primerDia.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
   let celdas = '';
-  for (let i = 0; i < offset; i++) celdas += '<div></div>';
+  let primerHueco = true;
   for (let d = 1; d <= diasMes; d++){
+    const dowPre = new Date(anio, mes - 1, d).getDay();
+    if (dowPre === 0 || dowPre === 6) continue;
+    if (primerHueco){ const off = (dowPre + 6) % 7; for (let i = 0; i < off; i++) celdas += '<div></div>'; primerHueco = false; }
     const f = ASIS_CAL_MES + '-' + String(d).padStart(2, '0');
     const dia = porCurso[f] || {};
     let P = 0, F = 0, FJ = 0;
     Object.values(dia).forEach(v => { if (v === 'P') P++; else if (v === 'F') F++; else if (v === 'FJ') FJ++; });
     const marcados = P + F + FJ;
-    const dow = new Date(anio, mes - 1, d).getDay();
-    const finde = (dow === 0 || dow === 6);
     const esSel = f === fechaSel, esHoy = f === hoy;
-    const bg = esSel ? '#EAF4FF' : (finde ? '#F7F9FC' : '#fff');
+    const bg = esSel ? '#EAF4FF' : '#fff';
     const borde = esSel ? 'border:2px solid #13213F' : 'border:1px solid #E2E8F0';
     let info = '';
     if (marcados){
@@ -4886,7 +4886,7 @@ function renderAsisCalendario(){
         + '<div style="height:5px;border-radius:99px;background:#E8EDF3;margin-top:3px;overflow:hidden"><div style="height:100%;width:' + Math.round(P * 100 / Math.max(1, totalEst || marcados)) + '%;background:#43A047"></div></div>'
         + ((totalEst && marcados < totalEst) ? '<div style="font-size:10px;color:#8A97A8">Faltan ' + (totalEst - marcados) + ' por marcar</div>' : '');
     } else {
-      info = '<div style="font-size:10px;color:#B7C1CE;margin-top:4px">' + (finde ? 'Fin de semana' : 'Sin registrar') + '</div>';
+      info = '<div style="font-size:10px;color:#B7C1CE;margin-top:4px">Sin registrar</div>';
     }
     celdas += '<div onclick="asisCalIrA(\'' + f + '\')" title="Ver o marcar la asistencia de este día" style="cursor:pointer;' + borde + ';border-radius:10px;padding:6px 7px;min-height:64px;background:' + bg + '">'
       + '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:' + (esHoy ? '800' : '600') + ';font-size:14px;color:#13213F">' + d + '</span>'
@@ -4899,8 +4899,8 @@ function renderAsisCalendario(){
     + '<button type="button" class="btn btn-sec mini" onclick="asisCalNav(1)">▶</button>'
     + '<button type="button" class="btn btn-sec mini" onclick="asisCalIrA(\'' + hoy + '\')">Hoy</button>'
     + '<span class="ayuda" style="margin:0">Toca un día para ver o marcar su asistencia.</span></div>'
-    + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">'
-    + ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(x => '<div style="text-align:center;font-size:11px;font-weight:700;color:#5A6B84">' + x + '</div>').join('')
+    + '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px">'
+    + ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map(x => '<div style="text-align:center;font-size:11px;font-weight:700;color:#5A6B84">' + x + '</div>').join('')
     + celdas + '</div>';
 }
 function renderAsistencia(){
