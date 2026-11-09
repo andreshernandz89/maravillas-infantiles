@@ -1040,14 +1040,14 @@ const LS_KEY = 'cemi_boletines_v3';
 const FB_CONFIG = { apiKey: "AIzaSyD8JESH5rhMkgmSjy-0h6p-zObQg-XAzQ0", authDomain: "plataforma-cemi.firebaseapp.com", databaseURL: "https://plataforma-cemi-default-rtdb.firebaseio.com", projectId: "plataforma-cemi", storageBucket: "plataforma-cemi.firebasestorage.app", messagingSenderId: "59598932057", appId: "1:59598932057:web:24cb8ee45a831374a4c948" };
 let FB_AUTH = null, FB_DB = null, NUBE_LISTA = false, ultimoEnvioNube = 0, timerNube = null, CLAVES_VIS = {};
 try{ firebase.initializeApp(FB_CONFIG); FB_AUTH = firebase.auth(); FB_DB = firebase.database(); }catch(e){ console.error('Firebase no cargó', e); }
-const CLAVES_NUBE = ['instituto','cursos','estudiantes','notas','extra','parciales','asistencia','planeadores','observadores','perfiles','perfilesEliminados','auditoria','pagos','nomina','facturacion','calendario','cierres','tareas'];
+const CLAVES_NUBE = ['instituto','cursos','estudiantes','notas','extra','parciales','asistencia','planeadores','observadores','perfiles','perfilesEliminados','auditoria','pagos','nomina','facturacion','calendario','cierres','tareas','faltaMarca','faltaAvisos'];
 function hashDe(v){ try{ return JSON.stringify(v === undefined ? null : v); }catch(e){ return ''; } }
 let hashNube = {};
 function dbParaNube(){ const o = {}; CLAVES_NUBE.forEach(k=>{ if(k==='perfiles'){ o[k] = (DB.perfiles||[]).map(p=>{ const q = Object.assign({}, p); delete q.clave; return q; }); } else { o[k] = (DB[k] === undefined ? null : DB[k]); } }); o.demo = false; return o; }
 function guardarNube(){ if(!FB_DB || !NUBE_LISTA) return; const datos = dbParaNube(); const cambios = {}; const enviados = []; CLAVES_NUBE.forEach(k=>{ const h = hashDe(datos[k]); if(hashNube[k] !== h){ cambios[k] = datos[k]; enviados.push([k, h]); } }); if(!enviados.length) return; ultimoEnvioNube = Date.now(); FB_DB.ref('cemiDB').update(cambios).then(()=>{ enviados.forEach(par=>{ hashNube[par[0]] = par[1]; }); }).catch(err=>{ console.error('Error subiendo a la nube', err); if(typeof window !== 'undefined' && typeof window.mostrarToast === 'function') window.mostrarToast('⚠️ No se pudieron subir tus cambios a la nube. Quedan en este equipo y la subida se reintentará automáticamente al volver la conexión.', 'error'); }); }
 function programarGuardarNube(){ if(timerNube) clearTimeout(timerNube); timerNube = setTimeout(guardarNube, 600); }
 function migrarModulosPerfiles(){ if(!Array.isArray(DB.perfiles)) return; const ACADEMICOS = ['panel','instituto','cursos','asignaturas','notas','boletines','final','asistencia','planeador','observador']; DB.perfiles.forEach(p=>{ if(!p || p.rol==='owner' || p.modulosV3) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ ACADEMICOS.forEach(add); add('certificados'); add('matriculas'); } p.modulosV3 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV4) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('tareas'); add('rector'); } else if(p.rol==='docente'){ add('tareas'); } p.modulosV4 = true; }); DB.perfiles.forEach(p=>{ if(!p || p.modulosV5) return; p.modulos = Array.isArray(p.modulos) ? p.modulos : []; const add = id=>{ if(!p.modulos.includes(id)) p.modulos.push(id); }; if(p.rol==='admin'){ MODULOS_TODOS.forEach(add); } else if(p.rol==='coord'){ add('documentos'); } p.modulosV5 = true; }); }
-function saneamientoNube(){ migrarModulosPerfiles(); if(!DB.parciales) DB.parciales = {}; if(!DB.asistencia) DB.asistencia = {}; if(!DB.planeadores) DB.planeadores = {}; if(!DB.observadores) DB.observadores = {}; if(!Array.isArray(DB.auditoria)) DB.auditoria = []; if(!Array.isArray(DB.perfiles)) DB.perfiles = []; if(!Array.isArray(DB.perfilesEliminados)) DB.perfilesEliminados = []; if(!Array.isArray(DB.cursos)) DB.cursos = []; if(!Array.isArray(DB.estudiantes)) DB.estudiantes = []; if(!DB.notas) DB.notas = {}; if(!DB.extra) DB.extra = {}; Object.values(DB.asistencia||{}).forEach(pc=>Object.values(pc).forEach(dia=>{ Object.keys(dia).forEach(id=>{ if(dia[id]==='R') dia[id]='P'; }); }));  }
+function saneamientoNube(){ migrarModulosPerfiles(); if(!DB.parciales) DB.parciales = {}; if(!DB.asistencia) DB.asistencia = {}; if(!DB.faltaMarca) DB.faltaMarca = {}; if(!DB.faltaAvisos) DB.faltaAvisos = {}; if(!DB.planeadores) DB.planeadores = {}; if(!DB.observadores) DB.observadores = {}; if(!Array.isArray(DB.auditoria)) DB.auditoria = []; if(!Array.isArray(DB.perfiles)) DB.perfiles = []; if(!Array.isArray(DB.perfilesEliminados)) DB.perfilesEliminados = []; if(!Array.isArray(DB.cursos)) DB.cursos = []; if(!Array.isArray(DB.estudiantes)) DB.estudiantes = []; if(!DB.notas) DB.notas = {}; if(!DB.extra) DB.extra = {}; Object.values(DB.asistencia||{}).forEach(pc=>Object.values(pc).forEach(dia=>{ Object.keys(dia).forEach(id=>{ if(dia[id]==='R') dia[id]='P'; }); }));  }
 function aplicarDatosNube(datos){ if (typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) return; NUBE_YA_APLICO = true; DB = datos; if(!Array.isArray(DB.tareas)) DB.tareas = []; saneamientoNube(); if(typeof respaldoAutomatico === 'function') respaldoAutomatico(); if(typeof fusionarPagosWallet === 'function') fusionarPagosWallet(); if(typeof sincronizarConsulta2027 === 'function') sincronizarConsulta2027(false); guardarCopiaLocal(); const d = dbParaNube(); CLAVES_NUBE.forEach(k=>{ hashNube[k] = hashDe(d[k]); }); }
 let MATRI = {}, MATRI_ACTIVO = false, MATRI_SEL = '';
 let CERTSOL = {}, CERTSOL_ACTIVO = false;
@@ -4861,6 +4861,8 @@ function renderAsistencia(){
     return `<tr><td class="num">${i+1}</td><td>${esc(e.nombre)}</td><td><div class="asis-btns">${btn('P','Presente')}${btn('F','Falta')}</div>${justif}</td><td>${cm[0]+cm[1]} faltas (${cm[1]} justif. · ${cm[0]} no justif.)</td></tr>`;
   }).join('') || '<tr><td colspan="4"><div class="estado-vacio"><strong>Este curso aún no tiene estudiantes</strong><span>Agrégalos en «Cursos y estudiantes» y vuelve aquí para pasar la asistencia del día.</span></div></td></tr>';
   $('asis-resumen').textContent = lista.length ? ('Presentes: '+P+' · Faltas: '+(F+FJ)+' ('+FJ+' justificadas · '+F+' no justificadas) · Sin marcar: '+S) : '';
+  const pendAvisoFalta = (fecha === fechaHoyISO()) ? faltasPendientesDeAviso(cursoId, fecha) : 0;
+  if (pendAvisoFalta && $('asis-resumen')) $('asis-resumen').innerHTML += ' &nbsp; <button class="btn mini" onclick="avisarFaltasAhora()">📣 Avisar faltas ahora (' + pendAvisoFalta + ')</button>';
   renderJustifPanel(cursoId, lista);
 }
 function marcarAsistencia(estId, val){
@@ -4870,6 +4872,7 @@ function marcarAsistencia(estId, val){
   if(!DB.asistencia[cursoId]) DB.asistencia[cursoId] = {};
   if(!DB.asistencia[cursoId][fecha]) DB.asistencia[cursoId][fecha] = {};
   DB.asistencia[cursoId][fecha][estId] = val;
+  registrarMarcaFalta(cursoId, fecha, estId, val);
   guardar(); renderAsistencia();
 }
 
@@ -4966,13 +4969,17 @@ async function renderPanelPush(){
   try {
     const s2 = await FB_DB.ref('pushEnvios').once('value');
     const v2 = s2.val() || {};
-    const lista = Object.keys(v2).map(k => Object.assign({}, v2[k], { _id: k })).sort((a, b) => (b.fecha || 0) - (a.fecha || 0)).slice(0, 5);
+    const listaT = Object.keys(v2).map(k => Object.assign({}, v2[k], { _id: k })).sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+    const lista = listaT.filter(x => !x.clave).slice(0, 5);
+    const autosHoy = listaT.filter(x => x.clave && x.fecha && new Date(x.fecha).toDateString() === new Date().toDateString());
+    let filaAuto = '';
+    if (autosHoy.length){ const dispA = autosHoy.reduce((acc, x) => acc + ((x.resultado && x.resultado.enviados) || 0), 0); const pendA = autosHoy.filter(x => x.estado !== 'enviado').length; filaAuto = '<p class="ayuda" style="margin:2px 0">\u00B7 🤖 Hoy \u2014 <strong>Avisos automáticos de inasistencia</strong> \u00B7 ' + autosHoy.length + ' estudiante(s) \u00B7 \u2714 Enviados a ' + dispA + ' dispositivos' + (pendA ? ' \u00B7 \u23F3 ' + pendA + ' en cola\u2026' : '') + ' \u00B7 por Automático · Asistencia</p>'; }
     const h = $('push-historial');
-    if (h && lista.length) h.innerHTML = '<button type="button" onclick="pushHistorialToggle(this)" style="display:flex;align-items:center;gap:6px;background:none;border:none;padding:4px 0;cursor:pointer;font:inherit;color:inherit;text-align:left"><strong>Últimos envíos</strong><span class="push-hist-flecha" style="font-size:12px;color:#5A6B84">\u25B8</span></button><div class="push-hist-lista" style="display:none">' + lista.map(x => {
+    if (h && (lista.length || autosHoy.length)) h.innerHTML = '<button type="button" onclick="pushHistorialToggle(this)" style="display:flex;align-items:center;gap:6px;background:none;border:none;padding:4px 0;cursor:pointer;font:inherit;color:inherit;text-align:left"><strong>Últimos envíos</strong><span class="push-hist-flecha" style="font-size:12px;color:#5A6B84">\u25B8</span></button><div class="push-hist-lista" style="display:none">' + lista.map(x => {
       const f = x.fecha ? new Date(x.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
       const est = x.estado === 'enviado' ? '\u2714 Enviada' + (x.resultado ? ' a ' + (x.resultado.enviados || 0) + ' dispositivos' : '') : '\u23F3 En cola\u2026';
-      return '<p class="ayuda" style="margin:2px 0">\u00B7 ' + esc(f) + ' \u2014 <strong>' + esc(x.titulo || '') + '</strong> \u00B7 ' + (x.grados && x.grados.length ? esc(x.grados.join(', ')) : 'Todos los grados') + ' \u00B7 ' + est + (x.autor ? ' \u00B7 por <strong>' + esc(x.autor) + '</strong>' : '') + '</p>';
-    }).join('') + '</div>';
+      return '<p class="ayuda" style="margin:2px 0">\u00B7 ' + esc(f) + ' \u2014 <strong>' + esc(x.titulo || '') + '</strong> \u00B7 ' + (x.destino ? esc(x.destino) : (x.grados && x.grados.length ? esc(x.grados.join(', ')) : 'Todos los grados')) + ' \u00B7 ' + est + (x.autor ? ' \u00B7 por <strong>' + esc(x.autor) + '</strong>' : '') + '</p>';
+    }).join('') + filaAuto + '</div>';
   } catch (e) {}
 }
 function pushHistorialToggle(btn){
@@ -5008,6 +5015,76 @@ async function enviarPushPadres(){
     if (est) est.innerHTML = '<div style="background:#FDECEC;color:#8F1D1D;border:1px solid #F3C0BB;border-radius:12px;padding:10px 12px;margin-top:10px">No se pudo dejar en cola. Revisa tu conexión e inténtalo de nuevo; si persiste, avisa a soporte (puede faltar la regla pushEnvios en Firebase).</div>';
   } finally { if (btn) btn.disabled = false; }
 }
+/* ===== AVISO AUTOMÁTICO DE INASISTENCIA (push solo al acudiente) =====
+   Al marcar una falta (F) se anota la hora; pasados 20 minutos, si el
+   estudiante sigue en falta, la plataforma deja en la cola pushEnvios un
+   aviso dirigido SOLO a los dispositivos de ese estudiante (por su clave).
+   La espera cubre llegadas tarde y errores al marcar; si antes de cumplirse
+   la falta se corrige a Presente o Justificada, el aviso se cancela solo.
+   Cada estudiante recibe máximo un aviso por día. */
+const FALTA_GRACIA_MS = 20 * 60 * 1000;
+const FALTA_VENTANA_MS = 3 * 60 * 60 * 1000;
+function registrarMarcaFalta(cursoId, fecha, estId, val){
+  if(!DB.faltaMarca) DB.faltaMarca = {};
+  if(!DB.faltaAvisos) DB.faltaAvisos = {};
+  const k = cursoId + '|' + fecha + '|' + estId;
+  if (val === 'F'){ if(!DB.faltaMarca[k] && !DB.faltaAvisos[k]) DB.faltaMarca[k] = Date.now(); }
+  else if (DB.faltaMarca[k]){ delete DB.faltaMarca[k]; }
+}
+function faltasPendientesDeAviso(cursoId, fecha){
+  if(!DB.faltaMarca) return 0;
+  let n = 0;
+  Object.keys(DB.faltaMarca).forEach(k => { const p = k.split('|'); if (p[0] === cursoId && p[1] === fecha) n++; });
+  return n;
+}
+async function revisarAvisosFalta(opciones){
+  opciones = opciones || {};
+  if (typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) return;
+  if (typeof SIMULANDO !== 'undefined' && SIMULANDO) return;
+  if (!FB_DB) return;
+  if(!DB.faltaMarca) DB.faltaMarca = {};
+  if(!DB.faltaAvisos) DB.faltaAvisos = {};
+  const hoy = fechaHoyISO();
+  const ahora = Date.now();
+  let cambio = false;
+  for (const k of Object.keys(DB.faltaMarca)){
+    const partes = k.split('|');
+    const cursoId = partes[0], fecha = partes[1], estId = partes[2];
+    if (opciones.cursoId && (cursoId !== opciones.cursoId || fecha !== opciones.fecha)) continue;
+    if (fecha !== hoy){ delete DB.faltaMarca[k]; cambio = true; continue; }
+    const estado = (((DB.asistencia || {})[cursoId] || {})[fecha] || {})[estId] || '';
+    if (estado !== 'F'){ delete DB.faltaMarca[k]; cambio = true; continue; }
+    const desde = DB.faltaMarca[k] || ahora;
+    if (!opciones.inmediato && (ahora - desde) < FALTA_GRACIA_MS) continue;
+    if ((ahora - desde) > FALTA_VENTANA_MS){ delete DB.faltaMarca[k]; cambio = true; continue; }
+    const e = (DB.estudiantes || []).find(x => x.id === estId);
+    if (!e || !(e.datos || {}).docNumero){ delete DB.faltaMarca[k]; cambio = true; continue; }
+    try {
+      const clave = await sha256Hex(normDocMatricula(e.datos.docNumero));
+      const partesNom = String(e.nombre || '').split(',');
+      const nombres = (partesNom[1] || partesNom[0] || '').trim();
+      const fechaTxt = new Date(fecha + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+      await FB_DB.ref('pushEnvios').push({
+        titulo: 'Aviso de inasistencia',
+        cuerpo: 'Hola. Te informamos que ' + nombres + ' no registró asistencia hoy ' + fechaTxt + '. Si ya enviaste la justificación, por favor ignora este mensaje.',
+        clave: clave, destino: 'Acudiente de ' + e.nombre, tipo: 'INASISTENCIA',
+        autor: 'Automático · Asistencia', fecha: Date.now(), estado: 'pendiente'
+      });
+      DB.faltaAvisos[k] = Date.now();
+    } catch(err) { console.error('aviso de falta', err); }
+    delete DB.faltaMarca[k];
+    cambio = true;
+  }
+  if (cambio) guardar();
+}
+async function avisarFaltasAhora(){
+  const cursoId = $('asis-curso') ? $('asis-curso').value : '';
+  const fecha = $('asis-fecha') ? $('asis-fecha').value : '';
+  await revisarAvisosFalta({ inmediato: true, cursoId: cursoId, fecha: fecha });
+  renderAsistencia();
+  if (typeof mostrarToast === 'function') mostrarToast('📣 Avisos de inasistencia en cola: se enviarán solo a los acudientes de los estudiantes en falta.');
+}
+setInterval(() => { revisarAvisosFalta(); }, 60000);
 function renderPanelNotificaciones(){
   const cont = $('panel-notificaciones'); if(!cont) return;
   const p = perfilActual(); if(!p || p.rol === 'docente'){ cont.innerHTML = ''; return; }
