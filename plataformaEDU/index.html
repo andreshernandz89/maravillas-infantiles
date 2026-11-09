@@ -472,7 +472,7 @@ button.btn:hover{ background:var(--azul-osc); }
           <div class="fila">
             <div><label>Fecha</label><input type="date" id="cal-fecha"></div>
             <div style="flex:1;min-width:220px"><label>Título del evento</label><input type="text" id="cal-titulo" placeholder="Ej. Entrega de boletines del periodo 3"></div>
-            <div style="align-self:flex-end"><button class="btn" onclick="calAgregar()"><span class="sim-mas">+</span> Agregar evento</button></div>
+            <div style="align-self:flex-end"><button class="btn" id="cal-btn-guardar" onclick="calAgregar()"><span class="sim-mas">+</span> Agregar evento</button> <button class="btn btn-sec hidden" id="cal-btn-cancelar" onclick="calCancelarEdicion()">Cancelar</button></div>
           </div>
           <div class="fila"><div style="flex:1"><label>Detalle (opcional)</label><input type="text" id="cal-detalle" placeholder="Ej. 8:00 a. m., en el colegio"></div></div>
         </div>
@@ -1930,7 +1930,7 @@ function renderCalendarioGrid(){
     const evs = porFecha[CAL_DIA_SEL] || [];
     const fTxt = new Date(CAL_DIA_SEL + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     detalle = '<div style="margin-top:12px;border:1px solid #C9DBFA;border-radius:12px;padding:10px 12px;background:#FBFDFF"><strong style="text-transform:capitalize">' + esc(fTxt) + '</strong>'
-      + (evs.length ? evs.map(ev => '<div class="fila" style="justify-content:space-between;align-items:flex-start;margin-top:8px"><div><div>' + esc(ev.titulo || '') + '</div>' + (calDetalleVisible(ev.detalle) ? '<div class="ayuda">' + esc(calDetalleVisible(ev.detalle)) + '</div>' : '') + '</div>' + (puedeEditarCalendario() ? '<button class="btn btn-sec mini" onclick="calEliminar(\'' + ev.id + '\')">🗑 Quitar</button>' : '') + '</div>').join('')
+      + (evs.length ? evs.map(ev => '<div class="fila" style="justify-content:space-between;align-items:flex-start;margin-top:8px"><div><div>' + esc(ev.titulo || '') + '</div>' + (calDetalleVisible(ev.detalle) ? '<div class="ayuda">' + esc(calDetalleVisible(ev.detalle)) + '</div>' : '') + '</div>' + (puedeEditarCalendario() ? '<span style="display:flex;gap:6px;flex:none"><button class="btn btn-sec mini" onclick="calEditar(\'' + ev.id + '\')">✏️ Editar</button><button class="btn btn-sec mini" onclick="calEliminar(\'' + ev.id + '\')">🗑 Quitar</button></span>' : '') + '</div>').join('')
         : '<p class="ayuda" style="margin:6px 0 0">No hay eventos este día.' + (puedeEditarCalendario() ? ' La fecha ya quedó puesta en el formulario de arriba: escribe el título y toca «Agregar evento».' : '') + '</p>')
       + '</div>';
   }
@@ -1956,7 +1956,7 @@ function renderCalendario(){
   const fmtF = iso => new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const alternar = pasados.length ? '<div style="margin-top:10px"><button class="btn btn-sec mini" onclick="calAlternarPasados()">' + (CAL_VER_PASADOS ? '🙈 Ocultar los eventos pasados' : '👁 Mostrar los ' + pasados.length + ' eventos que ya pasaron') + '</button></div>' : '';
   cont.innerHTML = (evs.length ? evs.map(ev =>
-    '<div class="fila" style="justify-content:space-between;align-items:flex-start;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-top:8px"><div><strong>' + esc(fmtF(ev.fecha)) + '</strong>' + (ev.fecha < hoy ? ' <span class="chip">Ya pasó</span>' : '') + '<div>' + esc(ev.titulo) + '</div>' + (calDetalleVisible(ev.detalle) ? '<div class="ayuda">' + esc(calDetalleVisible(ev.detalle)) + '</div>' : '') + '</div>' + (puedeEditarCalendario() ? '<button class="btn btn-sec mini" onclick="calEliminar(\'' + ev.id + '\')">🗑 Quitar</button>' : '') + '</div>'
+    '<div class="fila" style="justify-content:space-between;align-items:flex-start;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-top:8px"><div><strong>' + esc(fmtF(ev.fecha)) + '</strong>' + (ev.fecha < hoy ? ' <span class="chip">Ya pasó</span>' : '') + '<div>' + esc(ev.titulo) + '</div>' + (calDetalleVisible(ev.detalle) ? '<div class="ayuda">' + esc(calDetalleVisible(ev.detalle)) + '</div>' : '') + '</div>' + (puedeEditarCalendario() ? '<span style="display:flex;gap:6px;flex:none"><button class="btn btn-sec mini" onclick="calEditar(\'' + ev.id + '\')">✏️ Editar</button><button class="btn btn-sec mini" onclick="calEliminar(\'' + ev.id + '\')">🗑 Quitar</button></span>' : '') + '</div>'
   ).join('') : (todos.length ? '<p class="ayuda">No hay eventos próximos en el calendario.</p>' : '<p class="ayuda">Todavía no hay eventos en el calendario. Agrega el primero con el formulario de arriba.</p>')) + alternar;
   const bR2 = $('btn-respaldo-manual'); if(bR2) bR2.style.display = esOwner() ? '' : 'none';
   calInfoDocumento();
@@ -2180,6 +2180,25 @@ async function calEliminarDocumento(){
   CAL_DOC = null; CAL_DOC_CARGADO = false; calInfoDocumento();
 }
 
+let CAL_EDIT_ID = null;
+function calEditar(id){
+  if(!puedeEditarCalendario()) return;
+  const ev = (DB.calendario || []).find(x => x.id === id); if(!ev) return;
+  CAL_EDIT_ID = id;
+  $('cal-fecha').value = ev.fecha || '';
+  $('cal-titulo').value = ev.titulo || '';
+  $('cal-detalle').value = ev.detalle || '';
+  const b = $('cal-btn-guardar'); if (b) b.innerHTML = '💾 Guardar cambios';
+  const c = $('cal-btn-cancelar'); if (c) c.classList.remove('hidden');
+  const form = $('cal-form'); if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if ($('cal-titulo') && $('cal-titulo').focus) $('cal-titulo').focus();
+}
+function calCancelarEdicion(){
+  CAL_EDIT_ID = null;
+  ['cal-fecha', 'cal-titulo', 'cal-detalle'].forEach(i => { const el = $(i); if (el) el.value = ''; });
+  const b = $('cal-btn-guardar'); if (b) b.innerHTML = '<span class="sim-mas">+</span> Agregar evento';
+  const c = $('cal-btn-cancelar'); if (c) c.classList.add('hidden');
+}
 function calAgregar(){
   if((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('Estás en una vista de solo lectura. Vuelve a tu vista normal para hacer cambios.'); return; }
   if(!puedeEditarCalendario()) return;
@@ -2187,6 +2206,14 @@ function calAgregar(){
   if(!fecha || !titulo){ alert('Escribe la fecha y el título del evento.'); return; }
   if(!Array.isArray(DB.calendario)) DB.calendario = [];
   if(!DB.cierres || typeof DB.cierres !== 'object' || Array.isArray(DB.cierres)) DB.cierres = {};
+  if (CAL_EDIT_ID){
+    const evE = DB.calendario.find(x => x.id === CAL_EDIT_ID);
+    if (evE){ evE.fecha = fecha; evE.titulo = titulo; evE.detalle = detalle; registrarCambio('Evento del calendario institucional modificado: ' + titulo + ' (' + fecha + ')'); }
+    calCancelarEdicion();
+    guardar(); renderCalendario();
+    sincronizarConsulta2027(true);
+    return;
+  }
   DB.calendario.push({ id: uid(), fecha: fecha, titulo: titulo, detalle: detalle });
   registrarCambio('Evento agregado al calendario institucional: ' + titulo + ' (' + fecha + ')');
   guardar(); renderCalendario();
@@ -2199,6 +2226,7 @@ function calEliminar(id){
   const ev = (DB.calendario || []).find(x => x.id === id); if(!ev) return;
   if(!confirm('¿Quitar del calendario el evento «' + ev.titulo + '» del ' + ev.fecha + '?')) return;
   DB.calendario = DB.calendario.filter(x => x.id !== id);
+  if (CAL_EDIT_ID === id) calCancelarEdicion();
   registrarCambio('Evento eliminado del calendario institucional: ' + ev.titulo + ' (' + ev.fecha + ')');
   guardar(); renderCalendario();
   sincronizarConsulta2027(true);
