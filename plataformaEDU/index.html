@@ -4968,12 +4968,20 @@ async function renderPanelPush(){
     const v2 = s2.val() || {};
     const lista = Object.keys(v2).map(k => Object.assign({}, v2[k], { _id: k })).sort((a, b) => (b.fecha || 0) - (a.fecha || 0)).slice(0, 5);
     const h = $('push-historial');
-    if (h && lista.length) h.innerHTML = '<p class="ayuda" style="margin:6px 0 2px"><strong>Últimos envíos</strong></p>' + lista.map(x => {
+    if (h && lista.length) h.innerHTML = '<button type="button" onclick="pushHistorialToggle(this)" style="display:flex;align-items:center;gap:6px;background:none;border:none;padding:4px 0;cursor:pointer;font:inherit;color:inherit;text-align:left"><strong>Últimos envíos</strong><span class="push-hist-flecha" style="font-size:12px;color:#5A6B84">\u25B8</span></button><div class="push-hist-lista" style="display:none">' + lista.map(x => {
       const f = x.fecha ? new Date(x.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
       const est = x.estado === 'enviado' ? '\u2714 Enviada' + (x.resultado ? ' a ' + (x.resultado.enviados || 0) + ' dispositivos' : '') : '\u23F3 En cola\u2026';
-      return '<p class="ayuda" style="margin:2px 0">\u00B7 ' + esc(f) + ' \u2014 <strong>' + esc(x.titulo || '') + '</strong> \u00B7 ' + (x.grados && x.grados.length ? esc(x.grados.join(', ')) : 'Todos los grados') + ' \u00B7 ' + est + '</p>';
-    }).join('');
+      return '<p class="ayuda" style="margin:2px 0">\u00B7 ' + esc(f) + ' \u2014 <strong>' + esc(x.titulo || '') + '</strong> \u00B7 ' + (x.grados && x.grados.length ? esc(x.grados.join(', ')) : 'Todos los grados') + ' \u00B7 ' + est + (x.autor ? ' \u00B7 por <strong>' + esc(x.autor) + '</strong>' : '') + '</p>';
+    }).join('') + '</div>';
   } catch (e) {}
+}
+function pushHistorialToggle(btn){
+  const lista = btn && btn.parentElement ? btn.parentElement.querySelector('.push-hist-lista') : null;
+  if(!lista) return;
+  const abierto = lista.style.display !== 'none';
+  lista.style.display = abierto ? 'none' : '';
+  const flecha = btn.querySelector('.push-hist-flecha');
+  if (flecha) flecha.textContent = abierto ? '\u25B8' : '\u25BE';
 }
 function pushGradosTodos(cb){
   document.querySelectorAll('.push-grado').forEach(x => { x.disabled = cb.checked; if (cb.checked) x.checked = false; });
