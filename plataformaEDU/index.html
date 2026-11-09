@@ -1932,12 +1932,13 @@ function cumpleHtml(e, edad){
 }
 async function revisarCumpleanos(){
   if ((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)) return;
+  const horaD = new Date();
+  if (horaD.getHours() < 6 || (horaD.getHours() === 6 && horaD.getMinutes() < 30)) return; // Los cumpleaños se felicitan desde las 6:30 a. m.
   const ahora = Date.now();
   if (ahora - CUMPLE_ULTIMA_REVISION < 30 * 60000) return;
   CUMPLE_ULTIMA_REVISION = ahora;
   const hoy = fechaHoyISO();
   if (!DB.cumpleAvisos || typeof DB.cumpleAvisos !== 'object' || Array.isArray(DB.cumpleAvisos)) DB.cumpleAvisos = {};
-  if (!Array.isArray(DB.pushEnvios)) DB.pushEnvios = [];
   const delDia = (DB.estudiantes || []).filter(e => e && !estaRetirado(e) && esCumpleHoy(e, hoy) && !DB.cumpleAvisos[e.id + '|' + hoy.slice(0, 4)]);
   if (!delDia.length) return;
   const inst = DB.instituto || {};
@@ -1946,7 +1947,7 @@ async function revisarCumpleanos(){
     const nom = nombreCortoEst(e), edad = edadQueCumple(e, hoy);
     try{
       const clave = await sha256Hex(normDocMatricula(e.datos && e.datos.docNumero));
-      DB.pushEnvios.push({ id: uid(), ts: Date.now(), titulo: '🎂 ¡Feliz cumpleaños, ' + nom + '!', cuerpo: 'Hoy ' + nom + ' cumple ' + (edad ? edad + ' años' : 'años') + '. En ' + (inst.nombre || 'el colegio') + ' lo celebramos con ustedes. 🎉', clave: clave, destino: 'Acudiente de ' + (e.nombre || ''), tipo: 'CUMPLEAÑOS', autor: 'Automático · Cumpleaños', url: padresUrlPublica() });
+      if (FB_DB) await FB_DB.ref('pushEnvios').push({ titulo: '🎂 ¡Feliz cumpleaños, ' + nom + '!', cuerpo: 'Hoy ' + nom + ' cumple ' + (edad ? edad + ' años' : 'años') + '. En ' + (inst.nombre || 'el colegio') + ' lo celebramos con ustedes. 🎉', clave: clave, destino: 'Acudiente de ' + (e.nombre || ''), tipo: 'CUMPLEAÑOS', autor: 'Automático · Cumpleaños', fecha: Date.now(), estado: 'pendiente' });
     }catch(err){}
     const correo = String((e.datos && e.datos.correoAcudiente) || '').trim();
     if (correo && correo.indexOf('@') > 0){
