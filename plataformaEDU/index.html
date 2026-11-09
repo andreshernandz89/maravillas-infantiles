@@ -870,8 +870,9 @@ button.btn:hover{ background:var(--azul-osc); }
           <div><label>Fecha</label><input type="date" id="asis-fecha" onchange="renderAsistencia()"></div>
           <div><label>&nbsp;</label><span id="asis-resumen" class="ok-flash"></span></div>
         </div>
+        <div id="asis-calendario" style="margin:14px 0 6px"></div>
         <div class="scroll"><table>
-          <thead><tr><th style="width:50px">#</th><th>Estudiante</th><th style="width:250px">Asistencia de hoy</th><th style="width:170px">En el mes</th></tr></thead>
+          <thead><tr><th style="width:50px">#</th><th>Estudiante</th><th style="width:250px">Asistencia</th><th style="width:170px">En el mes</th></tr></thead>
           <tbody id="lista-asistencia"></tbody>
         </table></div>
       </div>
@@ -4837,6 +4838,71 @@ function renderRector(){
     : '<p class="ayuda">🎉 Ningún estudiante tiene deuda de pensión registrada.</p>';
 }
 
+/* ===== CALENDARIO MENSUAL DE ASISTENCIA ===== */
+let ASIS_CAL_MES = '';
+function asisCalNav(delta){
+  const base = ASIS_CAL_MES || (($('asis-fecha') && $('asis-fecha').value) || fechaHoyISO()).slice(0, 7);
+  const d = new Date(base + '-15T12:00:00');
+  d.setMonth(d.getMonth() + delta);
+  ASIS_CAL_MES = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  renderAsisCalendario();
+}
+function asisCalIrA(fecha){
+  const inp = $('asis-fecha'); if (inp) inp.value = fecha;
+  ASIS_CAL_MES = fecha.slice(0, 7);
+  renderAsistencia();
+}
+function renderAsisCalendario(){
+  const cont = $('asis-calendario'); if(!cont) return;
+  const sel = $('asis-curso'); const cursoId = sel ? sel.value : '';
+  const fechaSel = $('asis-fecha') ? $('asis-fecha').value : '';
+  if(!ASIS_CAL_MES) ASIS_CAL_MES = (fechaSel || fechaHoyISO()).slice(0, 7);
+  const anio = Number(ASIS_CAL_MES.slice(0, 4)), mes = Number(ASIS_CAL_MES.slice(5, 7));
+  const porCurso = (DB.asistencia || {})[cursoId] || {};
+  const totalEst = estudiantesDe(cursoId).filter(e => !estaRetirado(e)).length;
+  const primerDia = new Date(anio, mes - 1, 1);
+  const offset = (primerDia.getDay() + 6) % 7;
+  const diasMes = new Date(anio, mes, 0).getDate();
+  const hoy = fechaHoyISO();
+  const nombreMes = primerDia.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+  let celdas = '';
+  for (let i = 0; i < offset; i++) celdas += '<div></div>';
+  for (let d = 1; d <= diasMes; d++){
+    const f = ASIS_CAL_MES + '-' + String(d).padStart(2, '0');
+    const dia = porCurso[f] || {};
+    let P = 0, F = 0, FJ = 0;
+    Object.values(dia).forEach(v => { if (v === 'P') P++; else if (v === 'F') F++; else if (v === 'FJ') FJ++; });
+    const marcados = P + F + FJ;
+    const dow = new Date(anio, mes - 1, d).getDay();
+    const finde = (dow === 0 || dow === 6);
+    const esSel = f === fechaSel, esHoy = f === hoy;
+    const bg = esSel ? '#EAF4FF' : (finde ? '#F7F9FC' : '#fff');
+    const borde = esSel ? 'border:2px solid #13213F' : 'border:1px solid #E2E8F0';
+    let info = '';
+    if (marcados){
+      info = '<div style="font-size:11px;line-height:1.5;margin-top:2px"><span style="color:#1E7D32;font-weight:700">✓ ' + P + '</span>'
+        + (F ? ' &nbsp;<span style="color:#C62828;font-weight:700">✗ ' + F + '</span>' : '')
+        + (FJ ? ' &nbsp;<span style="color:#B8860B;font-weight:700">FJ ' + FJ + '</span>' : '') + '</div>'
+        + '<div style="height:5px;border-radius:99px;background:#E8EDF3;margin-top:3px;overflow:hidden"><div style="height:100%;width:' + Math.round(P * 100 / Math.max(1, totalEst || marcados)) + '%;background:#43A047"></div></div>'
+        + ((totalEst && marcados < totalEst) ? '<div style="font-size:10px;color:#8A97A8">Faltan ' + (totalEst - marcados) + ' por marcar</div>' : '');
+    } else {
+      info = '<div style="font-size:10px;color:#B7C1CE;margin-top:4px">' + (finde ? 'Fin de semana' : 'Sin registrar') + '</div>';
+    }
+    celdas += '<div onclick="asisCalIrA(\'' + f + '\')" title="Ver o marcar la asistencia de este día" style="cursor:pointer;' + borde + ';border-radius:10px;padding:6px 7px;min-height:64px;background:' + bg + '">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:' + (esHoy ? '800' : '600') + ';font-size:14px;color:#13213F">' + d + '</span>'
+      + (esHoy ? '<span style="font-size:9px;background:#13213F;color:#fff;border-radius:99px;padding:1px 6px">HOY</span>' : '') + '</div>'
+      + info + '</div>';
+  }
+  cont.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">'
+    + '<button type="button" class="btn btn-sec mini" onclick="asisCalNav(-1)">◀</button>'
+    + '<strong style="font-size:16px;text-transform:capitalize">' + esc(nombreMes) + '</strong>'
+    + '<button type="button" class="btn btn-sec mini" onclick="asisCalNav(1)">▶</button>'
+    + '<button type="button" class="btn btn-sec mini" onclick="asisCalIrA(\'' + hoy + '\')">Hoy</button>'
+    + '<span class="ayuda" style="margin:0">Toca un día para ver o marcar su asistencia.</span></div>'
+    + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">'
+    + ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(x => '<div style="text-align:center;font-size:11px;font-weight:700;color:#5A6B84">' + x + '</div>').join('')
+    + celdas + '</div>';
+}
 function renderAsistencia(){
   const sel = $('asis-curso'); if(!sel) return;
   const previo = sel.value;
@@ -4863,6 +4929,8 @@ function renderAsistencia(){
   $('asis-resumen').textContent = lista.length ? ('Presentes: '+P+' · Faltas: '+(F+FJ)+' ('+FJ+' justificadas · '+F+' no justificadas) · Sin marcar: '+S) : '';
   const pendAvisoFalta = (fecha === fechaHoyISO()) ? faltasPendientesDeAviso(cursoId, fecha) : 0;
   if (pendAvisoFalta && $('asis-resumen')) $('asis-resumen').innerHTML += ' &nbsp; <button class="btn mini" onclick="avisarFaltasAhora()">📣 Avisar faltas ahora (' + pendAvisoFalta + ')</button>';
+  ASIS_CAL_MES = (fecha || fechaHoyISO()).slice(0, 7);
+  renderAsisCalendario();
   renderJustifPanel(cursoId, lista);
 }
 function marcarAsistencia(estId, val){
