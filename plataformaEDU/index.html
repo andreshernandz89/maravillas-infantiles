@@ -353,6 +353,7 @@ button.btn:hover{ background:var(--azul-osc); }
         <div id="panel-justif"></div>
         <div id="panel-avisos-padres"></div>
         <div id="panel-push"></div>
+        <div id="panel-recordatorios"></div>
         <div class="fila">
           <div><label>Periodo</label><select id="panel-periodo" onchange="PANEL_PERIODO=Number(this.value);renderPanel()"><option value="1">Periodo 1</option><option value="2">Periodo 2</option><option value="3">Periodo 3</option><option value="4">Periodo 4</option></select></div>
         </div>
@@ -4287,7 +4288,7 @@ function renderPanelDocente(){
   $('panel-periodo').value = String(P);
   if(typeof renderPanelEventos === 'function') renderPanelEventos();
   renderPanelNotificaciones();
-  if(typeof renderPanelPush === 'function') renderPanelPush();
+  if(typeof renderPanelPush === 'function') renderPanelPush(); if(typeof renderPanelRecordatorios === 'function') renderPanelRecordatorios();
   renderPanelJustif();
   const misCursos = cursosVisibles() || [];
   const curso = misCursos[0];
@@ -4350,7 +4351,7 @@ function renderPanel(){
   $('panel-periodo').value = String(P);
   if(typeof renderPanelEventos === 'function') renderPanelEventos();
   renderPanelNotificaciones();
-  if(typeof renderPanelPush === 'function') renderPanelPush();
+  if(typeof renderPanelPush === 'function') renderPanelPush(); if(typeof renderPanelRecordatorios === 'function') renderPanelRecordatorios();
   renderPanelJustif();
   const hoy = new Date();
   const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - ((hoy.getDay()+6)%7));
@@ -5372,6 +5373,45 @@ async function enviarPushPadres(){
   } catch (e) {
     console.error(e);
     if (est) est.innerHTML = '<div style="background:#FDECEC;color:#8F1D1D;border:1px solid #F3C0BB;border-radius:12px;padding:10px 12px;margin-top:10px">No se pudo dejar en cola. Revisa tu conexión e inténtalo de nuevo; si persiste, avisa a soporte (puede faltar la regla pushEnvios en Firebase).</div>';
+  } finally { if (btn) btn.disabled = false; }
+}
+async function renderPanelRecordatorios(){
+  const cont = $('panel-recordatorios'); if(!cont) return;
+  const p = perfilActual();
+  if(!p || (p.rol !== 'owner' && p.rol !== 'admin') || !FB_DB){ cont.innerHTML = ''; return; }
+  let cfg = { activo: true, previo: true, diaPrevio: 5, mora: true };
+  try { const s = await FB_DB.ref('pushRecordatorios/config').once('value'); const v = s.val(); if (v) cfg = Object.assign(cfg, v); } catch (e) {}
+  cont.innerHTML =
+    '<div style="border:1.5px solid #C9DBFA;background:linear-gradient(160deg,#fff 60%,#FFF7E6);border-radius:18px;padding:14px 16px;margin:14px 0">' +
+    '<h3 style="margin:0 0 4px">⏰ Recordatorios automáticos de pago</h3>' +
+    '<p class="ayuda" style="margin:0 0 8px">La plataforma avisa sola, por notificación al celular, a los padres que deben la pensión. Solo les llega a quienes tienen las notificaciones activadas en la Consulta de Padres.</p>' +
+    '<label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="checkbox" id="rec-activo" ' + (cfg.activo !== false ? 'checked' : '') + '> <span><strong>Recordatorios activados</strong></span></label>' +
+    '<label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="checkbox" id="rec-previo" ' + (cfg.previo !== false ? 'checked' : '') + '> <span>Aviso antes del vencimiento, el día <input type="number" id="rec-dia-previo" min="1" max="10" value="' + (cfg.diaPrevio || 5) + '" style="width:64px;display:inline-block"> del mes (la pensión se paga hasta el día 10)</span></label>' +
+    '<label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="checkbox" id="rec-mora" ' + (cfg.mora !== false ? 'checked' : '') + '> <span>Aviso de pensión vencida el día 11 (cuando el mes entra en mora)</span></label>' +
+    '<div style="margin-top:10px"><button class="btn" id="btn-rec-guardar" onclick="guardarConfigRecordatorios()">Guardar</button></div>' +
+    '<div id="rec-estado"></div><div id="rec-historial" style="margin-top:8px"></div></div>';
+  try {
+    const s2 = await FB_DB.ref('pushRecordatorios/envios').once('value');
+    const v2 = s2.val() || {};
+    const lista = Object.keys(v2).sort().reverse().slice(0, 4);
+    const h = $('rec-historial');
+    if (h && lista.length) h.innerHTML = '<strong style="font-size:13px">Últimos envíos automáticos</strong>' + lista.map(k => {
+      const x = v2[k] || {}; const partes = k.split('-'); const tipo = partes[0] === 'mora' ? 'Pensión vencida' : 'Aviso previo';
+      const mes = partes.length >= 3 ? (partes[2] + '/' + partes[1]) : '';
+      return '<p class="ayuda" style="margin:2px 0">· ' + tipo + ' · ' + mes + ' · ' + (x.destinos != null ? x.destinos + ' familia(s) · ✔ ' + (x.enviados || 0) + ' enviado(s)' : esc(x.estado || '')) + '</p>';
+    }).join('');
+  } catch (e) {}
+}
+async function guardarConfigRecordatorios(){
+  const btn = $('btn-rec-guardar'); if (btn) btn.disabled = true;
+  const est = $('rec-estado');
+  try {
+    let dia = parseInt(($('rec-dia-previo').value || '5'), 10); if (!(dia >= 1 && dia <= 10)) dia = 5;
+    await FB_DB.ref('pushRecordatorios/config').set({ activo: $('rec-activo').checked, previo: $('rec-previo').checked, diaPrevio: dia, mora: $('rec-mora').checked, diaMora: 11 });
+    if (est) est.innerHTML = '<div style="background:#E2F4E5;color:#1E7D32;border:1px solid #BFE6C6;border-radius:12px;padding:10px 12px;margin-top:10px">✔ Guardado. Los recordatorios se envían solos a las 7:00 a.m. de los días marcados.</div>';
+  } catch (e) {
+    console.error(e);
+    if (est) est.innerHTML = '<div style="background:#FDECEC;color:#8F1D1D;border:1px solid #F3C0BB;border-radius:12px;padding:10px 12px;margin-top:10px">No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.</div>';
   } finally { if (btn) btn.disabled = false; }
 }
 /* ===== AVISO AUTOMÁTICO DE INASISTENCIA (push solo al acudiente) =====
