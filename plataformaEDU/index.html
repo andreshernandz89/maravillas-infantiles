@@ -2580,9 +2580,44 @@ function matriVer(id){ MATRI_SEL = (MATRI_SEL === id) ? '' : id; renderMatricula
 function matriEstado(id, estado){
   if(MODO_ARCHIVO || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('Estás en una vista de solo lectura (año anterior o simulación de perfil). Vuelve a tu vista normal para hacer cambios.'); return; }
   if(!FB_DB) return;
+  const antes = etapaDe(MATRI[id] || {});
   FB_DB.ref('matriculas2027/' + id).update({ estado })
-    .then(() => { if(MATRI[id]) MATRI[id].estado = estado; sincronizarProceso2027(); })
+    .then(() => { if(MATRI[id]) MATRI[id].estado = estado; sincronizarProceso2027();
+      const avance = (antes === 'NUEVA' && estado === 'PROCESO') || (antes === 'PROCESO' && estado === 'ADMITIDA');
+      if (avance) matriAvisarCorreoAuto(id, estado);
+    })
     .catch(err => alert('No se pudo guardar el cambio: ' + err.message));
+}
+/* Aviso de etapa AUTOMÁTICO (pedido de Andres, 2026-11-08): al avanzar una
+ * solicitud a PROCESO, ADMITIDA o IMPORTADA, el correo de la etapa sale solo,
+ * una única vez por etapa (sellos avisoCorreoEtapa + avisosCorreo). Si algo
+ * falla, NO se sella y queda disponible el botón manual «Avisar por correo». */
+async function matriAvisarCorreoAuto(id, etapa){
+  try{
+    const m = MATRI[id]; if(!m) return;
+    if (m.avisoCorreoEtapa && m.avisoCorreoEtapa.etapa === etapa) return;
+    if (m.avisosCorreo && m.avisosCorreo[etapa]) return;
+    const e = m.estudiante || {};
+    const para = String(e.correo || '').trim();
+    if (!para || para.indexOf('@') < 0) return;
+    if (!correoConectado()) return;
+    const inst = (DB.instituto && DB.instituto.nombre) || 'el colegio';
+    const nombreEst = ((e.nombres || '') + ' ' + (e.apellidos || '')).trim();
+    let accesoAviso = matriAccesoDe(m);
+    if (!accesoAviso){ try{ await sincronizarConsulta2027(true); }catch(errSync){} accesoAviso = matriAccesoDe(m); }
+    const pend = matriDocsPendientesTxt(m);
+    const aviso = matriAvisoTexto(etapa, nombreEst, m.grado || '', inst, accesoAviso, pend);
+    const resp = await correoEnviarPlataforma(para, aviso.asunto, aviso.cuerpo, matriAvisoHTML(etapa, nombreEst, m.grado || '', inst, accesoAviso, pend));
+    if (!resp || !resp.ok) throw new Error((resp && resp.error) || 'El puente no respondió.');
+    const ts = Date.now();
+    const avisos = Object.assign({}, m.avisosCorreo || {}); avisos[etapa] = ts;
+    if (FB_DB) await FB_DB.ref('matriculas2027/' + id).update({ avisoCorreoEtapa: { etapa: etapa, ts: ts }, avisosCorreo: avisos });
+    m.avisoCorreoEtapa = { etapa: etapa, ts: ts }; m.avisosCorreo = avisos;
+    renderMatriculas();
+  }catch(err){
+    console.warn('Aviso automático de etapa no enviado:', err);
+    alert('La etapa cambió, pero el correo automático a la familia no se pudo enviar (' + err.message + '). Puedes enviarlo con el botón «📧 Avisar por correo» de la tarjeta.');
+  }
 }
 function matriEliminar(id){
   if(MODO_ARCHIVO || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('Estás en una vista de solo lectura (año anterior o simulación de perfil). Vuelve a tu vista normal para hacer cambios.'); return; }
@@ -2764,6 +2799,7 @@ async function matriCrearEstudianteEn(id, anioDestino){
   catch(err){ alert('La ficha se creó, pero no se pudo actualizar la etapa de la matrícula: ' + err.message); }
   sincronizarProceso2027();
   renderMatriculas();
+  matriAvisarCorreoAuto(id, 'IMPORTADA');
   alert(esActual
     ? '✅ Estudiante creado: ' + nombre + ' en ' + curso.nombre + ' (año ' + anioActual + ').'
     : '✅ Estudiante pre-creado para el año ' + anioDestino + ': ' + nombre + ' en ' + curso.nombre + '. Lo ves con el filtro de año en la vista del año próximo y se activará al iniciar ese año.');
@@ -5918,8 +5954,9 @@ async function matriAvisarCorreo(id){
     const resp = await correoEnviarPlataforma(para, aviso.asunto, aviso.cuerpo, matriAvisoHTML(etapa, nombreEst, m.grado || '', inst, accesoAviso, matriDocsPendientesTxt(m)));
     if(!resp || !resp.ok) throw new Error((resp && resp.error) || 'El puente no respondió.');
     const marca = { etapa: etapa, ts: Date.now() };
-    if(FB_DB) FB_DB.ref('matriculas2027/' + id).update({ avisoCorreoEtapa: marca });
-    m.avisoCorreoEtapa = marca;
+    const avisosM = Object.assign({}, m.avisosCorreo || {}); avisosM[etapa] = marca.ts;
+    if(FB_DB) FB_DB.ref('matriculas2027/' + id).update({ avisoCorreoEtapa: marca, avisosCorreo: avisosM });
+    m.avisoCorreoEtapa = marca; m.avisosCorreo = avisosM;
     alert('✅ Correo enviado a ' + para + ' a nombre de ' + desde + '.');
     renderMatriculas();
   }catch(err){ alert('No se pudo enviar: ' + err.message); }
