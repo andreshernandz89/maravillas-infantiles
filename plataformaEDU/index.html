@@ -385,9 +385,11 @@ button.btn:hover{ background:var(--azul-osc); }
     <section id="tab-novedades" class="hidden">
       <div class="card">
         <h2>📣 Novedades del curso</h2>
-        <p class="ayuda">Publica los avisos y fotos del día de un curso: solo los ven los acudientes de ese curso en su «Consulta para padres».</p>
-        <div class="fila">
-          <div><label>Curso</label><select id="nov-curso" onchange="renderNovedades()"></select></div>
+        <p class="ayuda">Publica avisos y fotos para uno, varios o todos los cursos: cada acudiente lo ve en su «Consulta para padres» solo si el curso de su hijo(a) está marcado.</p>
+        <div>
+          <label>Curso(s) que verán la novedad</label>
+          <div id="nov-cursos-box" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
+          <div class="ayuda">Marca uno, varios o todos los cursos.</div>
         </div>
         <div style="margin-top:10px"><label>¿Qué quieres contar?</label><textarea id="nov-texto" rows="3" placeholder="Ej.: Hoy trabajamos las vocales con una actividad de pintura 🎨"></textarea></div>
         <div class="fila" style="margin-top:10px;align-items:flex-end;gap:12px;flex-wrap:wrap">
@@ -960,7 +962,6 @@ button.btn:hover{ background:var(--azul-osc); }
     <section id="tab-perfiles" class="hidden">
       <div class="card">
         <h2>Perfiles y accesos</h2>
-        <p class="ayuda">Cada persona entra con su usuario y su contraseña. El <strong>dueño (owner)</strong> lo ve y lo edita todo; la <strong>coordinadora</strong> también ve y edita todo el panel académico. Cada <strong>docente</strong> solo ve y edita <strong>su curso</strong>, en los módulos que tenga marcados. Desde aquí el dueño y el administrativo crean perfiles nuevos, asignan el curso, marcan los módulos permitidos —incluido el módulo Perfiles, para darle acceso a otra persona— y cambian el rol (docente, coordinadora o administrativo). Las claves y la eliminación de perfiles quedan solo para el dueño (su propio perfil de dueño no se puede eliminar).</p>
         <div id="perfiles-admin-zona">
         <div class="fila">
           <button class="btn" onclick="guardarCambiosPerfiles()">💾 Guardar cambios</button>
@@ -1958,25 +1959,49 @@ async function revisarCumpleanos(){
 }
 setInterval(revisarCumpleanos, 60000);
 
-/* ===== NOVEDADES DEL CURSO: avisos y fotos para los acudientes del curso ===== */
+/* ===== NOVEDADES DEL CURSO: avisos y fotos para los acudientes de uno, varios o todos los cursos ===== */
 let NOV_FOTO = '';
-function novedadesDelCurso(cursoId){ return (Array.isArray(DB.novedades) ? DB.novedades : []).filter(n => n.cursoId === cursoId).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)); }
+let NOV_SEL = null;
+function novCursosDe(n){ return Array.isArray(n.cursos) && n.cursos.length ? n.cursos : (n.cursoId ? [n.cursoId] : []); }
+function novedadesDelCurso(cursoId){ return (Array.isArray(DB.novedades) ? DB.novedades : []).filter(n => novCursosDe(n).includes(cursoId)).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)); }
 function novCursosVisibles(){
   const p = perfilActual(); if (!p) return [];
-  const todos = (DB.cursos || []).filter(c => c.anio === anioActivo());
+  const todos = (DB.cursos || []).slice();
   if (p.rol === 'docente'){ const gs = gradosDelDocente(p); return todos.filter(c => gs.includes(c.nombre)); }
   return todos;
 }
-function renderNovedades(){
-  const sel = $('nov-curso'); if (!sel) return;
+function novSelValidos(){
+  const vis = novCursosVisibles().map(c => c.id);
+  if (!Array.isArray(NOV_SEL)) return vis.length === 1 ? vis.slice() : [];
+  return NOV_SEL.filter(id => vis.includes(id));
+}
+function novToggleCurso(id, on){
+  let sel = novSelValidos();
+  if (on){ if (!sel.includes(id)) sel.push(id); } else { sel = sel.filter(x => x !== id); }
+  NOV_SEL = sel; renderNovCursosBox();
+}
+function novToggleTodos(on){
+  NOV_SEL = on ? novCursosVisibles().map(c => c.id) : [];
+  renderNovCursosBox();
+}
+function renderNovCursosBox(){
+  const box = $('nov-cursos-box'); if (!box) return;
   const cursos = novCursosVisibles();
-  const prev = sel.value;
-  sel.innerHTML = cursos.length ? cursos.map(c => '<option value="' + c.id + '">' + esc(c.nombre) + '</option>').join('') : '<option value="">(sin cursos)</option>';
-  if (prev && cursos.some(c => c.id === prev)) sel.value = prev;
+  if (!cursos.length){ box.innerHTML = '<span class="ayuda">(sin cursos)</span>'; return; }
+  const sel = novSelValidos();
+  const todosOn = cursos.length > 1 && sel.length === cursos.length;
+  let h = '';
+  if (cursos.length > 1) h += '<label style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1.5px solid #0792FE;border-radius:999px;cursor:pointer;font-weight:600"><input type="checkbox" ' + (todosOn ? 'checked' : '') + ' onchange="novToggleTodos(this.checked)"> Todos los cursos</label>';
+  h += cursos.map(c => '<label style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid #C9D6E8;border-radius:999px;cursor:pointer"><input type="checkbox" ' + (sel.includes(c.id) ? 'checked' : '') + ' onchange="novToggleCurso(\'' + c.id + '\', this.checked)"> ' + esc(c.nombre) + '</label>').join('');
+  box.innerHTML = h;
+}
+function renderNovedades(){
+  renderNovCursosBox();
   const lista = $('novedades-lista'); if (!lista) return;
   const p = perfilActual();
-  const items = sel.value ? novedadesDelCurso(sel.value) : [];
-  lista.innerHTML = items.length ? items.map(n => '<div class="card" style="margin-bottom:10px"><div class="fila" style="justify-content:space-between;align-items:flex-start"><span class="ayuda">' + esc(new Date(n.ts || Date.now()).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })) + ' · por ' + esc(n.autor || '') + '</span>' + ((p && (p.rol !== 'docente' || n.autor === p.nombre)) ? '<button class="btn btn-sec mini" onclick="novEliminar(\'' + n.id + '\')">🗑 Quitar</button>' : '') + '</div><div style="margin-top:6px;white-space:pre-wrap">' + esc(n.texto || '') + '</div>' + (n.foto ? '<img src="' + n.foto + '" alt="Foto de la novedad" style="margin-top:8px;max-width:100%;border-radius:10px">' : '') + '</div>').join('') : '<div class="vacio">Todavía no hay novedades en este curso. ¡Publica la primera!</div>';
+  const visIds = novCursosVisibles().map(c => c.id);
+  const items = (Array.isArray(DB.novedades) ? DB.novedades : []).filter(n => novCursosDe(n).some(id => visIds.includes(id))).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 40);
+  lista.innerHTML = items.length ? items.map(n => '<div class="card" style="margin-bottom:10px"><div class="fila" style="justify-content:space-between;align-items:flex-start"><span class="ayuda">' + esc(new Date(n.ts || Date.now()).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })) + ' · por ' + esc(n.autor || '') + '<br>Para: ' + esc(novCursosDe(n).map(id => (cursoDe(id) || {}).nombre || '').filter(Boolean).join(', ')) + '</span>' + ((p && (p.rol !== 'docente' || n.autor === p.nombre)) ? '<button class="btn btn-sec mini" onclick="novEliminar(\'' + n.id + '\')">🗑 Quitar</button>' : '') + '</div><div style="margin-top:6px;white-space:pre-wrap">' + esc(n.texto || '') + '</div>' + (n.foto ? '<img src="' + n.foto + '" alt="Foto de la novedad" style="margin-top:8px;max-width:100%;border-radius:10px">' : '') + '</div>').join('') : '<div class="vacio">Todavía no hay novedades. ¡Publica la primera!</div>';
 }
 function novFotoElegida(inp){
   const f = inp.files && inp.files[0]; if (!f) return;
@@ -1986,14 +2011,14 @@ function novFotoElegida(inp){
 }
 function novPublicar(){
   if ((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) || (typeof SIMULANDO !== 'undefined' && SIMULANDO)){ alert('Estás en una vista de solo lectura. Vuelve a tu vista normal para publicar.'); return; }
-  const sel = $('nov-curso'); const cursoId = sel ? sel.value : '';
+  const ids = novSelValidos();
   const texto = ($('nov-texto').value || '').trim();
-  if (!cursoId){ alert('Elige el curso.'); return; }
+  if (!ids.length){ alert('Marca al menos un curso.'); return; }
   if (!texto && !NOV_FOTO){ alert('Escribe la novedad o adjunta una foto.'); return; }
   if (!Array.isArray(DB.novedades)) DB.novedades = [];
-  DB.novedades.push({ id: uid(), cursoId: cursoId, texto: texto, foto: NOV_FOTO || '', autor: nombreAutorPush(), ts: Date.now() });
+  DB.novedades.push({ id: uid(), cursoId: ids[0], cursos: ids.slice(), texto: texto, foto: NOV_FOTO || '', autor: nombreAutorPush(), ts: Date.now() });
   if (DB.novedades.length > 300) DB.novedades = DB.novedades.slice(-300);
-  registrarCambio('Novedad publicada para el curso ' + ((cursoDe(cursoId) || {}).nombre || ''));
+  registrarCambio('Novedad publicada para ' + ids.map(id => (cursoDe(id) || {}).nombre || '').filter(Boolean).join(', '));
   $('nov-texto').value = ''; NOV_FOTO = ''; const fi = $('nov-foto'); if (fi) fi.value = ''; const prev = $('nov-foto-prev'); if (prev) prev.innerHTML = '';
   guardar(); renderNovedades();
   sincronizarConsulta2027(true);
