@@ -365,6 +365,8 @@
       .red-grid a{ border-radius:10px; overflow:hidden; display:block; }
       .red-grid img{ width:100%; aspect-ratio:1/1; object-fit:cover; display:block; transition:transform .3s ease; }
       .red-grid a:hover img{ transform:scale(1.06); }
+      .red-grid a{ position:relative; }
+      .feed-badge{ position:absolute; right:6px; bottom:6px; background:rgba(0,0,0,.55); color:#fff; font-size:.68rem; font-weight:700; padding:3px 8px; border-radius:999px; }
       .galeria-nota a{ color:var(--azul); font-weight:700; }
       .resenas-resumen{ text-align:center; margin-bottom:28px; }
       .resenas-nota-num{ font-size:3rem; font-weight:900; color:var(--tinta); line-height:1; }
@@ -586,11 +588,11 @@ body{ padding-top:103px; }
                 <span class="red-avatar red-avatar-ig"><img src="escudo.png" alt="Escudo del colegio" /></span>
                 <div>
                   <div class="red-nombre">@cemiedu</div>
-                  <div class="red-sub">Centro Educativo Maravillas Infantiles</div>
+                  <div class="red-sub">Centro Educativo Maravillas Infantiles · <span id="igSeguidores">787</span> seguidores</div>
                 </div>
                 <a class="red-btn red-btn-ig" href="https://www.instagram.com/cemiedu" target="_blank" rel="noopener">Ver perfil</a>
               </div>
-              <div class="red-grid">
+              <div class="red-grid" id="igFeed">
                 <a href="https://www.instagram.com/cemiedu" target="_blank" rel="noopener" aria-label="Ver en Instagram"><img src="galeria-1.jpg" alt="Vida escolar en Maravillas Infantiles" loading="lazy" /></a>
                 <a href="https://www.instagram.com/cemiedu" target="_blank" rel="noopener" aria-label="Ver en Instagram"><img src="galeria-2.jpg" alt="Vida escolar en Maravillas Infantiles" loading="lazy" /></a>
                 <a href="https://www.instagram.com/cemiedu" target="_blank" rel="noopener" aria-label="Ver en Instagram"><img src="galeria-3.jpg" alt="Vida escolar en Maravillas Infantiles" loading="lazy" /></a>
@@ -995,5 +997,36 @@ body{ padding-top:103px; }
       })();
     </script>
     <!-- NAVIDAD-FIN: nieve -->
+
+    <!-- Feed automático de Instagram: lee feed/feed.json (lo actualiza el sincronizador) -->
+    <script>
+      (function(){
+        var grid = document.getElementById('igFeed');
+        if(!grid || !window.fetch) return;
+        fetch('feed/feed.json', { cache:'no-store' })
+          .then(function(r){ if(!r.ok) throw new Error('feed'); return r.json(); })
+          .then(function(d){
+            if(!d || !d.items || !d.items.length) return;
+            grid.innerHTML = '';
+            d.items.forEach(function(it){
+              var a = document.createElement('a');
+              a.href = it.url; a.target = '_blank'; a.rel = 'noopener';
+              a.setAttribute('aria-label', 'Ver en Instagram');
+              var img = document.createElement('img');
+              img.src = it.img; img.alt = 'Publicación de Instagram del colegio'; img.loading = 'lazy';
+              a.appendChild(img);
+              if(it.tipo === 'video'){
+                var b = document.createElement('span');
+                b.className = 'feed-badge'; b.textContent = '▶ Video';
+                a.appendChild(b);
+              }
+              grid.appendChild(a);
+            });
+            var seg = document.getElementById('igSeguidores');
+            if(seg && d.seguidores) seg.textContent = Number(d.seguidores).toLocaleString('es-CO');
+          })
+          .catch(function(){ /* si el feed no carga, quedan las fotos actuales */ });
+      })();
+    </script>
   </body>
 </html>
