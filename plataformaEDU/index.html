@@ -6548,8 +6548,9 @@ else{ sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perf
       if (!u) return;
       presUid = u.uid; dbEdu = app.database();
       chatRef = dbEdu.ref("chatsPlataforma/" + INST_ID + "/" + u.uid);
-      var idn = identidad();
-      chatRef.update({ institucion: institucion(), nombre: idn.nombre, rol: idn.rol });
+      /* La conversación NO se crea aquí: nace recién cuando el usuario envía
+         su primer mensaje (el submit ya escribe institucion/nombre/rol).
+         Crear el nodo al iniciar llenaba la consola de chats vacíos. */
       chatRef.child("mensajes").off();
       chatRef.child("mensajes").on("child_added", function(snap){ pintar(snap.val()); });
       chatRef.child("finalizada").on("value", function(snap){ $("sop-fin").style.display = snap.val() === true ? "block" : "none"; });
@@ -6560,7 +6561,6 @@ else{ sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perf
     $("sop-panel").classList.add("abierto");
     $("sop-dot").style.display = "none";
     iniciar();
-    if (chatRef) { var idn = identidad(); chatRef.update({ institucion: institucion(), nombre: idn.nombre, rol: idn.rol }); }
     setTimeout(function(){ $("sop-input").focus(); }, 60);
   }
   setInterval(function(){
