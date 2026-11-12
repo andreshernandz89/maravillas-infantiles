@@ -93,10 +93,10 @@
         transition:transform .15s ease, box-shadow .15s ease;
       }
       .btn:hover{transform:translateY(-2px);}
-      .btn-coral{background:var(--coral);color:#fff;box-shadow:0 6px 16px rgba(15,71,184,.35);}
-      @media (prefers-color-scheme: dark){.btn-coral{color:#fff;}}
-      .nav-enlaces a.btn-coral{color:#fff;}
-      .nav-enlaces a.btn-coral:hover{background:var(--coral);color:#fff;}
+      .btn-coral{background:var(--coral);color:#fff !important;-webkit-text-fill-color:#fff;box-shadow:0 6px 16px rgba(15,71,184,.35);}
+      @media (prefers-color-scheme: dark){.btn-coral{color:#fff !important;-webkit-text-fill-color:#fff;}}
+      .nav-enlaces a.btn-coral{color:#fff !important;-webkit-text-fill-color:#fff;}
+      .nav-enlaces a.btn-coral:hover{background:var(--coral);color:#fff !important;-webkit-text-fill-color:#fff;}
       .btn-azul{background:var(--azul);color:#fff;box-shadow:0 6px 16px rgba(15,71,184,.3);}
       .btn-borde{background:transparent;color:var(--azul);border:2px solid var(--azul);box-shadow:none;}
       .nav .btn{padding:9px 20px;font-size:.95rem;}
