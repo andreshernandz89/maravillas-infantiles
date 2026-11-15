@@ -156,6 +156,17 @@
 .login-tab{flex:1;padding:10px 8px;border-radius:999px;border:1.5px solid #C9DBFA;background:#fff;color:#13213F;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
 .login-tab.activa{background:#0792FE;border-color:#0792FE;color:#fff}
 .ayuda-login{font-size:12.5px;color:#5A6B84;margin:8px 2px 0;line-height:1.45}
+.btn-grande{position:relative}
+.bg-badge{position:absolute;top:8px;right:10px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#e11d48;color:#fff;font-size:12.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.bg-badge-alerta{background:#f59e0b}
+.pago-estado{border-radius:14px;padding:12px 14px;margin:0 0 12px;font-size:14.5px;line-height:1.45}
+.pago-estado.ok{background:#e8f6ee;border:1.5px solid #9fd8b4;color:#14532d}
+.pago-estado.debe{background:#fff7e0;border:1.5px solid #f2cf6b;color:#713f12}
+.ev-chips{display:flex;gap:8px;flex-wrap:wrap}
+.ev-chip{display:inline-flex;align-items:center;gap:8px;background:#eef4ff;border:1px solid #c9dbfa;border-radius:12px;padding:5px 10px 5px 6px;font-size:13px;font-weight:600;color:#13213F}
+.ev-f{display:inline-flex;flex-direction:column;align-items:center;background:#0792FE;color:#fff;border-radius:8px;padding:2px 7px;line-height:1.05}
+.ev-f small{font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.sesion-avatar{width:40px;height:40px;flex:none;border-radius:50%;background:#0792FE;color:#fff;font-weight:800;font-size:15px;display:inline-flex;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
@@ -191,8 +202,8 @@
     <div id="error"></div>
   </div>
   <div class="card" id="barra-sesion" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <span>👤 <strong>Sesión iniciada</strong></span>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <span style="display:flex;align-items:center;gap:10px;min-width:0"><span class="sesion-avatar" id="sesion-avatar">👤</span><span id="sesion-quien" style="line-height:1.25"><strong>Sesión iniciada</strong></span></span>
       <button type="button" class="btn-salir" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
   </div>
@@ -201,6 +212,13 @@
     <p class="intro">Activa las notificaciones para enterarte al instante de los avisos del colegio, los boletines y los recordatorios importantes.</p>
     <button class="btn-pri" id="btn-push" onclick="activarPush()">🔔 Activar notificaciones</button>
     <div id="push-msg"></div>
+  </div>
+  <div class="card" id="instalar-card" style="display:none">
+    <h2><span class="ico">📲</span> La consulta en tu pantalla de inicio</h2>
+    <p class="intro">Deja la consulta como una app en tu celular: entras con un solo toque, sin escribir la dirección.</p>
+    <button class="btn-pri" id="btn-instalar" onclick="instalarApp()" style="display:none">📲 Instalar la consulta</button>
+    <p class="ayuda-login" id="instalar-ios" style="display:none">En iPhone: toca el botón <strong>Compartir</strong> (el cuadrado con la flecha hacia arriba) y luego <strong>«Agregar a pantalla de inicio»</strong>.</p>
+    <div style="margin-top:10px"><button type="button" class="btn-salir" onclick="ocultarInstalar()">Ahora no</button></div>
   </div>
   <div id="resultado"></div>
   <div class="card" id="doc-cal-card" style="display:none">
@@ -389,6 +407,8 @@ async function consultar(){
   if(datos.pagos){
     const p = datos.pagos;
     h += '<div class="card abierta" id="sec-pagos"><div class="desp-cab"><h2><span class="ico">💰</span> Matrícula y pensiones</h2></div><div class="desp-cuerpo">';
+    if(p.deuda > 0) h += '<div class="pago-estado debe">💰 Tienes pendiente <strong>' + fmtP(p.deuda) + '</strong>' + ((p.pendientes && p.pendientes.length) ? ' (' + p.pendientes.map(esc).join(', ') + ')' : '') + '. Recuerda: pagando hasta el <strong>día 10 de cada mes</strong> evitas el recargo por mora.</div>';
+    else h += '<div class="pago-estado ok">💙 <strong>¡Estás a paz y salvo!</strong> Gracias por tu puntualidad.</div>';
     h += '<p style="margin:0">Matrícula: ' + (p.matriculaOk ? '<strong>Pagada ✔</strong>' : '<strong>Pendiente</strong> (' + fmtP(p.tarifaMatricula) + ')') + '<br>Pensión mensual: ' + fmtP(p.tarifaPension) + ' · Meses pagados: <strong>' + p.mesesPagados + '</strong> de 10</p>' + barra((p.mesesPagados||0) * 10);
     if(p.deuda > 0){ h += '<p>Pendiente por pagar: <strong>' + fmtP(p.deuda) + '</strong>' + (p.pendientes && p.pendientes.length ? '<br>Meses pendientes: ' + p.pendientes.map(esc).join(', ') : '') + '</p><p class="nota">Las pensiones se pagan dentro de los primeros 10 días de cada mes. Si ya pagaste y aún aparece pendiente, escríbenos por WhatsApp al 302 285 2745.</p>'; }
     else { h += '<p style="margin:8px 0 0"><strong>✔ El estudiante se encuentra a paz y salvo.</strong></p>'; }
@@ -468,6 +488,7 @@ async function consultar(){
     + '</div></div>';
 
   res.innerHTML = (proceso ? procesoHTML(proceso) : '') + h;
+  pintarSesion();
   MOD_ACTIVO = null;
   MODULOS.forEach(m => { const n = document.getElementById(m); if(n) n.style.display = 'none'; });
   res.scrollIntoView({behavior:'smooth'});
@@ -518,16 +539,36 @@ function diaHTML(d, blq){
     const ev = d.calendario[0];
     const cuandoEv = ev.fecha === hoyT ? '¡es HOY!' : ('el ' + fmtFecha(ev.fecha));
     lineas.push('<div class="dia-linea"><span class="dia-ico">📅</span><div>Próximo evento: <strong>' + esc(ev.titulo) + '</strong> · ' + esc(cuandoEv) + '.</div></div>');
+    if(d.calendario.length > 1){
+      const chips = d.calendario.slice(0, 3).map(e2 => {
+        const f = new Date((e2.fecha || '') + 'T12:00:00');
+        const dn = isNaN(f) ? '' : f.getDate();
+        const mn = isNaN(f) ? '' : f.toLocaleDateString('es-CO', { month: 'short' }).replace('.', '');
+        return '<span class="ev-chip"><span class="ev-f"><strong>' + dn + '</strong><small>' + mn + '</small></span>' + esc(e2.titulo) + '</span>';
+      }).join('');
+      lineas.push('<div class="dia-linea"><span class="dia-ico">🗓️</span><div><div style="margin-bottom:6px"><strong>Lo que viene:</strong></div><div class="ev-chips">' + chips + '</div></div></div>');
+    }
+  }
+  if(d.pagos){
+    if(d.pagos.deuda > 0) lineas.push('<div class="dia-linea"><span class="dia-ico">💰</span><div><strong>Pensión pendiente:</strong> ' + fmtP(d.pagos.deuda) + ((d.pagos.pendientes && d.pagos.pendientes.length) ? ' (' + d.pagos.pendientes.map(esc).join(', ') + ')' : '') + '. Tienes hasta el día 10 de cada mes para pagar sin recargo.</div></div>');
+    else lineas.push('<div class="dia-linea"><span class="dia-ico">💙</span><div><strong>Pagos al día.</strong> ¡Gracias por tu puntualidad!</div></div>');
+  }
+  if(Array.isArray(d.novedades) && d.novedades.length){
+    const nv = d.novedades.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0))[0];
+    if(nv && nv.texto) lineas.push('<div class="dia-linea"><span class="dia-ico">📣</span><div><strong>Novedad del curso:</strong> ' + esc(String(nv.texto).slice(0, 140)) + (nv.autor ? ' · ' + esc(nv.autor) : '') + '</div></div>');
+  }
+  if(!blq && d.notas && d.notas.periodo){
+    lineas.push('<div class="dia-linea"><span class="dia-ico">📚</span><div><strong>Notas del periodo ' + esc(String(d.notas.periodo)) + '</strong> ya están publicadas' + ((d.notas.promedio != null && !d.notas.preescolar) ? ': promedio ' + Number(d.notas.promedio).toFixed(2).replace('.', ',') : '') + '.</div></div>');
   }
   if(!lineas.length) return '';
   return '<div class="card dia-card"><h2><span class="ico">🌞</span> El día de ' + esc(primerNombre) + '</h2><div class="dia-fecha">' + esc(fechaHoyTxt) + '</div>' + lineas.join('') + '</div>';
 }
 function botonesHTML(d){
   const b = [];
-  if(Array.isArray(d.tareas)) b.push('<button class="btn-grande" onclick="irSeccion(\'sec-tareas\')"><span class="bg-ico">📌</span>Tareas</button>');
-  if(Array.isArray(d.novedades) && d.novedades.length) b.push('<button class="btn-grande" onclick="irSeccion(\'sec-novedades\')"><span class="bg-ico">📣</span>Novedades</button>');
+  if(Array.isArray(d.tareas)){ const pend = d.tareas.filter(t => (t.fechaEntrega || '') >= hoyISO()).length; b.push('<button class="btn-grande" onclick="irSeccion(\'sec-tareas\')"><span class="bg-ico">📌</span>Tareas' + (pend ? '<span class="bg-badge">' + pend + '</span>' : '') + '</button>'); }
+  if(Array.isArray(d.novedades) && d.novedades.length) b.push('<button class="btn-grande" onclick="irSeccion(\'sec-novedades\')"><span class="bg-ico">📣</span>Novedades<span class="bg-badge">' + d.novedades.length + '</span></button>');
   b.push('<button class="btn-grande verde" onclick="irSeccion(\'sec-justificar\')"><span class="bg-ico">✉️</span>Justificar una falta</button>');
-  if(d.pagos) b.push('<button class="btn-grande naranja" onclick="irSeccion(\'sec-pagos\')"><span class="bg-ico">💰</span>Pensiones y pagos</button>');
+  if(d.pagos) b.push('<button class="btn-grande naranja" onclick="irSeccion(\'sec-pagos\')"><span class="bg-ico">💰</span>Pensiones y pagos' + (d.pagos.deuda > 0 ? '<span class="bg-badge bg-badge-alerta">!</span>' : '') + '</button>');
   b.push('<button class="btn-grande morado" onclick="irSeccion(\'sec-certs\')"><span class="bg-ico">📜</span>Certificados</button>');
   if(d.calendario && d.calendario.length) b.push('<button class="btn-grande celeste" onclick="irSeccion(\'sec-eventos\')"><span class="bg-ico">📅</span>Eventos</button>');
   b.push('<button class="btn-grande cafe" onclick="irSeccion(\'sec-manual\')"><span class="bg-ico">📘</span>Manual de convivencia</button>');
@@ -635,9 +676,19 @@ async function enviarPagoPension(){
   }
 }
 function altDesp(el){ const c = el.closest('.card'); if(c) c.classList.toggle('abierta'); }
+function pintarSesion(){
+  const d = DATOS_ACTUAL; if(!d) return;
+  const q = $('sesion-quien'); if(!q) return;
+  const nombre = ((d.nombres || '') + ' ' + (d.apellidos || '')).trim();
+  if(!nombre) return;
+  const ini = nombre.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  const av = $('sesion-avatar'); if(av && ini) av.textContent = ini;
+  q.innerHTML = '<strong>Familia de ' + esc(nombre) + '</strong>' + (d.gradoActual ? '<br><span style="font-size:12.5px;color:#5A6B84">' + esc(d.gradoActual) + '</span>' : '');
+}
 function sesionIniciada(){
   const c = $('card-login'); if(c) c.style.display = 'none';
   const b = $('barra-sesion'); if(b) b.style.display = '';
+  pintarSesion();
 }
 function cerrarSesion(){
   try{ localStorage.removeItem('padres_doc'); localStorage.removeItem('padres_sesion'); }catch(e){}
@@ -1342,6 +1393,19 @@ function verDocCalendario(){
 </script>
 <script>
 if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+let INSTALAR_PROMPT = null;
+window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); INSTALAR_PROMPT = e; mostrarInstalar(); });
+function esInstalada(){ return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; }
+function mostrarInstalar(){
+  const card = $('instalar-card'); if(!card || esInstalada()) return;
+  try{ if(localStorage.getItem('instalar_oculto')) return; }catch(e){}
+  const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(INSTALAR_PROMPT){ const b = $('btn-instalar'); if(b) b.style.display = ''; card.style.display = ''; }
+  else if(esIOS){ const t = $('instalar-ios'); if(t) t.style.display = ''; card.style.display = ''; }
+}
+function instalarApp(){ if(!INSTALAR_PROMPT) return; INSTALAR_PROMPT.prompt(); INSTALAR_PROMPT.userChoice.then(function(){ INSTALAR_PROMPT = null; const c = $('instalar-card'); if(c) c.style.display = 'none'; }); }
+function ocultarInstalar(){ try{ localStorage.setItem('instalar_oculto', '1'); }catch(e){} const c = $('instalar-card'); if(c) c.style.display = 'none'; }
+window.addEventListener('load', function(){ setTimeout(mostrarInstalar, 1200); });
 </script>
 <script>
 const VAPID_PUBLICA = 'BJ5Gpbd8m9JU-2fr49U2I5acU7ZPL9n2mFTwK_h2xNOZBZ2PGd5Y8-TD07w1mwEe3a0MSjPhqc_-W-Td1CPKNFM';
