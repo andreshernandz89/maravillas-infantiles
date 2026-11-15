@@ -1030,5 +1030,32 @@ body{ padding-top:103px; }
           .catch(function(){ /* si el feed no carga, quedan las fotos actuales */ });
       })();
     </script>
+  <!-- BARRA FIJA MÓVIL: admisiones y consulta de padres siempre a un toque -->
+  <style>
+    .barra-adm{ display:none; }
+    @media (max-width: 768px){
+      .barra-adm{ display:flex; position:fixed; left:0; right:0; bottom:0; z-index:40; gap:8px; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); background:rgba(255,255,255,.96); box-shadow:0 -4px 18px rgba(10,51,133,.18); backdrop-filter:blur(6px); transition:transform .25s ease; }
+      .barra-adm.oculta{ transform:translateY(110%); }
+      .barra-adm a{ flex:1; text-align:center; text-decoration:none; font-weight:800; font-size:.95rem; padding:12px 6px; border-radius:12px; }
+      .barra-adm .b-adm{ background:#0f47b8; color:#fff; }
+      .barra-adm .b-con{ background:#eaf1fd; color:#0f47b8; border:1.5px solid #0f47b8; }
+      body{ padding-bottom:64px; }
+      .btn-whatsapp{ bottom:calc(84px + env(safe-area-inset-bottom)); }
+    }
+  </style>
+  <nav class="barra-adm" id="barraAdm" aria-label="Accesos rápidos">
+    <a class="b-adm" href="/matricula2027">📝 Admisiones 2027</a>
+    <a class="b-con" href="/padres/">👨‍👩‍👧 Consulta de padres</a>
+  </nav>
+  <script>
+    (function(){
+      var barra = document.getElementById("barraAdm");
+      if (!barra) return;
+      document.addEventListener("focusin", function(e){
+        if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) barra.classList.add("oculta");
+      });
+      document.addEventListener("focusout", function(){ barra.classList.remove("oculta"); });
+    })();
+  </script>
   </body>
 </html>
