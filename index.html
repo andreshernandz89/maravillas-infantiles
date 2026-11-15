@@ -631,7 +631,7 @@ body{ padding-top:103px; }
           <div class="slider-videos">
             <div class="sv-marco">
               <div class="sv-pista" id="svPista">
-            <div class="vslide"><a href="https://www.instagram.com/reel/DfaXD3LD45v/" target="_blank" rel="noopener" aria-label="Ver este video en Instagram"><img src="video-ig-1.jpg" alt="Video reciente de Instagram del colegio" /><span class="vslide-ig"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.6" y="2.6" width="18.8" height="18.8" rx="5.4" stroke="#ffffff" stroke-width="2.1"/><circle cx="12" cy="12" r="4.3" stroke="#ffffff" stroke-width="2.1"/><circle cx="17.5" cy="6.5" r="1.45" fill="#ffffff"/></svg> Ver en Instagram</span></a></div>
+            <div class="vslide"><a href="https://www.instagram.com/reel/DfaXD3LD45v/" target="_blank" rel="noopener" aria-label="Ver este video en Instagram"><img id="svReciente" src="galeria-1.jpg" alt="Video reciente de Instagram del colegio" /><span class="vslide-ig"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.6" y="2.6" width="18.8" height="18.8" rx="5.4" stroke="#ffffff" stroke-width="2.1"/><circle cx="12" cy="12" r="4.3" stroke="#ffffff" stroke-width="2.1"/><circle cx="17.5" cy="6.5" r="1.45" fill="#ffffff"/></svg> Ver en Instagram</span></a></div>
             <div class="vslide"><a href="https://www.instagram.com/reel/De2QTUtNn7E/" target="_blank" rel="noopener" aria-label="Ver este video en Instagram"><video src="video-ig-2.mp4" poster="video-ig-2.jpg" muted loop playsinline preload="metadata"></video><span class="vslide-ig"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.6" y="2.6" width="18.8" height="18.8" rx="5.4" stroke="#ffffff" stroke-width="2.1"/><circle cx="12" cy="12" r="4.3" stroke="#ffffff" stroke-width="2.1"/><circle cx="17.5" cy="6.5" r="1.45" fill="#ffffff"/></svg> Ver en Instagram</span></a></div>
             <div class="vslide"><a href="https://www.instagram.com/reel/De2QGsHtx5K/" target="_blank" rel="noopener" aria-label="Ver este video en Instagram"><video src="video-ig-3.mp4" poster="video-ig-3.jpg" muted loop playsinline preload="metadata"></video><span class="vslide-ig"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.6" y="2.6" width="18.8" height="18.8" rx="5.4" stroke="#ffffff" stroke-width="2.1"/><circle cx="12" cy="12" r="4.3" stroke="#ffffff" stroke-width="2.1"/><circle cx="17.5" cy="6.5" r="1.45" fill="#ffffff"/></svg> Ver en Instagram</span></a></div>
             <div class="vslide"><a href="https://www.instagram.com/reel/De2Pwcltx6W/" target="_blank" rel="noopener" aria-label="Ver este video en Instagram"><video src="video-ig-4.mp4" poster="video-ig-4.jpg" muted loop playsinline preload="metadata"></video><span class="vslide-ig"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.6" y="2.6" width="18.8" height="18.8" rx="5.4" stroke="#ffffff" stroke-width="2.1"/><circle cx="12" cy="12" r="4.3" stroke="#ffffff" stroke-width="2.1"/><circle cx="17.5" cy="6.5" r="1.45" fill="#ffffff"/></svg> Ver en Instagram</span></a></div>
@@ -1042,6 +1042,17 @@ body{ padding-top:103px; }
             });
             var seg = document.getElementById('igSeguidores');
             if(seg && d.seguidores) seg.textContent = Number(d.seguidores).toLocaleString('es-CO');
+            var sv = document.getElementById('svReciente');
+            if(sv){
+              for(var j = 0; j < d.items.length; j++){
+                if(d.items[j].tipo === 'video'){
+                  sv.src = d.items[j].img;
+                  var enlaceSv = sv.closest('a');
+                  if(enlaceSv) enlaceSv.href = d.items[j].url;
+                  break;
+                }
+              }
+            }
           })
           .catch(function(){ /* si el feed no carga, quedan las fotos actuales */ });
       })();
