@@ -6503,7 +6503,7 @@ else{ sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perf
     appId: "1:677869873209:web:ad8d4650fb96088b5285e8" };
   var ROLES = { owner: "Dueño", admin: "Administrativo", coord: "Coordinación", docente: "Docente" };
   var chatRef = null, iniciado = false;
-  var dbEdu = null, presUid = null, presRef = null, presKey = null, ultLatido = 0;
+  var dbEdu = null, presUid = null, presRef = null, presKey = null, ultLatido = 0, ultAct = 0;
   function $(id){ return document.getElementById(id); }
   function perfil(){ try { return (typeof perfilActual === "function") ? perfilActual() : null; } catch(e) { return null; } }
   function institucion(){ var el = $("head-inst"); var t = el ? (el.textContent || "").trim() : ""; return t || INST_ID; }
@@ -6533,9 +6533,17 @@ else{ sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perf
       presRef.set({ perfilId: key, nombre: idn.nombre, rol: idn.rol, desde: Date.now(), visto: Date.now() });
       presRef.onDisconnect().remove();
       ultLatido = Date.now();
+      ultAct = 0;
     } else if (Date.now() - ultLatido >= 25000) {
       ultLatido = Date.now();
       presRef.update({ visto: Date.now(), nombre: idn.nombre, rol: idn.rol });
+    }
+    /* Última actividad persistente de la institución: vive en presencia/<inst>/_actividad
+       y NO se borra al desconectarse (no lleva onDisconnect). La consola de clientes
+       la lee para mostrar cuándo fue la última vez que alguien del colegio entró. */
+    if (Date.now() - ultAct >= 600000) {
+      ultAct = Date.now();
+      try { dbEdu.ref("presencia/" + INST_ID + "/_actividad").update({ ts: ultAct, nombre: idn.nombre, rol: idn.rol }); } catch(e) {}
     }
   }
   function iniciar(){
