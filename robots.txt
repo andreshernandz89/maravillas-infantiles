@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /plataformaEDU/
+Disallow: /plataformaCEMI/
+
+Sitemap: https://maravillasinfantiles.com/sitemap.xml
