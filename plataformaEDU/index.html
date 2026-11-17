@@ -173,12 +173,12 @@
   #print-area{ display:none; }
   @page{ size:Letter; margin:0; }
   @media print{
-    @page{ size: letter; margin: 1.2cm; }
+    @page{ size: letter; margin: 0; }
     html, body{ margin:0 !important; padding:0 !important; }
     body *{ visibility:hidden; }
     #print-area, #print-area *{ visibility:visible; }
     #print-area{ display:block; position:absolute; inset:0; padding:0; }
-    .hoja{ border:none; max-width:none; margin:0; page-break-after:always; break-after:page; }
+    .hoja{ border:none; max-width:none; margin:0; padding: 1.1cm 1.2cm; page-break-after:always; break-after:page; }
     #print-area .hoja + .hoja{ page-break-before:always; break-before:page; }
     #print-area tr{ page-break-inside:avoid; break-inside:avoid; }
   }
