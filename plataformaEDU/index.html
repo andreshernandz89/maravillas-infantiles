@@ -864,6 +864,7 @@ button.btn:hover{ background:var(--azul-osc); }
             </select></div>
           <div><label>Estudiante</label><select id="bol-estudiante" onchange="renderBoletines()"></select></div>
           <button class="btn" id="btn-imprimir-bol" onclick="imprimir('boletines')">🖨️ Imprimir / PDF</button>
+          <button class="btn" id="btn-word-bol" onclick="descargarBoletinesWord()">📄 Descargar en Word</button>
         </div>
       </div>
       <div id="boletines-out"></div>
@@ -4184,6 +4185,7 @@ function hojaBoletin(e, periodo){
 }
 function renderBoletines(){
   const bBol = $('btn-imprimir-bol'); if(bBol) bBol.style.display = puedeImprimir() ? '' : 'none';
+  const bWord = $('btn-word-bol'); if(bWord) bWord.style.display = puedeImprimir() ? '' : 'none';
   refrescarSelectsEstudiantes();
   const cursoId = $('bol-curso').value, periodo = $('bol-periodo').value, sel = $('bol-estudiante').value;
   const pBol = perfilActual();
@@ -4823,6 +4825,50 @@ function imprimir(cual){
   $('print-area').innerHTML = src;
   ajustarHojasAUnaPagina();
   window.print();
+}
+function descargarBoletinesWord(){
+  if(!puedeImprimir()){ alert('Solo el dueño (owner) y el administrativo pueden imprimir documentos.'); return; }
+  const hojas = Array.from(document.querySelectorAll('#boletines-out .hoja'));
+  if(!hojas.length){ alert('No hay nada para descargar todavía.'); return; }
+  const urlEscudo = new URL('../escudo.png', location.href).href;
+  let cuerpo = hojas.map(h=>h.outerHTML).join('\n');
+  cuerpo = cuerpo.split('../escudo.png').join(urlEscudo);
+  cuerpo = cuerpo.replace(/<div class="enc"><img[^>]*src="([^"]*)"[^>]*><div>([\s\S]*?<\/div>)<\/div><\/div>/g,
+    '<table style="border:none;width:100%"><tr><td style="border:none;width:2.2cm;vertical-align:middle"><img src="$1" style="width:2.2cm"></td><td style="border:none;vertical-align:middle">$2</td></tr></table>');
+  const css = '@page WordSection1 { size: 21.59cm 27.94cm; margin: 1.5cm; }'
+    + 'body{font-family:Calibri,Arial,sans-serif}'
+    + '.hoja{font-size:11.5pt;color:#111;page-break-after:always}'
+    + '.hoja:last-child{page-break-after:auto}'
+    + 'table{border-collapse:collapse;width:100%;font-size:11pt}'
+    + 'th,td{border:1pt solid #444;padding:4pt 6pt}'
+    + 'th{background:#e8eefb;text-align:center}'
+    + 'td.c,th.c{text-align:center}'
+    + '.inst{font-size:16pt;font-weight:800}'
+    + '.lic{font-size:10.5pt}'
+    + '.sede{font-size:10.5pt;font-weight:700;letter-spacing:2pt}'
+    + '.titulo{font-size:14pt;font-weight:800;text-align:center;text-transform:uppercase}'
+    + '.seccion{font-size:12pt;font-weight:800;text-transform:uppercase}'
+    + '.logros{white-space:pre-line}'
+    + '.x{font-weight:800;text-align:center}'
+    + '.inasis{font-weight:700}'
+    + '.obs-t{font-weight:800}'
+    + '.obs{white-space:pre-line}'
+    + '.firma{margin-top:32pt;text-align:center}'
+    + '.firma .linea{border-top:1.5pt solid #111;width:280px;margin:0 auto;padding-top:4pt;font-weight:700}';
+  const doc = '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Boletines</title>'
+    + '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->'
+    + '<style>' + css + '</style></head><body><div class="WordSection1">' + cuerpo + '</div></body></html>';
+  const selCurso = $('bol-curso');
+  const nombreCurso = (selCurso && selCurso.selectedIndex >= 0) ? selCurso.options[selCurso.selectedIndex].text : 'curso';
+  const periodo = $('bol-periodo') ? $('bol-periodo').value : '';
+  const nombreArchivo = ('boletines-' + nombreCurso + '-P' + periodo + '.doc').replace(/[\\/:*?"<>|]/g, '-');
+  const blob = new Blob(['\ufeff' + doc], { type: 'application/msword;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = nombreArchivo;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
 function ajustarHojasAUnaPagina(){
   // Cada boletín/informe debe caber COMPLETO en una sola hoja Carta:
