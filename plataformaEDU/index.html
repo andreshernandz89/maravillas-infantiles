@@ -4831,10 +4831,58 @@ function descargarBoletinesWord(){
   const hojas = Array.from(document.querySelectorAll('#boletines-out .hoja'));
   if(!hojas.length){ alert('No hay nada para descargar todavía.'); return; }
   const urlEscudo = new URL('../escudo.png', location.href).href;
-  let cuerpo = hojas.map(h=>h.outerHTML).join('\n');
+  let cuerpo = hojas.map(h=>h.outerHTML).join('\n<br clear="all" style="page-break-before:always">\n');
   cuerpo = cuerpo.split('../escudo.png').join(urlEscudo);
   cuerpo = cuerpo.replace(/<div class="enc"><img[^>]*src="([^"]*)"[^>]*><div>([\s\S]*?<\/div>)<\/div><\/div>/g,
-    '<table class="enc-tab"><tr><td style="width:2.4cm;vertical-align:middle"><img src="$1" width="80" style="width:2.1cm;height:auto"></td><td style="vertical-align:middle">$2</td></tr></table>');
+    '<table class="enc-tab"><tr><td style="width:2.4cm;vertical-align:middle"><img src="$1" width="80" height="101" style="width:2.1cm;height:2.64cm"></td><td style="vertical-align:middle">$2</td></tr></table>');
+  // Word no siempre aplica las reglas del <style> a las tablas: las medidas
+  // críticas van EN LÍNEA. Cada tabla (menos la del encabezado) queda con ancho
+  // total fijo, layout fijo y un <colgroup> con el ancho en cm de cada columna,
+  // calculado desde las celdas de su primera fila.
+  const ANCHO_WORD = 18.5;
+  const contWord = document.createElement('div');
+  contWord.innerHTML = cuerpo;
+  contWord.querySelectorAll('table').forEach(t=>{
+    if(t.classList.contains('enc-tab')) return;
+    const prevT = (t.getAttribute('style')||'').replace(/width\s*:[^;]+;?/gi, '');
+    t.setAttribute('style', 'width:' + ANCHO_WORD + 'cm;table-layout:fixed;mso-table-layout-alt:fixed;border-collapse:collapse;' + prevT);
+    const fila = t.querySelector('tr');
+    if(!fila) return;
+    const celdas = Array.from(fila.children).filter(c=>c.tagName==='TD'||c.tagName==='TH');
+    if(!celdas.length) return;
+    let anchos = celdas.map(c=>{
+      const m = (c.getAttribute('style')||'').match(/width\s*:\s*([0-9.]+)\s*(px|%|cm|pt)/i) || (c.getAttribute('width') ? [null, c.getAttribute('width'), 'px'] : null);
+      if(!m) return null;
+      const v = parseFloat(m[1]), u = m[2].toLowerCase();
+      if(u==='px') return v*0.026458;
+      if(u==='%') return v/100*ANCHO_WORD;
+      if(u==='pt') return v*0.035278;
+      return v;
+    });
+    const sumaDecl = anchos.reduce((s, a)=>s + (a||0), 0);
+    const nSin = anchos.filter(a=>a===null).length;
+    if(nSin>0){ const resto = Math.max(ANCHO_WORD - sumaDecl, 0)/nSin; anchos = anchos.map(a=>a===null ? resto : a); }
+    const suma = anchos.reduce((s, a)=>s + a, 0);
+    if(suma>0 && Math.abs(suma - ANCHO_WORD)>0.001){ const f = ANCHO_WORD/suma; anchos = anchos.map(a=>a*f); }
+    anchos = anchos.map(a=>Math.round(a*100)/100);
+    const dif = Math.round((ANCHO_WORD - anchos.reduce((s, a)=>s + a, 0))*100)/100;
+    anchos[anchos.length - 1] = Math.round((anchos[anchos.length - 1] + dif)*100)/100;
+    // Atributos width en px además del estilo en cm: Word y LibreOffice los
+    // respetan siempre al importar HTML (las reglas CSS en cm, no siempre).
+    const ANCHO_PX = Math.round(ANCHO_WORD/0.026458);
+    const anchosPx = anchos.map(a=>Math.round(a/0.026458));
+    anchosPx[anchosPx.length - 1] += ANCHO_PX - anchosPx.reduce((s, a)=>s + a, 0);
+    t.setAttribute('width', ANCHO_PX);
+    celdas.forEach((c, i)=>{
+      const st = (c.getAttribute('style')||'').replace(/width\s*:[^;]+;?/gi, '').trim().replace(/;$/, '');
+      c.setAttribute('style', (st ? st + ';' : '') + 'width:' + anchos[i].toFixed(2) + 'cm');
+      c.setAttribute('width', anchosPx[i]);
+    });
+    const cg = document.createElement('colgroup');
+    anchos.forEach((a, i)=>{ const col = document.createElement('col'); col.setAttribute('style', 'width:' + a.toFixed(2) + 'cm'); col.setAttribute('width', anchosPx[i]); cg.appendChild(col); });
+    t.insertBefore(cg, t.firstChild);
+  });
+  cuerpo = contWord.innerHTML;
   const css = '@page WordSection1 { size: 21.59cm 27.94cm; margin: 1.5cm; }'
     + 'body{font-family:Calibri,Arial,sans-serif}'
     + '.hoja{font-size:11.5pt;color:#111;page-break-after:always}'
@@ -4843,7 +4891,7 @@ function descargarBoletinesWord(){
     + 'th,td{border:1pt solid #444;padding:4pt 6pt;word-wrap:break-word;overflow-wrap:break-word}'
     + '.enc-tab{border:none;width:18.5cm}'
     + '.enc-tab td{border:none}'
-    + '.enc-tab img{width:2.1cm;height:auto}'
+    + '.enc-tab img{width:2.1cm;height:2.64cm}'
     + 'th{background:#e8eefb;text-align:center}'
     + 'td.c,th.c{text-align:center}'
     + '.inst{font-size:16pt;font-weight:800}'
