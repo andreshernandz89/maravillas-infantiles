@@ -4259,7 +4259,7 @@ function hojaFinal(e){
   const inasHtml = hayReg
     ? 'Asistencias durante el año escolar: Justificadas: ' + dTxt(diasJ) + ' &nbsp;&nbsp; No justificadas: ' + dTxt(diasN)
     : (hayInas
-      ? 'Asistencias durante el año escolar: Justificadas: ' + fmtHoras(totInasJ) + ' horas &nbsp;&nbsp; No justificadas: ' + fmtHoras(totInasN) + ' horas'
+      ? 'Asistencias durante el año escolar: Justificadas: ' + fmtHoras(totInasJ) + ' días &nbsp;&nbsp; No justificadas: ' + fmtHoras(totInasN) + ' días'
       : 'Asistencias durante el año escolar: Justificadas ______ días &nbsp;&nbsp; No justificadas: ______ días');
   const gradoFrase = pre
     ? 'el Grado <strong>' + gAct + '</strong> de Educación Preescolar'
@@ -5124,7 +5124,7 @@ function _datosInformeDocx(e){
   const inasTxt = hayReg
     ? 'Asistencias durante el año escolar: Justificadas: ' + dTxt(diasJ) + '   No justificadas: ' + dTxt(diasN)
     : (hayInas
-      ? 'Asistencias durante el año escolar: Justificadas: ' + fmtHoras(totInasJ) + ' horas   No justificadas: ' + fmtHoras(totInasN) + ' horas'
+      ? 'Asistencias durante el año escolar: Justificadas: ' + fmtHoras(totInasJ) + ' días   No justificadas: ' + fmtHoras(totInasN) + ' días'
       : 'Asistencias durante el año escolar: Justificadas ______ días   No justificadas: ______ días');
   const jornadaTxt = String(inst.jornada || 'MAÑANA').toUpperCase().includes('TARDE') ? 'de la tarde' : 'de la mañana';
   const certRuns = [
