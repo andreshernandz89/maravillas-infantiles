@@ -4194,7 +4194,7 @@ function hojaBoletin(e, periodo){
   }).join('');
   const disc = DISCIPLINA_ITEMS.map((item, i)=>`<tr><td>${esc(item)}</td><td class="x">${marcaX(x.disciplina[i],'DS')}</td><td class="x">${marcaX(x.disciplina[i],'DA')}</td><td class="x">${marcaX(x.disciplina[i],'DB')}</td></tr>`).join('');
   return `<div class="hoja">${encabezadoHoja(e, curso)}
-    ${pre ? '' : `<table style="margin-top:6px"><tr><td class="c" style="width:55%"><strong>Promedio:</strong> ${fmt(prom)}</td><td class="c"><strong>Puesto:</strong> ${rank[e.id]||''}</td></tr></table>`}
+    ${pre ? '' : `<table style="margin-top:6px"><tr><td style="width:55%"></td><td class="c" style="width:26%"><strong>Promedio:</strong> ${fmt(prom)}</td><td class="c" style="width:19%"><strong>Puesto:</strong> ${rank[e.id]||''}</td></tr></table>`}
     <div class="titulo">Informe del ${ROMANOS[String(periodo)]} periodo</div>
     <div class="seccion">Aspectos del plan de formación</div>
     <table><thead><tr><th style="text-align:left;width:190px">ASIGNATURA</th><th class="c" style="width:44px">IH</th><th class="c" style="width:132px;white-space:nowrap">DESEMPEÑO</th><th style="text-align:left">FORTALEZA / DEBILIDADES / ESTRATEGIAS</th></tr></thead><tbody>${filas}</tbody></table>
@@ -5020,9 +5020,10 @@ function _bloqueBoletinDocx(m, esPrimero){
     _trDocx(_tcDocx(6108, _pBol([{ t:'Nivel: ', b:true, sz:21 }, { t:m.nivel, sz:21 }])) +
             _tcDocx(4998, _pBol([{ t:'Grado: ', b:true, sz:21 }, { t:m.grado, sz:21 }, { t:'   Jornada: ', b:true, sz:21 }, { t:m.jornada, sz:21 }])))
   );
-  const promRow = m.pre ? '' : _sepDocx() + _tblDocx([6108, 4998],
-    _trDocx(_tcDocx(6108, _pBol([{ t:'Promedio: ', b:true, sz:21 }, { t:m.promTxt, sz:21 }], { jc:'center' })) +
-            _tcDocx(4998, _pBol([{ t:'Puesto: ', b:true, sz:21 }, { t:String(m.puesto), sz:21 }], { jc:'center' })))
+  const promRow = m.pre ? '' : _sepDocx() + _tblDocx([6108, 2930, 2068],
+    _trDocx(_tcDocx(6108, _pBol([])) +
+            _tcDocx(2930, _pBol([{ t:'Promedio: ', b:true, sz:21 }, { t:m.promTxt, sz:21 }], { jc:'center' })) +
+            _tcDocx(2068, _pBol([{ t:'Puesto: ', b:true, sz:21 }, { t:String(m.puesto), sz:21 }], { jc:'center' })))
   );
   const filasAsig = _trDocx(
       _tcDocx(2550, _pBol([{ t:'ASIGNATURA', b:true, sz:20 }]), { shd:'F2F6FC' }) +
