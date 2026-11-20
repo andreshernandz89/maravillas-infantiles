@@ -3109,7 +3109,7 @@ function puestos(cursoId, periodo){
   return map;
 }
 function estudiantesDe(cursoId){ return DB.estudiantes.filter(e=>e.cursoId===cursoId).slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)); }
-function extraDe(estId, periodo){ const x = (DB.extra[estId]||{})[String(periodo)]; return x || { comp:'', caligrafia:'', inasJ:'', inasN:'', disciplina:{}, obs:'' }; }
+function extraDe(estId, periodo){ const x = (DB.extra[estId]||{})[String(periodo)]; if(!x) return { comp:'', caligrafia:'', inasJ:'', inasN:'', disciplina:{}, obs:'' }; if(!x.disciplina || typeof x.disciplina!=='object') x.disciplina = {}; return x; }
 
 /* ================= ACCESO ================= */
 function perfiles(){ return DB.perfiles || []; }
