@@ -4242,12 +4242,17 @@ function hojaFinal(e){
   const hoyImp = new Date();
   const dadoEn = 'Dado en ' + (inst.ciudad || 'Barranquilla') + ', ' + (hoyImp.getDate() === 1 ? 'al 1 día' : 'a los ' + hoyImp.getDate() + ' días') + ' del mes de ' + MESES_F[hoyImp.getMonth()] + ' del ' + hoyImp.getFullYear() + '.';
   const nombreDoc = String(e.nombre || '').replace(/,/g, '').replace(/\s+/g, ' ').trim();
+  let diasJ = 0, diasN = 0, hayReg = false;
+  Object.values(DB.asistencia[e.cursoId] || {}).forEach(dia=>{ const v = dia[e.id]; if(v){ hayReg = true; if(v === 'FJ') diasJ++; else if(v === 'F') diasN++; } });
   let totInasJ = 0, totInasN = 0, hayInas = false;
   [1,2,3,4].forEach(p=>{ const xp = extraDe(e.id, p); const vj = parseFloat(String(xp.inasJ || '').replace(',', '.')), vn = parseFloat(String(xp.inasN || '').replace(',', '.')); if(!isNaN(vj)){ totInasJ += vj; hayInas = true; } if(!isNaN(vn)){ totInasN += vn; hayInas = true; } });
   const fmtHoras = n => String(Math.round(n * 100) / 100).replace('.', ',');
-  const inasHtml = hayInas
-    ? 'Asistencias durante el año escolar: Justificadas: ' + fmtHoras(totInasJ) + ' horas &nbsp;&nbsp; No justificadas: ' + fmtHoras(totInasN) + ' horas'
-    : 'Asistencias durante el año escolar: Justificadas ______ horas &nbsp;&nbsp; No justificadas: ______ horas';
+  const dTxt = n => n + (n === 1 ? ' día' : ' días');
+  const inasHtml = hayReg
+    ? 'Asistencias durante el año escolar: Justificadas: ' + dTxt(diasJ) + ' &nbsp;&nbsp; No justificadas: ' + dTxt(diasN)
+    : (hayInas
+      ? 'Asistencias durante el año escolar: Justificadas: ' + fmtHoras(totInasJ) + ' horas &nbsp;&nbsp; No justificadas: ' + fmtHoras(totInasN) + ' horas'
+      : 'Asistencias durante el año escolar: Justificadas ______ días &nbsp;&nbsp; No justificadas: ______ días');
   const gradoFrase = pre
     ? 'el Grado <strong>' + gAct + '</strong> de Educación Preescolar'
     : 'el Grado <strong>' + gAct + '</strong>' + (ORDINAL_G[gAct] ? ' (' + ORDINAL_G[gAct] + ')' : '') + ' de Educación Básica Primaria';
