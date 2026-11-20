@@ -4861,7 +4861,7 @@ function descargarBoletinesWordHtml(){
   // críticas van EN LÍNEA. Cada tabla (menos la del encabezado) queda con ancho
   // total fijo, layout fijo y un <colgroup> con el ancho en cm de cada columna,
   // calculado desde las celdas de su primera fila.
-  const ANCHO_WORD = 18.5;
+  const ANCHO_WORD = 19.5;
   const contWord = document.createElement('div');
   contWord.innerHTML = cuerpo;
   contWord.querySelectorAll('table').forEach(t=>{
@@ -4905,13 +4905,13 @@ function descargarBoletinesWordHtml(){
     t.insertBefore(cg, t.firstChild);
   });
   cuerpo = contWord.innerHTML;
-  const css = '@page WordSection1 { size: 21.59cm 27.94cm; margin: 1.5cm; }'
+  const css = '@page WordSection1 { size: 21.59cm 27.94cm; margin: 1cm; }'
     + 'body{font-family:Calibri,Arial,sans-serif}'
     + '.hoja{font-size:11.5pt;color:#111;page-break-after:always}'
     + '.hoja:last-child{page-break-after:auto}'
-    + 'table{border-collapse:collapse;width:18.5cm;table-layout:fixed;mso-table-layout-alt:fixed;font-size:11pt}'
+    + 'table{border-collapse:collapse;width:19.5cm;table-layout:fixed;mso-table-layout-alt:fixed;font-size:11pt}'
     + 'th,td{border:1pt solid #444;padding:4pt 6pt;word-wrap:break-word;overflow-wrap:break-word}'
-    + '.enc-tab{border:none;width:18.5cm}'
+    + '.enc-tab{border:none;width:19.5cm}'
     + '.enc-tab td{border:none}'
     + '.enc-tab img{width:2.1cm;height:2.64cm}'
     + 'th{background:#e8eefb;text-align:center}'
@@ -4954,7 +4954,7 @@ function _armarDocxBol(bloquesXml, escudoBytes){
   return _zipPartes([
     { nombre:'[Content_Types].xml', datos: enc.encode(contentTypes) },
     { nombre:'_rels/.rels', datos: enc.encode(rels) },
-    { nombre:'word/document.xml', datos: enc.encode(_documentoDocxXml(bloquesXml)) },
+    { nombre:'word/document.xml', datos: enc.encode(_documentoDocxXml(bloquesXml, '<w:pgMar w:top="567" w:right="567" w:bottom="567" w:left="567" w:header="0" w:footer="0" w:gutter="0"/>')) },
     { nombre:'word/styles.xml', datos: enc.encode(styles) },
     { nombre:'word/_rels/document.xml.rels', datos: enc.encode(docRels) },
     { nombre:'word/media/escudo.png', datos: escudoBytes }
@@ -4987,70 +4987,70 @@ function _datosBoletinDocx(e, periodo){
 }
 function _pBol(runs, o){ return _pDocx(runs, Object.assign({ line:240 }, o || {})); }
 function _bloqueBoletinDocx(m, esPrimero){
-  const enc = _tblDocx([1134, 6520, 1134],
+  const enc = _tblDocx([1134, 8838, 1134],
     _trDocx(
       _tcDocx(1134, _pBol([{ img: _imgRun(1, 666000, 837809, 'escudo.png') }]), { va:'center' }) +
-      _tcDocx(6520,
+      _tcDocx(8838,
         _pBol([{ t: m.instNombre, b:true, sz:27 }], { jc:'center' }) +
         _pBol([{ t: m.licencia, sz:21 }], { jc:'center' }) +
         _pBol([{ t: m.sede, b:true, sz:21 }], { jc:'center' })
       , { va:'center' }) +
       _tcDocx(1134, _pBol([]), { va:'center' })
     ), { sinBordes:true });
-  const info = _tblDocx([4861, 3977],
-    _trDocx(_tcDocx(4861, _pBol([{ t:'Nombre: ', b:true, sz:21 }, { t:m.nombre, sz:21 }])) +
-            _tcDocx(3977, _pBol([{ t:'Año Lectivo: ', b:true, sz:21 }, { t:String(m.anio), sz:21 }]))) +
-    _trDocx(_tcDocx(4861, _pBol([{ t:'Nivel: ', b:true, sz:21 }, { t:m.nivel, sz:21 }])) +
-            _tcDocx(3977, _pBol([{ t:'Grado: ', b:true, sz:21 }, { t:m.grado, sz:21 }, { t:'   Jornada: ', b:true, sz:21 }, { t:m.jornada, sz:21 }])))
+  const info = _tblDocx([6108, 4998],
+    _trDocx(_tcDocx(6108, _pBol([{ t:'Nombre: ', b:true, sz:21 }, { t:m.nombre, sz:21 }])) +
+            _tcDocx(4998, _pBol([{ t:'Año Lectivo: ', b:true, sz:21 }, { t:String(m.anio), sz:21 }]))) +
+    _trDocx(_tcDocx(6108, _pBol([{ t:'Nivel: ', b:true, sz:21 }, { t:m.nivel, sz:21 }])) +
+            _tcDocx(4998, _pBol([{ t:'Grado: ', b:true, sz:21 }, { t:m.grado, sz:21 }, { t:'   Jornada: ', b:true, sz:21 }, { t:m.jornada, sz:21 }])))
   );
-  const promRow = m.pre ? '' : _sepDocx() + _tblDocx([4861, 3977],
-    _trDocx(_tcDocx(4861, _pBol([{ t:'Promedio: ', b:true, sz:21 }, { t:m.promTxt, sz:21 }], { jc:'center' })) +
-            _tcDocx(3977, _pBol([{ t:'Puesto: ', b:true, sz:21 }, { t:String(m.puesto), sz:21 }], { jc:'center' })))
+  const promRow = m.pre ? '' : _sepDocx() + _tblDocx([6108, 4998],
+    _trDocx(_tcDocx(6108, _pBol([{ t:'Promedio: ', b:true, sz:21 }, { t:m.promTxt, sz:21 }], { jc:'center' })) +
+            _tcDocx(4998, _pBol([{ t:'Puesto: ', b:true, sz:21 }, { t:String(m.puesto), sz:21 }], { jc:'center' })))
   );
   const filasAsig = _trDocx(
       _tcDocx(2600, _pBol([{ t:'ASIGNATURA', b:true, sz:20 }]), { shd:'F2F6FC' }) +
       _tcDocx(600, _pBol([{ t:'IH', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' }) +
       _tcDocx(1250, _pBol([{ t:'DESEMPEÑO', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' }) +
-      _tcDocx(4388, _pBol([{ t:'FORTALEZA / DEBILIDADES / ESTRATEGIAS', b:true, sz:20 }]), { shd:'F2F6FC' })
+      _tcDocx(6656, _pBol([{ t:'FORTALEZA / DEBILIDADES / ESTRATEGIAS', b:true, sz:20 }]), { shd:'F2F6FC' })
     ) + m.filas.map(f=>_trDocx(
       _tcDocx(2600, _pBol([{ t:f.nom, b:true, sz:20 }])) +
       _tcDocx(600, _pBol([{ t:f.ih, sz:20 }], { jc:'center' })) +
       _tcDocx(1250, _pBol([{ t:f.des, b:true, sz:20 }], { jc:'center' })) +
-      _tcDocx(4388, _pBol([{ t:f.logro, sz:19 }]))
+      _tcDocx(6656, _pBol([{ t:f.logro, sz:19 }]))
     , true)).join('');
-  const tablaAsig = _tblDocx([2600, 600, 1250, 4388], filasAsig);
+  const tablaAsig = _tblDocx([2600, 600, 1250, 6656], filasAsig);
   let comp = '';
   if(!m.esParvulo){
     const lineasComp = TEXTO_COMP_LECTORA.split('\n').map(l=>_pBol([{ t:l, sz:20 }])).join('');
-    comp = _sepDocx() + _tblDocx([7038, 600, 600, 600],
-      _trDocx(_tcDocx(7038, _pBol([{ t:'COMPRENSIÓN LECTORA', b:true, sz:20 }]), { shd:'F2F6FC' }) +
+    comp = _sepDocx() + _tblDocx([9306, 600, 600, 600],
+      _trDocx(_tcDocx(9306, _pBol([{ t:'COMPRENSIÓN LECTORA', b:true, sz:20 }]), { shd:'F2F6FC' }) +
               _tcDocx(600, _pBol([{ t:'DS', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' }) +
               _tcDocx(600, _pBol([{ t:'DA', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' }) +
               _tcDocx(600, _pBol([{ t:'DB', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' })) +
-      _trDocx(_tcDocx(7038, lineasComp) +
+      _trDocx(_tcDocx(9306, lineasComp) +
               _tcDocx(600, _pBol([{ t:m.compDs, b:true, sz:20 }], { jc:'center' })) +
               _tcDocx(600, _pBol([{ t:m.compDa, b:true, sz:20 }], { jc:'center' })) +
               _tcDocx(600, _pBol([{ t:m.compDb, b:true, sz:20 }], { jc:'center' })), true) +
-      _trDocx(_tcDocx(7038, _pBol([{ t:TEXTO_CALIGRAFIA, sz:20 }]) + _pBol([{ t:'Reforzar Caligrafía:   SI ' + (m.calig==='SI' ? '✗' : '') + '    NO ' + (m.calig==='NO' ? '✗' : ''), sz:20 }])) +
+      _trDocx(_tcDocx(9306, _pBol([{ t:TEXTO_CALIGRAFIA, sz:20 }]) + _pBol([{ t:'Reforzar Caligrafía:   SI ' + (m.calig==='SI' ? '✗' : '') + '    NO ' + (m.calig==='NO' ? '✗' : ''), sz:20 }])) +
               _tcDocx(600, _pBol([])) + _tcDocx(600, _pBol([])) + _tcDocx(600, _pBol([])), true)
     );
   }
   let escala = '';
   if(!m.pre){
     const filasEsc = [['Desempeño bajo','0 – 2,9'],['Desempeño Básico','3,0 – 3,9'],['Desempeño Alto','4,0 – 4,7'],['Desempeño Superior','4,8 – 5,0']];
-    escala = _sepDocx() + _tblDocx([6893, 1945],
-      _trDocx(_tcDocx(6893, _pBol([{ t:'ESCALA DE VALORES', b:true, sz:20 }]), { shd:'F2F6FC' }) +
+    escala = _sepDocx() + _tblDocx([9161, 1945],
+      _trDocx(_tcDocx(9161, _pBol([{ t:'ESCALA DE VALORES', b:true, sz:20 }]), { shd:'F2F6FC' }) +
               _tcDocx(1945, _pBol([{ t:'valor', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' })) +
-      filasEsc.map(r=>_trDocx(_tcDocx(6893, _pBol([{ t:r[0], sz:20 }])) + _tcDocx(1945, _pBol([{ t:r[1], sz:20 }], { jc:'center' })), true)).join('')
+      filasEsc.map(r=>_trDocx(_tcDocx(9161, _pBol([{ t:r[0], sz:20 }])) + _tcDocx(1945, _pBol([{ t:r[1], sz:20 }], { jc:'center' })), true)).join('')
     );
   }
-  const disc = _sepDocx() + _tblDocx([7038, 600, 600, 600],
-    _trDocx(_tcDocx(7038, _pBol([{ t:'DISCIPLINA Y ACTITUDES', b:true, sz:20 }]), { shd:'F2F6FC' }) +
+  const disc = _sepDocx() + _tblDocx([9306, 600, 600, 600],
+    _trDocx(_tcDocx(9306, _pBol([{ t:'DISCIPLINA Y ACTITUDES', b:true, sz:20 }]), { shd:'F2F6FC' }) +
             _tcDocx(600, _pBol([{ t:'DS', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' }) +
             _tcDocx(600, _pBol([{ t:'DA', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' }) +
             _tcDocx(600, _pBol([{ t:'DB', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' })) +
     m.disc.map(d=>_trDocx(
-      _tcDocx(7038, _pBol([{ t:d.item, sz:19 }])) +
+      _tcDocx(9306, _pBol([{ t:d.item, sz:19 }])) +
       _tcDocx(600, _pBol([{ t:d.ds, b:true, sz:20 }], { jc:'center' })) +
       _tcDocx(600, _pBol([{ t:d.da, b:true, sz:20 }], { jc:'center' })) +
       _tcDocx(600, _pBol([{ t:d.db, b:true, sz:20 }], { jc:'center' }))
@@ -5175,10 +5175,10 @@ function _tblDocx(cols, filas, o){
 }
 /* m: {instNombre, licencia, certRuns, filas:[{nom, ih, vf}], inasTxt, promoRuns|null, dadoEn} */
 function _bloqueInformeDocx(m, esPrimero){
-  const enc = _tblDocx([1134, 6520, 1134],
+  const enc = _tblDocx([1134, 7704, 1134],
     _trDocx(
       _tcDocx(1134, _pDocx([{ img: _imgRun(1, 666000, 837809, 'escudo.png') }]), { va:'center' }) +
-      _tcDocx(6520,
+      _tcDocx(7704,
         _pDocx([{ t: m.instNombre, b:true, sz:27 }], { jc:'center' }) +
         _pDocx([{ t: m.licencia, sz:21 }], { jc:'center' }) +
         _pDocx([{ t: 'Código de Dane #308001000238 Núcleo # 11 Nit. 1.045.684.643-5', sz:21 }], { jc:'center' }) +
@@ -5215,11 +5215,11 @@ function _bloqueInformeDocx(m, esPrimero){
     _pDocx([{ t:'Atentamente.', sz:22 }], { after:40, keepNext:true }) +
     firma;
 }
-function _documentoDocxXml(bloques){
+function _documentoDocxXml(bloques, pgMar){
   return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
   '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>' +
   bloques +
-  '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1701" w:right="1134" w:bottom="1701" w:left="2268" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>';
+  '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/>' + (pgMar || '<w:pgMar w:top="1701" w:right="1134" w:bottom="1701" w:left="1134" w:header="0" w:footer="0" w:gutter="0"/>') + '</w:sectPr></w:body></w:document>';
 }
 function _armarDocx(bloquesXml, escudoBytes, firmaBytes){
   const enc = new TextEncoder();
@@ -5348,18 +5348,18 @@ function descargarFinalWordHtml(){
   // Encabezado: tabla de 3 columnas (escudo | texto | vacío) para que el
   // texto quede centrado en la página, igual que en la web y el PDF.
   cuerpo = cuerpo.replace(/<div class="enc-final"><img[^>]*src="([^"]*)"[^>]*><div class="enc-txt">([\s\S]*?)<\/div><\/div>/g,
-    '<table class="enc-tab-final" width="587"><colgroup><col width="91" style="width:2.4cm"><col width="405" style="width:10.7cm"><col width="91" style="width:2.4cm"></colgroup><tr><td width="91" style="width:2.4cm;vertical-align:top"><img src="$1" width="80" height="101" style="width:2.1cm;height:2.64cm"></td><td width="405" style="width:10.7cm;vertical-align:top;text-align:center">$2</td><td width="91" style="width:2.4cm"></td></tr></table>');
+    '<table class="enc-tab-final" width="663"><colgroup><col width="91" style="width:2.4cm"><col width="481" style="width:12.7cm"><col width="91" style="width:2.4cm"></colgroup><tr><td width="91" style="width:2.4cm;vertical-align:top"><img src="$1" width="80" height="101" style="width:2.1cm;height:2.64cm"></td><td width="481" style="width:12.7cm;vertical-align:top;text-align:center">$2</td><td width="91" style="width:2.4cm"></td></tr></table>');
   cuerpo = cuerpo.replace(/<table class="tabla-final">/g, '<table class="tabla-final" align="center" width="510"><colgroup><col width="283" style="width:7.5cm"><col width="83" style="width:2.2cm"><col width="144" style="width:3.8cm"></colgroup>');
   cuerpo = cuerpo.split('style="width:110px"').join('style="width:2.2cm"');
   cuerpo = cuerpo.split('style="width:190px"').join('style="width:3.8cm"');
   // Firma con tamaño fijo por atributo: si solo va en CSS, Word la muestra
   // en su tamaño natural (518 px) y se pasa de página.
   cuerpo = cuerpo.replace(/<img src="([^"]*firma-secretaria\.png)"[^>]*>/g, '<img src="$1" width="240" height="49" style="width:6.35cm">');
-  const css = '@page WordSection1 { size: 21.59cm 27.94cm; margin: 3cm 2cm 3cm 4cm; }'
+  const css = '@page WordSection1 { size: 21.59cm 27.94cm; margin: 3cm 2cm 3cm 2cm; }'
     + 'body{font-family:"Times New Roman",Times,serif}'
     + '.hoja{font-size:12pt;color:#000;line-height:1.12}'
     + '.hoja:last-child{page-break-after:auto}'
-    + '.enc-tab-final{border:none;width:15.5cm;table-layout:fixed;mso-table-layout-alt:fixed}'
+    + '.enc-tab-final{border:none;width:17.5cm;table-layout:fixed;mso-table-layout-alt:fixed}'
     + '.enc-tab-final td{border:none;padding:0;vertical-align:top}'
     + '.enc-tab-final img{width:2.1cm;height:2.64cm}'
     + '.enc-tab-final td div{margin:1pt 0;font-size:11pt}'
