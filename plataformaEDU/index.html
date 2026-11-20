@@ -4190,14 +4190,14 @@ function hojaBoletin(e, periodo){
   const filas = asignaturasDe(curso).map(a=>{
     const logro = ((curso.logros||{})[a.id]||{})[String(periodo)] || '';
     const letra = letraDe(e.id, periodo, a.id);
-    return `<tr><td><strong>${esc(a.nombre)}</strong></td><td class="c">${a.ih!=null?a.ih:''}</td><td class="c" style="white-space:nowrap">${pre ? (letra ? `<strong>${LETRAS_PRE[letra].toUpperCase()}</strong>` : '') : `<strong>${fmt(notaDe(e.id, periodo, a.id))}</strong>`}</td><td class="logros">${esc(logro)}</td></tr>`;
+    return `<tr><td style="vertical-align:middle"><strong>${esc(a.nombre)}</strong></td><td class="c" style="vertical-align:middle">${a.ih!=null?a.ih:''}</td><td class="c" style="white-space:nowrap;vertical-align:middle">${pre ? (letra ? `<strong>${LETRAS_PRE[letra].toUpperCase()}</strong>` : '') : `<strong>${fmt(notaDe(e.id, periodo, a.id))}</strong>`}</td><td class="logros">${esc(logro)}</td></tr>`;
   }).join('');
   const disc = DISCIPLINA_ITEMS.map((item, i)=>`<tr><td>${esc(item)}</td><td class="x">${marcaX(x.disciplina[i],'DS')}</td><td class="x">${marcaX(x.disciplina[i],'DA')}</td><td class="x">${marcaX(x.disciplina[i],'DB')}</td></tr>`).join('');
   return `<div class="hoja">${encabezadoHoja(e, curso)}
     ${pre ? '' : `<table style="margin-top:6px"><tr><td style="width:55%"></td><td class="c" style="width:26%"><strong>Promedio:</strong> ${fmt(prom)}</td><td class="c" style="width:19%"><strong>Puesto:</strong> ${rank[e.id]||''}</td></tr></table>`}
     <div class="titulo">Informe del ${ROMANOS[String(periodo)]} periodo</div>
     <div class="seccion">Aspectos del plan de formación</div>
-    <table><thead><tr><th style="text-align:left;width:190px">ASIGNATURA</th><th class="c" style="width:44px">IH</th><th class="c" style="width:132px;white-space:nowrap">DESEMPEÑO</th><th style="text-align:left">FORTALEZA / DEBILIDADES / ESTRATEGIAS</th></tr></thead><tbody>${filas}</tbody></table>
+    <table><thead><tr><th style="text-align:left;width:190px;vertical-align:middle">ASIGNATURA</th><th class="c" style="width:44px;vertical-align:middle">IH</th><th class="c" style="width:132px;white-space:nowrap;vertical-align:middle">DESEMPEÑO</th><th style="text-align:left;vertical-align:middle">FORTALEZA / DEBILIDADES / ESTRATEGIAS</th></tr></thead><tbody>${filas}</tbody></table>
     ${esParvulo ? '' : `<table style="margin-top:10px"><thead><tr><th style="text-align:left">COMPRENSIÓN LECTORA</th><th class="c" style="width:44px">DS</th><th class="c" style="width:44px">DA</th><th class="c" style="width:44px">DB</th></tr></thead>
     <tbody><tr><td class="logros">${esc(TEXTO_COMP_LECTORA)}</td><td class="x">${marcaX(x.comp,'DS')}</td><td class="x">${marcaX(x.comp,'DA')}</td><td class="x">${marcaX(x.comp,'DB')}</td></tr>
     <tr><td>${esc(TEXTO_CALIGRAFIA)}<br>Reforzar Caligrafía: &nbsp;SI ${x.caligrafia==='SI'?'✗':''} &nbsp;&nbsp; NO ${x.caligrafia==='NO'?'✗':''}</td><td></td><td></td><td></td></tr></tbody></table>`}
@@ -5025,14 +5025,14 @@ function _bloqueBoletinDocx(m, esPrimero){
             _tcDocx(2601, _pBol([{ t:'Puesto: ', b:true, sz:21 }, { t:String(m.puesto), sz:21 }], { jc:'center' })))
   , { ind: 6181 });
   const filasAsig = _trDocx(
-      _tcDocx(2268, _pBol([{ t:'ASIGNATURA', b:true, sz:20 }]), { shd:'F2F6FC' }) +
-      _tcDocx(567, _pBol([{ t:'IH', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' }) +
-      _tcDocx(1615, _pBol([{ t:'DESEMPEÑO', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' }) +
-      _tcDocx(6656, _pBol([{ t:'FORTALEZA / DEBILIDADES / ESTRATEGIAS', b:true, sz:20 }]), { shd:'F2F6FC' })
+      _tcDocx(2268, _pBol([{ t:'ASIGNATURA', b:true, sz:20 }]), { shd:'F2F6FC', va:'center' }) +
+      _tcDocx(567, _pBol([{ t:'IH', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC', va:'center' }) +
+      _tcDocx(1615, _pBol([{ t:'DESEMPEÑO', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC', va:'center' }) +
+      _tcDocx(6656, _pBol([{ t:'FORTALEZA / DEBILIDADES / ESTRATEGIAS', b:true, sz:20 }]), { shd:'F2F6FC', va:'center' })
     ) + m.filas.map(f=>_trDocx(
-      _tcDocx(2268, _pBol([{ t:f.nom, b:true, sz:20 }])) +
-      _tcDocx(567, _pBol([{ t:f.ih, sz:20 }], { jc:'center' })) +
-      _tcDocx(1615, _pBol([{ t:f.des, b:true, sz:20 }], { jc:'center' })) +
+      _tcDocx(2268, _pBol([{ t:f.nom, b:true, sz:20 }]), { va:'center' }) +
+      _tcDocx(567, _pBol([{ t:f.ih, sz:20 }], { jc:'center' }), { va:'center' }) +
+      _tcDocx(1615, _pBol([{ t:f.des, b:true, sz:20 }], { jc:'center' }), { va:'center' }) +
       _tcDocx(6656, _pBol([{ t:f.logro, sz:19 }]))
     , true)).join('');
   const tablaAsig = _tblDocx([2268, 567, 1615, 6656], filasAsig);
