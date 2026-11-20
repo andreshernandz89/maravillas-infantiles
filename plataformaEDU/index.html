@@ -848,8 +848,8 @@ button.btn:hover{ background:var(--azul-osc); }
             <select id="extra-comp" onchange="guardarExtra()"><option value="">—</option><option value="DS">DS (Superior)</option><option value="DA">DA (Alto)</option><option value="DB">DB (Básico)</option></select></div>
           <div><label>¿Reforzar caligrafía?</label>
             <select id="extra-calig" onchange="guardarExtra()"><option value="">—</option><option value="SI">SÍ</option><option value="NO">NO</option></select></div>
-          <div style="width:130px"><label>Inasist. justificadas (h)</label><input type="number" id="extra-inasj" min="0" onchange="guardarExtra()"></div>
-          <div style="width:140px"><label>Inasist. NO justificadas (h)</label><input type="number" id="extra-inasn" min="0" onchange="guardarExtra()"></div>
+          <div style="width:130px"><label>Inasist. justificadas (días)</label><input type="number" id="extra-inasj" min="0" onchange="guardarExtra()"></div>
+          <div style="width:140px"><label>Inasist. NO justificadas (días)</label><input type="number" id="extra-inasn" min="0" onchange="guardarExtra()"></div>
         </div>
         <div id="extra-disciplina"></div>
         <div class="fila" style="margin-top:10px">
@@ -872,7 +872,6 @@ button.btn:hover{ background:var(--azul-osc); }
               <option value="3">Periodo 3</option><option value="4">Periodo 4</option>
             </select></div>
           <div><label>Estudiante</label><select id="bol-estudiante" onchange="renderBoletines()"></select></div>
-          <button class="btn" id="btn-imprimir-bol" onclick="imprimir('boletines')">🖨️ Imprimir / PDF</button>
           <button class="btn" id="btn-word-bol" onclick="descargarBoletinesWord()">📄 Descargar en Word</button>
         </div>
       </div>
@@ -886,7 +885,6 @@ button.btn:hover{ background:var(--azul-osc); }
         <div class="fila">
           <div><label>Curso</label><select id="fin-curso" onchange="renderFinal()"></select></div>
           <div><label>Estudiante</label><select id="fin-estudiante" onchange="renderFinal()"></select></div>
-          <button class="btn" id="btn-imprimir-fin" onclick="imprimir('final')">🖨️ Imprimir / PDF</button>
           <button class="btn" id="btn-word-fin" onclick="descargarFinalWord()">📄 Descargar en Word</button>
         </div>
       </div>
@@ -3228,7 +3226,6 @@ function aplicarPermisos(){
   const puedeEst = puedeCrearEstudiantes();
   $('fila-add-estudiante').classList.toggle('hidden', !puedeEst);
   const docente = esDocente();
-  $('btn-imprimir-bol').classList.toggle('hidden', docente);
   $('fila-add-curso').classList.toggle('hidden', docente);
   $('nota-docente-cursos').classList.add('hidden');
   $('ayuda-cursos-admin').classList.toggle('hidden', docente);
@@ -4164,6 +4161,24 @@ function tablaEscalaPreescolar(){
   <tr><td>Excelente</td><td class="c">E</td></tr></table>`;
 }
 function marcaX(valor, col){ return valor===col ? 'X' : ''; }
+function inasistenciasPeriodoDias(e, periodo){
+  // Dias de inasistencia del periodo, contados del registro diario de asistencia.
+  // El rango del periodo va del cierre del periodo anterior (exclusivo) al cierre de este periodo (inclusive).
+  const fCierre = p => { const c = (DB.cierres || {})[String(p)]; return (c && c.fecha) ? String(c.fecha) : null; };
+  const desde = periodo > 1 ? fCierre(periodo - 1) : null;
+  const hasta = fCierre(periodo);
+  let j = 0, n = 0, hay = false;
+  const reg = DB.asistencia[e.cursoId] || {};
+  Object.keys(reg).forEach(fecha => {
+    if(desde && fecha <= desde) return;
+    if(hasta && fecha > hasta) return;
+    const v = (reg[fecha] || {})[e.id];
+    if(v){ hay = true; if(v === 'FJ') j++; else if(v === 'F') n++; }
+  });
+  if(hay) return { j: String(j), n: String(n) };
+  const x = extraDe(e.id, periodo);
+  return { j: x.inasJ || '', n: x.inasN || '' };
+}
 function hojaBoletin(e, periodo){
   const curso = cursoDe(e.cursoId); if(!curso) return '';
   const pre = esPreescolar(curso);
@@ -4171,6 +4186,7 @@ function hojaBoletin(e, periodo){
   const rank = puestos(e.cursoId, periodo);
   const prom = promedioPeriodo(e.id, periodo);
   const x = extraDe(e.id, periodo);
+  const ina = inasistenciasPeriodoDias(e, periodo);
   const filas = asignaturasDe(curso).map(a=>{
     const logro = ((curso.logros||{})[a.id]||{})[String(periodo)] || '';
     const letra = letraDe(e.id, periodo, a.id);
@@ -4187,7 +4203,7 @@ function hojaBoletin(e, periodo){
     <tr><td>${esc(TEXTO_CALIGRAFIA)}<br>Reforzar Caligrafía: &nbsp;SI ${x.caligrafia==='SI'?'✗':''} &nbsp;&nbsp; NO ${x.caligrafia==='NO'?'✗':''}</td><td></td><td></td><td></td></tr></tbody></table>`}
     ${pre ? '' : tablaEscala()}
     <table style="margin-top:10px"><thead><tr><th style="text-align:left">DISCIPLINA Y ACTITUDES</th><th class="c" style="width:44px">DS</th><th class="c" style="width:44px">DA</th><th class="c" style="width:44px">DB</th></tr></thead><tbody>${disc}</tbody></table>
-    <p class="inasis">INASISTENCIAS: &nbsp; JUSTIFICADAS: ${esc(x.inasJ||'')} HORAS &nbsp;&nbsp;&nbsp; NO JUSTIFICADAS: ${esc(x.inasN||'')} HORAS</p>
+    <p class="inasis">INASISTENCIAS: &nbsp; JUSTIFICADAS: ${esc(ina.j)} DÍAS &nbsp;&nbsp;&nbsp; NO JUSTIFICADAS: ${esc(ina.n)} DÍAS</p>
     <p class="obs-t">OBSERVACIONES:</p>
     <p class="obs">${esc(x.obs||'')}</p>
     <div class="firma"><div class="linea">Directora de grupo.</div></div>
@@ -4968,6 +4984,7 @@ function _datosBoletinDocx(e, periodo){
   const rank = puestos(e.cursoId, periodo);
   const prom = promedioPeriodo(e.id, periodo);
   const x = extraDe(e.id, periodo);
+  const ina = inasistenciasPeriodoDias(e, periodo);
   const filas = asignaturasDe(curso).map(a=>{
     const logro = ((curso.logros||{})[a.id]||{})[String(periodo)] || '';
     const letra = letraDe(e.id, periodo, a.id);
@@ -4982,7 +4999,7 @@ function _datosBoletinDocx(e, periodo){
     titulo: 'INFORME DEL ' + (ROMANOS[String(periodo)]||'') + ' PERIODO',
     filas, disc,
     compDs: x.comp==='DS' ? 'X' : '', compDa: x.comp==='DA' ? 'X' : '', compDb: x.comp==='DB' ? 'X' : '',
-    calig: x.caligrafia||'', inasJ: x.inasJ||'', inasN: x.inasN||'', obs: x.obs||''
+    calig: x.caligrafia||'', inasJ: ina.j, inasN: ina.n, obs: x.obs||''
   };
 }
 function _pBol(runs, o){ return _pDocx(runs, Object.assign({ line:240 }, o || {})); }
@@ -5064,7 +5081,7 @@ function _bloqueBoletinDocx(m, esPrimero){
     _pBol([{ t: m.titulo, b:true, sz:25 }], { jc:'center', before:100, after:60 }) +
     _pBol([{ t:'ASPECTOS DEL PLAN DE FORMACIÓN', b:true, sz:21 }], { after:50 }) +
     tablaAsig + comp + escala + disc +
-    _pBol([{ t:'INASISTENCIAS:   JUSTIFICADAS: ' + m.inasJ + ' HORAS    NO JUSTIFICADAS: ' + m.inasN + ' HORAS', b:true, sz:21 }], { before:90, after:30 }) +
+    _pBol([{ t:'INASISTENCIAS:   JUSTIFICADAS: ' + m.inasJ + ' DÍAS    NO JUSTIFICADAS: ' + m.inasN + ' DÍAS', b:true, sz:21 }], { before:90, after:30 }) +
     _pBol([{ t:'OBSERVACIONES:', b:true, sz:21 }], { after:20 }) +
     _pBol([{ t: m.obs, sz:21 }], { after:60 }) +
     _pBol([], { before:280 }) +
