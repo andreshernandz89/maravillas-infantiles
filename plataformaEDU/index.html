@@ -4955,30 +4955,30 @@ function descargarFinalWord(){
   // Encabezado: tabla de 3 columnas (escudo | texto | vacío) para que el
   // texto quede centrado en la página, igual que en la web y el PDF.
   cuerpo = cuerpo.replace(/<div class="enc-final"><img[^>]*src="([^"]*)"[^>]*><div class="enc-txt">([\s\S]*?)<\/div><\/div>/g,
-    '<table class="enc-tab-final" width="669"><colgroup><col width="91" style="width:2.4cm"><col width="487" style="width:12.9cm"><col width="91" style="width:2.4cm"></colgroup><tr><td width="91" style="width:2.4cm;vertical-align:top"><img src="$1" width="80" height="101" style="width:2.1cm;height:2.64cm"></td><td width="487" style="width:12.9cm;vertical-align:top;text-align:center">$2</td><td width="91" style="width:2.4cm"></td></tr></table>');
+    '<table class="enc-tab-final" width="587"><colgroup><col width="91" style="width:2.4cm"><col width="405" style="width:10.7cm"><col width="91" style="width:2.4cm"></colgroup><tr><td width="91" style="width:2.4cm;vertical-align:top"><img src="$1" width="80" height="101" style="width:2.1cm;height:2.64cm"></td><td width="405" style="width:10.7cm;vertical-align:top;text-align:center">$2</td><td width="91" style="width:2.4cm"></td></tr></table>');
   cuerpo = cuerpo.replace(/<table class="tabla-final">/g, '<table class="tabla-final" align="center" width="510"><colgroup><col width="283" style="width:7.5cm"><col width="83" style="width:2.2cm"><col width="144" style="width:3.8cm"></colgroup>');
   cuerpo = cuerpo.split('style="width:110px"').join('style="width:2.2cm"');
   cuerpo = cuerpo.split('style="width:190px"').join('style="width:3.8cm"');
   // Firma con tamaño fijo por atributo: si solo va en CSS, Word la muestra
   // en su tamaño natural (518 px) y se pasa de página.
   cuerpo = cuerpo.replace(/<img src="([^"]*firma-secretaria\.png)"[^>]*>/g, '<img src="$1" width="240" height="49" style="width:6.35cm">');
-  const css = '@page WordSection1 { size: 21.59cm 27.94cm; margin: 1.6cm 1.9cm; }'
+  const css = '@page WordSection1 { size: 21.59cm 27.94cm; margin: 3cm 2cm 3cm 4cm; }'
     + 'body{font-family:"Times New Roman",Times,serif}'
-    + '.hoja{font-size:11.5pt;color:#000}'
+    + '.hoja{font-size:12pt;color:#000;line-height:1.12}'
     + '.hoja:last-child{page-break-after:auto}'
-    + '.enc-tab-final{border:none;width:17.7cm;table-layout:fixed;mso-table-layout-alt:fixed}'
+    + '.enc-tab-final{border:none;width:15.5cm;table-layout:fixed;mso-table-layout-alt:fixed}'
     + '.enc-tab-final td{border:none;padding:0;vertical-align:top}'
     + '.enc-tab-final img{width:2.1cm;height:2.64cm}'
-    + '.enc-tab-final td div{margin:1pt 0}'
-    + '.inst{font-size:14pt;font-weight:700}'
+    + '.enc-tab-final td div{margin:1pt 0;font-size:11pt}'
+    + '.inst{font-size:13.5pt;font-weight:700}'
     + '.tit-final{font-size:12.5pt;font-weight:700;margin-top:6pt}'
-    + '.certifican{text-align:center;font-weight:700;margin:14pt 0 10pt}'
-    + '.cuerpo{text-align:justify;margin:0 0 10pt}'
-    + 'table.tabla-final{border-collapse:collapse;width:13.5cm;margin:10pt auto 5pt;font-size:11.5pt}'
-    + 'table.tabla-final th, table.tabla-final td{border:1pt solid #000;padding:3pt 7pt}'
+    + '.certifican{text-align:center;font-weight:700;margin:10pt 0 8pt}'
+    + '.cuerpo{text-align:justify;margin:0 0 8pt}'
+    + 'table.tabla-final{border-collapse:collapse;width:13.5cm;margin:8pt auto 4pt;font-size:12pt}'
+    + 'table.tabla-final th, table.tabla-final td{border:1pt solid #000;padding:2pt 7pt}'
     + 'td.c,th.c{text-align:center}'
-    + '.cierre-final{margin-top:14pt}'
-    + '.cierre-final p{margin:0 0 6pt}'
+    + '.cierre-final{margin-top:10pt;page-break-inside:avoid}'
+    + '.cierre-final p{margin:0 0 4pt}'
     + '.cierre-final .promo{text-align:justify}'
     + '.firma-sec{margin-top:6pt;width:6.9cm;page-break-inside:avoid}'
     + '.firma-sec img{width:6.9cm;display:block}'
