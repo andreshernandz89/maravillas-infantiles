@@ -4943,7 +4943,239 @@ function descargarBoletinesWord(){
   a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
-function descargarFinalWord(){
+/* ===== Word REAL (.docx): generador OOXML sin librerías ===== */
+function _xesc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+const _crcTabla = (()=>{ const t=[]; for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = (c&1) ? (0xEDB88320^(c>>>1)) : (c>>>1); t[n]=c>>>0; } return t; })();
+function _crc32(b){ let c=0xFFFFFFFF; for(let i=0;i<b.length;i++) c = _crcTabla[(c^b[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function _zipPartes(partes){
+  const enc = new TextEncoder();
+  const chunks=[], central=[]; let offset=0;
+  const u16=n=>new Uint8Array([n&255,(n>>8)&255]);
+  const u32=n=>new Uint8Array([n&255,(n>>8)&255,(n>>16)&255,(n>>24)&255]);
+  for(const f of partes){
+    const nombre = enc.encode(f.nombre);
+    const crc = _crc32(f.datos);
+    const local = [u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(0), u16(0x21), u32(crc), u32(f.datos.length), u32(f.datos.length), u16(nombre.length), u16(0), nombre, f.datos];
+    let tam=0; local.forEach(c=>tam+=c.length);
+    chunks.push(...local);
+    central.push([u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0x21), u32(crc), u32(f.datos.length), u32(f.datos.length), u16(nombre.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset), nombre]);
+    offset += tam;
+  }
+  let cTam=0; central.forEach(r=>r.forEach(c=>cTam+=c.length));
+  const fin = [u32(0x06054b50), u16(0), u16(0), u16(partes.length), u16(partes.length), u32(cTam), u32(offset), u16(0)];
+  const todo = [...chunks, ...central.flat(), ...fin];
+  let total=0; todo.forEach(c=>total+=c.length);
+  const out = new Uint8Array(total); let pos=0;
+  todo.forEach(c=>{ out.set(c,pos); pos+=c.length; });
+  return out;
+}
+function _imgRun(rid, cx, cy, nombre){
+  return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + cx + '" cy="' + cy + '"/><wp:docPr id="' + (100+rid) + '" name="' + nombre + '"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="' + (100+rid) + '" name="' + nombre + '"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rId' + rid + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>';
+}
+function _pDocx(runs, o){
+  o = o || {};
+  let ppr = '';
+  if(o.pb) ppr += '<w:pageBreakBefore/>';
+  if(o.keepNext) ppr += '<w:keepNext/>';
+  ppr += '<w:keepLines/>';
+  if(o.jc) ppr += '<w:jc w:val="' + o.jc + '"/>';
+  ppr += '<w:spacing w:before="' + (o.before||0) + '" w:after="' + (o.after==null?0:o.after) + '" w:line="276" w:lineRule="auto"/>';
+  const rs = runs.map(r=>{
+    if(r.img) return r.img;
+    let rpr = '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>';
+    if(r.b) rpr += '<w:b/>';
+    if(r.u) rpr += '<w:u w:val="single"/>';
+    const sz = r.sz || 24;
+    rpr += '<w:sz w:val="' + sz + '"/><w:szCs w:val="' + sz + '"/>';
+    return '<w:r><w:rPr>' + rpr + '</w:rPr><w:t xml:space="preserve">' + _xesc(r.t) + '</w:t></w:r>';
+  }).join('');
+  return '<w:p><w:pPr>' + ppr + '</w:pPr>' + rs + '</w:p>';
+}
+function _tcDocx(w, contenido, o){
+  o = o || {};
+  let pr = '<w:tcW w:w="' + w + '" w:type="dxa"/>';
+  if(o.shd) pr += '<w:shd w:val="clear" w:color="auto" w:fill="' + o.shd + '"/>';
+  if(o.bordeSup) pr += '<w:tcBorders><w:top w:val="single" w:sz="8" w:space="0" w:color="000000"/></w:tcBorders>';
+  if(o.va) pr += '<w:vAlign w:val="' + o.va + '"/>';
+  return '<w:tc><w:tcPr>' + pr + '</w:tcPr>' + contenido + '</w:tc>';
+}
+function _trDocx(celdas, noPartir){
+  return '<w:tr>' + (noPartir ? '<w:trPr><w:cantSplit/></w:trPr>' : '') + celdas + '</w:tr>';
+}
+function _tblDocx(cols, filas, o){
+  o = o || {};
+  const total = cols.reduce((a,b)=>a+b,0);
+  const unBorde = v => ['top','left','bottom','right','insideH','insideV'].map(l=>'<w:' + l + ' w:val="' + v + '" w:sz="6" w:space="0" w:color="C9D4E4"/>').join('');
+  const bordes = o.sinBordes
+    ? '<w:tblBorders>' + ['top','left','bottom','right','insideH','insideV'].map(l=>'<w:' + l + ' w:val="nil" w:sz="0" w:space="0" w:color="auto"/>').join('') + '</w:tblBorders>'
+    : '<w:tblBorders>' + unBorde('single') + '</w:tblBorders>';
+  const grid = cols.map(w=>'<w:gridCol w:w="' + w + '"/>').join('');
+  return '<w:tbl><w:tblPr><w:tblW w:w="' + total + '" w:type="dxa"/><w:tblLayout w:type="fixed"/>' + (o.jc ? '<w:jc w:val="' + o.jc + '"/>' : '') + bordes + '<w:tblCellMar><w:top w:w="28" w:type="dxa"/><w:left w:w="85" w:type="dxa"/><w:bottom w:w="28" w:type="dxa"/><w:right w:w="85" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>' + grid + '</w:tblGrid>' + filas + '</w:tbl>';
+}
+/* m: {instNombre, licencia, certRuns, filas:[{nom, ih, vf}], inasTxt, promoRuns|null, dadoEn} */
+function _bloqueInformeDocx(m, esPrimero){
+  const enc = _tblDocx([1134, 6520, 1134],
+    _trDocx(
+      _tcDocx(1134, _pDocx([{ img: _imgRun(1, 666000, 837809, 'escudo.png') }]), { va:'center' }) +
+      _tcDocx(6520,
+        _pDocx([{ t: m.instNombre, b:true, sz:27 }], { jc:'center' }) +
+        _pDocx([{ t: m.licencia, sz:21 }], { jc:'center' }) +
+        _pDocx([{ t: 'Código de Dane #308001000238 Núcleo # 11 Nit. 1.045.684.643-5', sz:21 }], { jc:'center' }) +
+        _pDocx([{ t: 'Decreto 1290 del 16 de Abril de 2009', sz:21 }], { jc:'center' }) +
+        _pDocx([{ t: 'INFORME ACADEMICO FINAL', b:true, sz:25 }], { jc:'center', before:57 })
+      , { va:'center' }) +
+      _tcDocx(1134, _pDocx([]), { va:'center' })
+    ), { sinBordes:true, margenH:0, margenV:0 });
+  const filas = _trDocx(
+      _tcDocx(4252, _pDocx([{ t:'AREAS Y ASIGNATURAS', b:true, sz:21 }]), { shd:'F2F6FC' }) +
+      _tcDocx(1247, _pDocx([{ t:'INTENS. HORARIA', b:true, sz:21 }], { jc:'center' }), { shd:'F2F6FC' }) +
+      _tcDocx(2154, _pDocx([{ t:'VALORACION FINAL', b:true, sz:21 }], { jc:'center' }), { shd:'F2F6FC' })
+    ) + m.filas.map(f=>_trDocx(
+      _tcDocx(4252, _pDocx([{ t:f.nom, b:true, sz:22 }])) +
+      _tcDocx(1247, _pDocx([{ t:f.ih, sz:22 }], { jc:'center' })) +
+      _tcDocx(2154, _pDocx([{ t:f.vf, b:true, sz:22 }], { jc:'center' }))
+    )).join('');
+  const tabla = _tblDocx([4252, 1247, 2154], filas, { jc:'center' });
+  const firma = _tblDocx([3601],
+    _trDocx(_tcDocx(3601, _pDocx([{ img: _imgRun(2, 2286000, 463320, 'firma.png') }], { keepNext:true })), true) +
+    _trDocx(_tcDocx(3601, _pDocx([{ t:'Secretaria (E).', b:true, sz:22 }]), { bordeSup:true }), true)
+  , { sinBordes:true, margenH:0, margenV:0 });
+  return (esPrimero ? '' : '') +
+    '<w:p><w:pPr>' + (esPrimero ? '' : '<w:pageBreakBefore/>') + '<w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="auto"/></w:pPr></w:p>' +
+    enc +
+    _pDocx([{ t:'CERTIFICAN:', b:true }], { jc:'center', before:113, after:60 }) +
+    _pDocx(m.certRuns, { jc:'both', after:90 }) +
+    _pDocx([{ t:'A continuación, se especifican las valoraciones del periodo final e intensidad horaria:' }], { jc:'both', after:90 }) +
+    tabla +
+    _pDocx([{ t: m.inasTxt, b:true, sz:22 }], { before:100, after:40, keepNext:true }) +
+    _pDocx([{ t:'La institución se encuentra registrada en la Notaria octava, libro 6 Folio 138.', u:true, sz:22 }], { after:40, keepNext:true }) +
+    (m.promoRuns ? _pDocx(m.promoRuns, { jc:'both', sz:22, after:40, keepNext:true }) : '') +
+    _pDocx([{ t: m.dadoEn, sz:22 }], { after:40, keepNext:true }) +
+    _pDocx([{ t:'Atentamente.', sz:22 }], { after:40, keepNext:true }) +
+    firma;
+}
+function _documentoDocxXml(bloques){
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+  '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>' +
+  bloques +
+  '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1701" w:right="1134" w:bottom="1701" w:left="2268" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>';
+}
+function _armarDocx(bloquesXml, escudoBytes, firmaBytes){
+  const enc = new TextEncoder();
+  const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>';
+  const rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+  const docRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/escudo.png"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/firma.png"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="es-CO"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>';
+  return _zipPartes([
+    { nombre:'[Content_Types].xml', datos: enc.encode(contentTypes) },
+    { nombre:'_rels/.rels', datos: enc.encode(rels) },
+    { nombre:'word/document.xml', datos: enc.encode(_documentoDocxXml(bloquesXml)) },
+    { nombre:'word/styles.xml', datos: enc.encode(styles) },
+    { nombre:'word/_rels/document.xml.rels', datos: enc.encode(docRels) },
+    { nombre:'word/media/escudo.png', datos: escudoBytes },
+    { nombre:'word/media/firma.png', datos: firmaBytes }
+  ]);
+}
+function _datosInformeDocx(e){
+  const curso = cursoDe(e.cursoId); if(!curso) return null;
+  const inst = DB.instituto || {};
+  const pre = esPreescolar(curso);
+  const asigs = asignaturasDe(curso);
+  const PALABRA_PRE = { I:'INSUFICIENTE', A:'ACEPTABLE', S:'SOBRESALIENTE', E:'EXCELENTE' };
+  const sinAcentos = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const filasD = asigs.map(a=>{
+    if(pre){
+      const ps = [1,2,3,4].map(p=>letraDe(e.id, p, a.id)).filter(Boolean);
+      const ult = ps.length ? ps[ps.length-1] : '';
+      return { a, vf: PALABRA_PRE[ult] || '' };
+    }
+    const ps = [1,2,3,4].map(p=>notaDe(e.id, p, a.id));
+    return { a, vf: promedio(ps) };
+  });
+  const promFinal = pre ? null : promedio(filasD.map(x=>x.vf));
+  const promovido = pre ? true : (promFinal != null && promFinal >= 3.0);
+  const GRADOS_CANON = ['PÁRVULO','PRE-JARDÍN','JARDÍN','TRANSICIÓN','PRIMERO','SEGUNDO','TERCERO','CUARTO','QUINTO','SEXTO'];
+  const ORDINAL_G = { PRIMERO:'1º', SEGUNDO:'2º', TERCERO:'3º', CUARTO:'4º', QUINTO:'5º', SEXTO:'6º' };
+  const claveG = s => sinAcentos(String(s||'').toUpperCase()).replace(/[^A-Z-]/g,'');
+  const iG = GRADOS_CANON.findIndex(g => claveG(g) === claveG(curso.nombre));
+  const gAct = iG >= 0 ? GRADOS_CANON[iG] : String(curso.nombre||'').toUpperCase();
+  const gSig = iG >= 0 ? GRADOS_CANON[iG+1] : null;
+  let sigRuns = null;
+  if(gSig){
+    if(ORDINAL_G[gSig]) sigRuns = [{ t:'grado ' + ORDINAL_G[gSig] + ' ', sz:22 }, { t:'(' + gSig + ')', b:true, sz:22 }, { t:' de Educación Básica ', sz:22 }, { t:(gSig==='SEXTO' ? 'Secundaria' : 'Primaria'), b:true, sz:22 }];
+    else sigRuns = [{ t:'grado ', sz:22 }, { t:gSig, b:true, sz:22 }, { t:' de Educación Preescolar', sz:22 }];
+  }
+  let promoRuns = null;
+  if(gSig && (pre || promFinal != null)){
+    promoRuns = promovido
+      ? [{ t:'Alcanzo los logros propuestos para el grado ', sz:22 }, { t:gAct, b:true, sz:22 }, { t:' de ' + (pre ? 'Educación Preescolar' : 'Educación Básica') + ' que lo promociona para cursar ', sz:22 }, ...sigRuns, { t:'.', sz:22 }]
+      : [{ t:'No alcanzo los logros propuestos para el grado ', sz:22 }, { t:gAct, b:true, sz:22 }, { t:' de Educación Básica, por lo cual no es promovido al siguiente grado.', sz:22 }];
+  }
+  const MESES_F = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const hoyImp = new Date();
+  const dadoEn = 'Dado en ' + (inst.ciudad || 'Barranquilla') + ', ' + (hoyImp.getDate() === 1 ? 'al 1 día' : 'a los ' + hoyImp.getDate() + ' días') + ' del mes de ' + MESES_F[hoyImp.getMonth()] + ' del ' + hoyImp.getFullYear() + '.';
+  const nombreDoc = String(e.nombre || '').replace(/,/g, '').replace(/\s+/g, ' ').trim();
+  let diasJ = 0, diasN = 0, hayReg = false;
+  Object.values(DB.asistencia[e.cursoId] || {}).forEach(dia=>{ const v = dia[e.id]; if(v){ hayReg = true; if(v === 'FJ') diasJ++; else if(v === 'F') diasN++; } });
+  let totInasJ = 0, totInasN = 0, hayInas = false;
+  [1,2,3,4].forEach(p=>{ const xp = extraDe(e.id, p); const vj = parseFloat(String(xp.inasJ || '').replace(',', '.')), vn = parseFloat(String(xp.inasN || '').replace(',', '.')); if(!isNaN(vj)){ totInasJ += vj; hayInas = true; } if(!isNaN(vn)){ totInasN += vn; hayInas = true; } });
+  const fmtHoras = n => String(Math.round(n * 100) / 100).replace('.', ',');
+  const dTxt = n => n + (n === 1 ? ' día' : ' días');
+  const inasTxt = hayReg
+    ? 'Asistencias durante el año escolar: Justificadas: ' + dTxt(diasJ) + '   No justificadas: ' + dTxt(diasN)
+    : (hayInas
+      ? 'Asistencias durante el año escolar: Justificadas: ' + fmtHoras(totInasJ) + ' horas   No justificadas: ' + fmtHoras(totInasN) + ' horas'
+      : 'Asistencias durante el año escolar: Justificadas ______ días   No justificadas: ______ días');
+  const jornadaTxt = String(inst.jornada || 'MAÑANA').toUpperCase().includes('TARDE') ? 'de la tarde' : 'de la mañana';
+  const certRuns = [
+    { t:'Que el/la alumno(a) ' },
+    { t:nombreDoc, b:true },
+    { t:', ' + (promovido ? 'cursó y aprobó' : 'cursó') + ' en esta Institución Educativa el Grado ' },
+    { t:gAct, b:true },
+    { t: pre ? ' de Educación Preescolar' : ((ORDINAL_G[gAct] ? ' (' + ORDINAL_G[gAct] + ')' : '') + ' de Educación Básica Primaria') },
+    { t:' en el año ' + (inst.anio || '') + ', Jornada ' + jornadaTxt + ', calendario escolar A.' }
+  ];
+  return {
+    instNombre: String(inst.nombre || '').toUpperCase(),
+    licencia: inst.licencia || '',
+    certRuns,
+    filas: filasD.map(x=>({ nom: sinAcentos(String(x.a.nombre || '').toUpperCase()), ih: x.a.ih != null ? String(x.a.ih) : '', vf: pre ? (x.vf || '') : (x.vf == null ? '' : Number(x.vf).toFixed(1)) })),
+    inasTxt, promoRuns, dadoEn
+  };
+}
+async function descargarFinalWord(){
+  if(!puedeImprimir()){ alert('Solo el propietario o el perfil administrativo pueden descargar en Word.'); return; }
+  const cursoId = $('fin-curso').value, sel = $('fin-estudiante').value;
+  const curso = cursoDe(cursoId);
+  let lista;
+  if(sel && sel !== 'all'){
+    const e = DB.estudiantes.find(s=>s.id===sel);
+    lista = e ? [e] : [];
+  } else {
+    lista = estudiantesDe(cursoId).filter(e=>!estaRetirado(e));
+  }
+  if(!lista.length){ alert('No hay informes para descargar en este curso.'); return; }
+  try {
+    const urlEscudo = new URL('../escudo.png', location.href).href;
+    const urlFirma = new URL('/plataformaCEMI/firma-secretaria.png', location.href).href;
+    const traer = async u => { const r = await fetch(u); if(!r.ok) throw new Error('Imagen del documento no disponible.'); return new Uint8Array(await r.arrayBuffer()); };
+    const imgs = await Promise.all([traer(urlEscudo), traer(urlFirma)]);
+    let bloques = '';
+    lista.forEach((e, i)=>{ const m = _datosInformeDocx(e); if(m) bloques += _bloqueInformeDocx(m, i === 0); });
+    if(!bloques) throw new Error('Sin datos para el documento.');
+    const bytes = _armarDocx(bloques, imgs[0], imgs[1]);
+    const blob = new Blob([bytes], { type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'informe-final-' + (curso ? curso.nombre : 'curso') + '.docx';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  } catch(err){
+    console.warn('No se pudo generar el .docx; se usa el formato anterior:', err);
+    descargarFinalWordHtml();
+  }
+}
+function descargarFinalWordHtml(){
   if(!puedeImprimir()){ alert('Solo el dueño (owner) y el administrativo pueden imprimir documentos.'); return; }
   const hojas = Array.from(document.querySelectorAll('#final-out .hoja'));
   if(!hojas.length){ alert('No hay nada para descargar todavía.'); return; }
@@ -4980,8 +5212,8 @@ function descargarFinalWord(){
     + '.cierre-final{margin-top:10pt;page-break-inside:avoid}'
     + '.cierre-final p{margin:0 0 4pt}'
     + '.cierre-final .promo{text-align:justify}'
-    + '.firma-sec{margin-top:6pt;width:6.9cm;page-break-inside:avoid}'
-    + '.firma-sec img{width:6.9cm;display:block}'
+    + '.firma-sec{margin-top:6pt;width:6.35cm;page-break-inside:avoid}'
+    + '.firma-sec img{width:6.35cm;display:block}'
     + '.firma-sec .linea2{border-top:1.2pt solid #111}'
     + '.firma-sec .cargo{font-weight:700;font-size:11pt;margin-top:4pt}';
   const doc = '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Informe final</title>'
