@@ -4242,6 +4242,12 @@ function hojaFinal(e){
   const hoyImp = new Date();
   const dadoEn = 'Dado en ' + (inst.ciudad || 'Barranquilla') + ', ' + (hoyImp.getDate() === 1 ? 'al 1 día' : 'a los ' + hoyImp.getDate() + ' días') + ' del mes de ' + MESES_F[hoyImp.getMonth()] + ' del ' + hoyImp.getFullYear() + '.';
   const nombreDoc = String(e.nombre || '').replace(/,/g, '').replace(/\s+/g, ' ').trim();
+  let totInasJ = 0, totInasN = 0, hayInas = false;
+  [1,2,3,4].forEach(p=>{ const xp = extraDe(e.id, p); const vj = parseFloat(String(xp.inasJ || '').replace(',', '.')), vn = parseFloat(String(xp.inasN || '').replace(',', '.')); if(!isNaN(vj)){ totInasJ += vj; hayInas = true; } if(!isNaN(vn)){ totInasN += vn; hayInas = true; } });
+  const fmtHoras = n => String(Math.round(n * 100) / 100).replace('.', ',');
+  const inasHtml = hayInas
+    ? 'Asistencias durante el año escolar: Justificadas: ' + fmtHoras(totInasJ) + ' horas &nbsp;&nbsp; No justificadas: ' + fmtHoras(totInasN) + ' horas'
+    : 'Asistencias durante el año escolar: Justificadas ______ horas &nbsp;&nbsp; No justificadas: ______ horas';
   const gradoFrase = pre
     ? 'el Grado <strong>' + gAct + '</strong> de Educación Preescolar'
     : 'el Grado <strong>' + gAct + '</strong>' + (ORDINAL_G[gAct] ? ' (' + ORDINAL_G[gAct] + ')' : '') + ' de Educación Básica Primaria';
@@ -4260,6 +4266,7 @@ function hojaFinal(e){
     <p class="cuerpo">A continuación, se especifican las valoraciones del periodo final e intensidad horaria:</p>
     <table class="tabla-final"><thead><tr><th style="text-align:left">AREAS Y ASIGNATURAS</th><th class="c" style="width:110px">INTENS. HORARIA</th><th class="c" style="width:190px">VALORACION FINAL</th></tr></thead><tbody>${filasHtml}</tbody></table>
     <div class="cierre-final">
+    <p><strong>${inasHtml}</strong></p>
     <p><u>La institución se encuentra registrada en la Notaria octava, libro 6 Folio 138.</u></p>
     ${promoHtml ? `<p class="promo">${promoHtml}</p>` : ''}
     <p class="dado">${dadoEn}</p>
