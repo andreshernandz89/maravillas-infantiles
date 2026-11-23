@@ -3861,6 +3861,30 @@ function editarTema(cursoId, asigId, valor){
   curso.temas[asigId][periodo] = valor;
   guardar();
 }
+function textosBolDe(curso, periodo){
+  const t = ((curso && curso.textosBol) || {})[String(periodo)] || {};
+  return {
+    comp: (t.comp != null && String(t.comp).trim()) ? t.comp : TEXTO_COMP_LECTORA,
+    calig: (t.calig != null && String(t.calig).trim()) ? t.calig : TEXTO_CALIGRAFIA
+  };
+}
+function editarTextoBol(cursoId, campo, valor){
+  const curso = cursoDe(cursoId); if(!curso) return;
+  const periodo = $('asig-periodo').value;
+  if(!curso.textosBol) curso.textosBol = {};
+  if(!curso.textosBol[periodo]) curso.textosBol[periodo] = {};
+  curso.textosBol[periodo][campo] = valor;
+  guardar();
+}
+function textosBolHTML(curso, periodo){
+  const tb = textosBolDe(curso, periodo);
+  return `<div style="margin-top:16px"><h4 style="margin:0 0 4px">Textos del boletín — Periodo ${periodo}</h4>
+  <p class="ayuda" style="margin:0 0 8px">Estos dos textos salen impresos en el boletín de todos los estudiantes del curso, en la tabla de Comprensión Lectora. Puedes ajustarlos a tu grupo: se guardan solos mientras escribes y aplican al imprimir o descargar el boletín.</p>
+  <label>Comprensión lectora</label>
+  <textarea id="txtbol-comp" style="min-height:64px" oninput="editarTextoBol('${curso.id}','comp',this.value)">${esc(tb.comp)}</textarea>
+  <label style="margin-top:8px">Caligrafía</label>
+  <textarea id="txtbol-calig" style="min-height:52px" oninput="editarTextoBol('${curso.id}','calig',this.value)">${esc(tb.calig)}</textarea></div>`;
+}
 async function generarLogroIA(cursoId, asigId, btn){
   const curso = cursoDe(cursoId); if(!curso) return;
   const a = curso.asignaturas.find(x=>x.id===asigId); if(!a) return;
@@ -3920,7 +3944,7 @@ function renderAsignaturas(){
     </tr>`;
   }).join('');
   const barraIA = '<div style="margin:0 0 10px"><button class="btn mini" onclick="generarTodosLogrosIA(this)">✨ Generar TODOS los logros con IA</button><span id="ia-todos-estado" class="ayuda"></span><div class="ayuda">Escribe los temas de cada asignatura y crea todos los logros del periodo en una sola llamada: es mucho más rápido que uno por uno.</div></div>';
-  cont.innerHTML = barraIA + `<div class="scroll"><table><thead><tr><th>Asignatura</th><th>IH</th><th>Temas y Logros / Fortalezas — Periodo ${periodo}</th><th>Acción</th></tr></thead><tbody>${filas || '<tr><td colspan="4">Este curso aún no tiene asignaturas.</td></tr>'}</tbody></table></div>`;
+  cont.innerHTML = barraIA + `<div class="scroll"><table><thead><tr><th>Asignatura</th><th>IH</th><th>Temas y Logros / Fortalezas — Periodo ${periodo}</th><th>Acción</th></tr></thead><tbody>${filas || '<tr><td colspan="4">Este curso aún no tiene asignaturas.</td></tr>'}</tbody></table></div>` + textosBolHTML(curso, periodo);
 }
 </script>
 
@@ -4196,6 +4220,7 @@ function hojaBoletin(e, periodo){
   const rank = puestos(e.cursoId, periodo);
   const prom = promedioPeriodo(e.id, periodo);
   const x = extraDe(e.id, periodo);
+  const tb = textosBolDe(curso, periodo);
   const ina = inasistenciasPeriodoDias(e, periodo);
   const filas = asignaturasDe(curso).map(a=>{
     const logro = ((curso.logros||{})[a.id]||{})[String(periodo)] || '';
@@ -4209,8 +4234,8 @@ function hojaBoletin(e, periodo){
     <div class="seccion">Aspectos del plan de formación</div>
     <table><thead><tr><th style="text-align:left;width:190px;vertical-align:middle">ASIGNATURA</th><th class="c" style="width:44px;vertical-align:middle">IH</th><th class="c" style="width:132px;white-space:nowrap;vertical-align:middle">DESEMPEÑO</th><th style="text-align:left;vertical-align:middle">FORTALEZA / DEBILIDADES / ESTRATEGIAS</th></tr></thead><tbody>${filas}</tbody></table>
     ${esParvulo ? '' : `<table style="margin-top:10px"><thead><tr><th style="text-align:left">COMPRENSIÓN LECTORA</th><th class="c" style="width:44px">DS</th><th class="c" style="width:44px">DA</th><th class="c" style="width:44px">DB</th></tr></thead>
-    <tbody><tr><td class="logros">${esc(TEXTO_COMP_LECTORA)}</td><td class="x">${marcaX(x.comp,'DS')}</td><td class="x">${marcaX(x.comp,'DA')}</td><td class="x">${marcaX(x.comp,'DB')}</td></tr>
-    <tr><td>${esc(TEXTO_CALIGRAFIA)}<br>Reforzar Caligrafía: &nbsp;SI ${x.caligrafia==='SI'?'✗':''} &nbsp;&nbsp; NO ${x.caligrafia==='NO'?'✗':''}</td><td></td><td></td><td></td></tr></tbody></table>`}
+    <tbody><tr><td class="logros">${esc(tb.comp)}</td><td class="x">${marcaX(x.comp,'DS')}</td><td class="x">${marcaX(x.comp,'DA')}</td><td class="x">${marcaX(x.comp,'DB')}</td></tr>
+    <tr><td>${esc(tb.calig)}<br>Reforzar Caligrafía: &nbsp;SI ${x.caligrafia==='SI'?'✗':''} &nbsp;&nbsp; NO ${x.caligrafia==='NO'?'✗':''}</td><td></td><td></td><td></td></tr></tbody></table>`}
     ${pre ? '' : tablaEscala()}
     <table style="margin-top:10px"><thead><tr><th style="text-align:left">DISCIPLINA Y ACTITUDES</th><th class="c" style="width:44px">DS</th><th class="c" style="width:44px">DA</th><th class="c" style="width:44px">DB</th></tr></thead><tbody>${disc}</tbody></table>
     <p class="inasis">INASISTENCIAS: &nbsp; JUSTIFICADAS: ${esc(ina.j)} DÍAS &nbsp;&nbsp;&nbsp; NO JUSTIFICADAS: ${esc(ina.n)} DÍAS</p>
@@ -5013,6 +5038,7 @@ function _datosBoletinDocx(e, periodo){
     titulo: 'INFORME DEL ' + (ROMANOS[String(periodo)]||'') + ' PERIODO',
     filas, disc,
     compDs: x.comp==='DS' ? 'X' : '', compDa: x.comp==='DA' ? 'X' : '', compDb: x.comp==='DB' ? 'X' : '',
+    compTxt: textosBolDe(curso, periodo).comp, caligTxt: textosBolDe(curso, periodo).calig,
     calig: x.caligrafia||'', inasJ: ina.j, inasN: ina.n, obs: x.obs||''
   };
 }
@@ -5052,7 +5078,7 @@ function _bloqueBoletinDocx(m, esPrimero){
   const tablaAsig = _tblDocx([2268, 567, 1615, 6656], filasAsig);
   let comp = '';
   if(!m.esParvulo){
-    const lineasComp = TEXTO_COMP_LECTORA.split('\n').map(l=>_pBol([{ t:l, sz:20 }])).join('');
+    const lineasComp = (m.compTxt || TEXTO_COMP_LECTORA).split('\n').map(l=>_pBol([{ t:l, sz:20 }])).join('');
     comp = _tblDocx([5670, 567, 567, 567],
       _trDocx(_tcDocx(5670, _pBol([{ t:'COMPRENSIÓN LECTORA', b:true, sz:20 }]), { shd:'F2F6FC' }) +
               _tcDocx(567, _pBol([{ t:'DS', b:true, sz:20 }], { jc:'center' }), { shd:'F2F6FC' }) +
@@ -5062,7 +5088,7 @@ function _bloqueBoletinDocx(m, esPrimero){
               _tcDocx(567, _pBol([{ t:m.compDs, b:true, sz:20 }], { jc:'center' })) +
               _tcDocx(567, _pBol([{ t:m.compDa, b:true, sz:20 }], { jc:'center' })) +
               _tcDocx(567, _pBol([{ t:m.compDb, b:true, sz:20 }], { jc:'center' })), true) +
-      _trDocx(_tcDocx(5670, _pBol([{ t:TEXTO_CALIGRAFIA, sz:20 }]) + _pBol([{ t:'Reforzar Caligrafía:   SI ' + (m.calig==='SI' ? '✗' : '') + '    NO ' + (m.calig==='NO' ? '✗' : ''), sz:20 }])) +
+      _trDocx(_tcDocx(5670, _pBol([{ t:(m.caligTxt || TEXTO_CALIGRAFIA), sz:20 }]) + _pBol([{ t:'Reforzar Caligrafía:   SI ' + (m.calig==='SI' ? '✗' : '') + '    NO ' + (m.calig==='NO' ? '✗' : ''), sz:20 }])) +
               _tcDocx(567, _pBol([])) + _tcDocx(567, _pBol([])) + _tcDocx(567, _pBol([])), true)
     );
   }
