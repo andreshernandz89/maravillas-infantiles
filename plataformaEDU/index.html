@@ -2568,7 +2568,10 @@ async function sincronizarConsulta2027(forzar){
       try{
         const prevAcc = (await FB_DB.ref('accesoPadres').once('value')).val() || {};
         const procVig = (await FB_DB.ref('proceso2027').once('value')).val() || {};
-        Object.keys(prevAcc).forEach(u => { if(!acceso[u] && prevAcc[u] && procVig[prevAcc[u]]) acceso[u] = prevAcc[u]; });
+        const clavesVivas = {};
+        Object.keys(mapa).forEach(k => { clavesVivas[k] = true; });
+        Object.keys(procVig).forEach(k => { clavesVivas[k] = true; });
+        Object.keys(prevAcc).forEach(u => { if(!acceso[u] && prevAcc[u] && clavesVivas[prevAcc[u]]) acceso[u] = prevAcc[u]; });
       }catch(ePres){}
       await FB_DB.ref('accesoPadres').set(acceso);
       if (cambioU) guardar();
