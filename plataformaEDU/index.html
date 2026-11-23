@@ -4372,12 +4372,14 @@ function renderPanelDocente(){
   let conObs = 0;
   ests.forEach(e=>{ const o = (DB.observadores[e.id] || {})[String(P)]; if(o && (o.desempeno || o.seguimiento || o.resultados)) conObs++; });
   const pctO = ests.length ? Math.round(conObs/ests.length*100) : 0;
+  const lg = logrosStats(c, P);
   const fila = (nombre, chip, detalle) => '<tr><td><strong>' + nombre + '</strong></td><td>' + chip + '</td><td style="font-size:12px">' + detalle + '</td></tr>';
   htmlCumplimiento += '<p class="ayuda">Semáforo de seguimiento de <strong>' + esc(c.nombre) + '</strong> · Periodo ' + P + '</p><div class="scroll"><table><thead><tr><th>Pendiente</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>'
     + fila('Notas del periodo ' + P, '<span style="cursor:pointer" title="Ver las notas" onclick="irANotas(\'' + c.id + '\', ' + P + ')">' + semChip(pctN) + '</span>', conNota + '/' + ests.length + ' estudiantes con todas sus notas')
     + fila('Asistencia diaria', '<span style="cursor:pointer" title="Ver la asistencia" onclick="irAAsistencia(\'' + c.id + '\', \'' + ultima + '\')">' + (alDia ? '<span class="sem v">Al día</span>' : (ultima ? '<span class="sem a">Atrasada</span>' : '<span class="sem r">Sin registros</span>')) + '</span>', ultima ? 'Último registro: ' + esc(ultima) : 'Aún no registras asistencia')
     + fila('Planeador de esta semana', planPct >= 100 ? '<span class="sem v" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Cargado · 100%</span>' : (planPct > 0 ? '<span class="sem a" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Parcial · ' + planPct + '%</span>' : '<span class="sem r" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Pendiente · 0%</span>'), planOk ? 'Semana del ' + lunesISO : 'Falta el planeador de la semana del ' + lunesISO)
     + fila('Observadores del periodo ' + P, '<span style="cursor:pointer" title="Ver los observadores" onclick="irAObservador(\'' + c.id + '\', ' + P + ')">' + semChip(pctO) + '</span>', conObs + '/' + ests.length + ' estudiantes con observador')
+    + fila('Logros del periodo ' + P, '<span style="cursor:pointer" title="Ver los logros" onclick="irALogros(\'' + c.id + '\', ' + P + ')">' + semChip(lg.pct) + '</span>', lg.con + '/' + lg.total + ' asignaturas con logro registrado')
     + '</tbody></table></div>';
   const mes = hoy.getMonth()+1, anio = hoy.getFullYear();
   const datosFecha = f => { if(!f) return null; let q = String(f).split('-'); if(q.length===3) return { y:+q[0], m:+q[1], d:+q[2] }; q = String(f).split('/'); if(q.length===3) return { y:+q[2], m:+q[1], d:+q[0] }; return null; };
@@ -4429,14 +4431,16 @@ function renderPanel(){
     let conObs = 0;
     ests.forEach(e=>{ const o = (DB.observadores[e.id] || {})[String(P)]; if(o && (o.desempeno || o.seguimiento || o.resultados)) conObs++; });
     const pctO = ests.length ? Math.round(conObs/ests.length*100) : 0;
+    const lg = logrosStats(c, P);
     const doc = perfiles().find(p=>p.rol==='docente' && esCursoDelDocente(p, c.nombre));
     return '<tr><td><strong>' + esc(c.nombre) + '</strong></td><td>' + esc(doc ? doc.nombre : '—') + '</td>' +
       '<td><span style="cursor:pointer" title="Ver las notas de este curso" onclick="irANotas(\'' + c.id + '\', ' + P + ')">' + semChip(pctN) + ' <span style="font-size:12px">' + conNota + '/' + ests.length + ' estudiantes completos</span></span></td>' +
       '<td><span style="cursor:pointer" title="Ver la asistencia de este curso" onclick="irAAsistencia(\'' + c.id + '\', \'' + ultima + '\')">' + (alDia ? '<span class="sem v">Al día</span>' : (ultima ? '<span class="sem a">Última: ' + esc(ultima) + '</span>' : '<span class="sem r">Sin registros</span>')) + '</span></td>' +
       '<td>' + (planPct >= 100 ? '<span class="sem v" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Cargado · 100%</span>' : (planPct > 0 ? '<span class="sem a" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Parcial · ' + planPct + '%</span>' : '<span class="sem r" style="cursor:pointer" title="Ver el planeador" onclick="irAlPlaneador(\'' + c.id + '\', \'' + lunesISO + '\')">Pendiente · 0%</span>')) + '</td>' +
-      '<td><span style="cursor:pointer" title="Ver los observadores de este curso" onclick="irAObservador(\'' + c.id + '\', ' + P + ')">' + semChip(pctO) + ' <span style="font-size:12px">' + conObs + '/' + ests.length + '</span></span></td></tr>';
+      '<td><span style="cursor:pointer" title="Ver los observadores de este curso" onclick="irAObservador(\'' + c.id + '\', ' + P + ')">' + semChip(pctO) + ' <span style="font-size:12px">' + conObs + '/' + ests.length + '</span></span></td>' +
+      '<td><span style="cursor:pointer" title="Ver los logros de este curso" onclick="irALogros(\'' + c.id + '\', ' + P + ')">' + semChip(lg.pct) + ' <span style="font-size:12px">' + lg.con + '/' + lg.total + ' asignaturas</span></span></td></tr>';
   }).join('');
-  $('panel-cumplimiento').innerHTML = '<div class="scroll"><table><thead><tr><th>Curso</th><th>Docente</th><th>Notas P' + P + '</th><th>Asistencia</th><th>Planeador de esta semana</th><th>Observadores P' + P + '</th></tr></thead><tbody>' + (filasC || '<tr><td colspan="6">Sin cursos.</td></tr>') + '</tbody></table></div>';
+  $('panel-cumplimiento').innerHTML = '<div class="scroll"><table><thead><tr><th>Curso</th><th>Docente</th><th>Notas P' + P + '</th><th>Asistencia</th><th>Planeador de esta semana</th><th>Observadores P' + P + '</th><th>Logros P' + P + '</th></tr></thead><tbody>' + (filasC || '<tr><td colspan="7">Sin cursos.</td></tr>') + '</tbody></table></div>';
   const riesgo = [];
   DB.estudiantes.forEach(e=>{
     if(estaRetirado(e)) return;
@@ -6267,6 +6271,18 @@ function irANotas(cursoId, periodo){
   const perN = $('notas-periodo'); if(perN && periodo) perN.value = String(periodo);
   try{ PARCIALES_EXTRA = 0; }catch(e){}
   renderNotas();
+}
+function irALogros(cursoId, periodo){
+  verTab('asignaturas');
+  const selA = $('asig-curso'); if(selA) selA.value = cursoId;
+  const perA = $('asig-periodo'); if(perA && periodo) perA.value = String(periodo);
+  renderAsignaturas();
+}
+function logrosStats(c, P){
+  const asigs = asignaturasDe(c);
+  let con = 0;
+  asigs.forEach(a=>{ if((((c.logros || {})[a.id] || {})[String(P)] || '').trim()) con++; });
+  return { con, total: asigs.length, pct: asigs.length ? Math.round(con / asigs.length * 100) : 0 };
 }
 function irAAsistencia(cursoId, fechaISO){
   verTab('asistencia');
