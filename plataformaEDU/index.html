@@ -1840,7 +1840,7 @@ function notasParaPadres(e){
       if(pre){ const L = letraDe(e.id, p, a.id); if(L) filas.push({ asignatura: a.nombre, letra: L, texto: LETRAS_PRE[L] || '' }); }
       else { const v = notaDe(e.id, p, a.id); if(v != null) filas.push({ asignatura: a.nombre, nota: v }); }
     });
-    if(filas.length && periodoCerrado(p)){
+    if(filas.length && periodoCerrado(p, e.cursoId)){
       const r = { periodo: p, preescolar: pre, filas: filas };
       if(!pre){ const prom = promedioPeriodo(e.id, p); if(prom != null) r.promedio = Math.round(prom * 100) / 100; const pu = puestos(e.cursoId, p); if(pu && pu[e.id]) r.puesto = pu[e.id]; }
       return r;
@@ -1880,7 +1880,7 @@ function notasParaPadresSnap(e, snap){
       if(pre){ if(LETRAS_PRE[v]) filas.push({ asignatura: a.nombre, letra: v, texto: LETRAS_PRE[v] }); }
       else if(!isNaN(Number(v))) filas.push({ asignatura: a.nombre, nota: Number(v) });
     });
-    if(filas.length && ((snap.cierres || {})[String(p)] || {}).cerrado){
+    if(filas.length && cierreSnapCerrado(snap, p, e.cursoId)){
       const r = { periodo: p, preescolar: pre, filas: filas };
       if(!pre){ const vals = filas.map(f => f.nota); r.promedio = Math.round(vals.reduce((s, x) => s + x, 0) / vals.length * 100) / 100; }
       return r;
@@ -3968,7 +3968,7 @@ function recomputarDefinitiva(estId, periodo, asigId){
 }
 function ponerParcial(estId, asigId, idx, valor){
   const periodo = $('notas-periodo').value;
-  if(periodoCerrado(periodo) && !esOwner()){ avisoBloqueoNotas(periodo); renderNotas(); return; }
+  if(periodoCerrado(periodo, cursoIdDeEst(estId)) && !esOwner()){ avisoBloqueoNotas(periodo); renderNotas(); return; }
   const arr = asegurarParciales(estId, periodo, asigId);
   const antesP = arr[idx] === undefined ? '' : arr[idx];
   const antesDef = notaDe(estId, periodo, asigId);
@@ -3982,11 +3982,30 @@ function ponerParcial(estId, asigId, idx, valor){
 }
 function agregarColumnaParcial(){ PARCIALES_EXTRA++; renderNotas(); }
 /* ================= CIERRE DE PERIODOS ================= */
-function periodoCerrado(p){ return !!(((DB.cierres || {})[String(p)]) || {}).cerrado; }
+function cierreDe(p, cursoId){
+  const c = (DB.cierres || {})[String(p)]; if(!c) return null;
+  if(c.cerrado) return c;
+  if(cursoId && c.cursos && c.cursos[cursoId] && c.cursos[cursoId].cerrado) return c.cursos[cursoId];
+  return null;
+}
+function periodoCerrado(p, cursoId){
+  if(cursoId) return !!cierreDe(p, cursoId);
+  const c = (DB.cierres || {})[String(p)]; if(!c) return false;
+  if(c.cerrado) return true;
+  return !!(c.cursos && Object.values(c.cursos).some(x=>x && x.cerrado));
+}
+function cierreSnapCerrado(snap, p, cursoId){
+  const c = ((snap || {}).cierres || {})[String(p)]; if(!c) return false;
+  if(c.cerrado) return true;
+  return !!(cursoId && c.cursos && c.cursos[cursoId] && c.cursos[cursoId].cerrado);
+}
+function cursoIdDeEst(estId){ const e = (DB.estudiantes || []).find(s=>s.id===estId); return e ? e.cursoId : ''; }
 /* Los periodos que ya terminaron (cerrados) no se le muestran a la docente en los selectores de trabajo. */
 function ajustarPeriodosDocente(){
   const p = perfilActual(); if(!p) return;
-  const abiertos = [1,2,3,4].filter(x=>!periodoCerrado(x));
+  const misIds = p.rol === 'docente' ? (DB.cursos || []).filter(c=>esCursoDelDocente(p, c.nombre)).map(c=>c.id) : [];
+  const cerradoPara = x => misIds.length ? misIds.every(id=>!!cierreDe(x, id)) : periodoCerrado(x);
+  const abiertos = [1,2,3,4].filter(x=>!cerradoPara(x));
   const filtrar = p.rol === 'docente' && abiertos.length > 0;
   if(filtrar && !abiertos.includes(PANEL_PERIODO)) PANEL_PERIODO = abiertos[0];
   ['panel-periodo','notas-periodo','obs-periodo','asig-periodo','bol-periodo'].forEach(id=>{
@@ -4001,11 +4020,16 @@ function cerrarPeriodo(){
   if(MODO_ARCHIVO || SIMULANDO) return;
   if(!puedeGestionarCierre()) return;
   const p = $('notas-periodo').value;
-  if(periodoCerrado(p)) return;
-  if(!confirm('¿Cerrar el periodo ' + p + '?\n\n• Las notas quedarán bloqueadas (solo el dueño podrá corregirlas).\n• Los boletines de este periodo se podrán generar.\n• Las notas se publicarán en la consulta de padres (si el estudiante está al día con los pagos).')) return;
+  const cursoId = $('notas-curso').value;
+  const curso = cursoDe(cursoId);
+  if(!curso) return;
+  if(periodoCerrado(p, cursoId)) return;
+  if(!confirm('¿Cerrar el periodo ' + p + ' de ' + curso.nombre + '? (solo este curso; los demás cursos siguen abiertos)\n\n• Las notas de este curso quedarán bloqueadas (solo el dueño podrá corregirlas).\n• Los boletines de este curso y periodo se podrán generar.\n• Las notas se publicarán en la consulta de padres (si el estudiante está al día con los pagos).')) return;
   if(!DB.cierres) DB.cierres = {};
-  DB.cierres[String(p)] = { cerrado: true, fecha: hoyISO(), por: (perfilActual() || {}).nombre || '' };
-  registrarCambio('Cierre del periodo ' + p);
+  if(!DB.cierres[String(p)]) DB.cierres[String(p)] = {};
+  if(!DB.cierres[String(p)].cursos) DB.cierres[String(p)].cursos = {};
+  DB.cierres[String(p)].cursos[cursoId] = { cerrado: true, fecha: hoyISO(), por: (perfilActual() || {}).nombre || '' };
+  registrarCambio('Cierre del periodo ' + p + ' — ' + curso.nombre);
   guardar(); renderNotas();
   if(typeof sincronizarConsulta2027 === 'function') sincronizarConsulta2027(true);
 }
@@ -4013,9 +4037,24 @@ function reabrirPeriodo(){
   if(MODO_ARCHIVO || SIMULANDO) return;
   if(!esOwner()) return;
   const p = $('notas-periodo').value;
-  if(!confirm('¿Reabrir el periodo ' + p + '? Las notas volverán a ser editables por las docentes y dejarán de publicarse en boletines y en la consulta de padres hasta que se cierre de nuevo.')) return;
-  if(DB.cierres) delete DB.cierres[String(p)];
-  registrarCambio('Reapertura del periodo ' + p);
+  const cursoId = $('notas-curso').value;
+  const curso = cursoDe(cursoId);
+  if(!curso) return;
+  if(!confirm('¿Reabrir el periodo ' + p + ' de ' + curso.nombre + '? Solo se reabre ESTE curso: las notas volverán a ser editables por la docente y dejarán de publicarse en boletines y en la consulta de padres hasta que se cierre de nuevo.')) return;
+  const reg = (DB.cierres || {})[String(p)];
+  if(reg){
+    if(reg.cerrado){
+      const datos = { cerrado: true, fecha: reg.fecha || '', por: reg.por || '' };
+      reg.cursos = {};
+      (DB.cursos || []).forEach(c=>{ if(c.id !== cursoId) reg.cursos[c.id] = { cerrado: true, fecha: datos.fecha, por: datos.por }; });
+      delete reg.cerrado; delete reg.fecha; delete reg.por;
+      if(!Object.keys(reg.cursos).length) delete DB.cierres[String(p)];
+    } else if(reg.cursos){
+      delete reg.cursos[cursoId];
+      if(!Object.keys(reg.cursos).length) delete DB.cierres[String(p)];
+    }
+  }
+  registrarCambio('Reapertura del periodo ' + p + ' — ' + curso.nombre);
   guardar(); renderNotas();
   if(typeof sincronizarConsulta2027 === 'function') sincronizarConsulta2027(true);
 }
@@ -4023,14 +4062,16 @@ function renderNotas(){ ajustarPeriodosDocente(); renderNotasBase(); aplicarCier
 function aplicarCierreNotas(){
   const bar = $('notas-cierre'); if(!bar) return;
   const p = $('notas-periodo').value;
-  const c = (DB.cierres || {})[String(p)] || {};
+  const cursoId = $('notas-curso') ? $('notas-curso').value : '';
+  const cursoSel = cursoDe(cursoId);
+  const c = cierreDe(p, cursoId) || {};
   const cerrado = !!c.cerrado;
   let html;
   if(cerrado){
-    html = '🔒 <strong>Periodo ' + p + ' CERRADO</strong>' + (c.fecha ? ' el ' + esc(c.fecha) : '') + (c.por ? ' por ' + esc(c.por) : '') + '. Las notas están bloqueadas' + (esOwner() ? ' — como dueño, tú sí puedes corregirlas.' : ' (solo el dueño puede corregirlas) y ya se publican en boletines y en la consulta de padres.');
+    html = '🔒 <strong>Periodo ' + p + ' CERRADO</strong>' + (cursoSel ? ' para ' + esc(cursoSel.nombre) : '') + (c.fecha ? ' el ' + esc(c.fecha) : '') + (c.por ? ' por ' + esc(c.por) : '') + '. Las notas de este curso están bloqueadas' + (esOwner() ? ' — como dueño, tú sí puedes corregirlas.' : ' (solo el dueño puede corregirlas) y ya se publican en boletines y en la consulta de padres.');
     if(esOwner()) html += ' <button class="btn btn-sec" onclick="reabrirPeriodo()">🔓 Reabrir periodo</button>';
   } else {
-    html = '🔓 <strong>Periodo ' + p + ' abierto</strong>: las notas se pueden modificar. Mientras esté abierto, este periodo <strong>no</strong> se publica en boletines ni en la consulta de padres.';
+    html = '🔓 <strong>Periodo ' + p + ' abierto</strong>' + (cursoSel ? ' para ' + esc(cursoSel.nombre) : '') + ': las notas se pueden modificar. Mientras esté abierto, este periodo <strong>no</strong> se publica en boletines ni en la consulta de padres para este curso.';
     if(puedeGestionarCierre()) html += ' <button class="btn btn-sec" onclick="cerrarPeriodo()">🔒 Cerrar periodo ' + p + '</button>';
   }
   bar.innerHTML = html;
@@ -4101,7 +4142,7 @@ function renderNotasBase(){
 }
 function ponerLetra(estId, asigId, valor){
   const periodo = $('notas-periodo').value;
-  if(periodoCerrado(periodo) && !esOwner()){ avisoBloqueoNotas(periodo); renderNotas(); return; }
+  if(periodoCerrado(periodo, cursoIdDeEst(estId)) && !esOwner()){ avisoBloqueoNotas(periodo); renderNotas(); return; }
   const antes = letraDe(estId, periodo, asigId);
   if(!DB.notas[estId]) DB.notas[estId] = {};
   if(!DB.notas[estId][periodo]) DB.notas[estId][periodo] = {};
@@ -4112,7 +4153,7 @@ function ponerLetra(estId, asigId, valor){
 }
 function ponerNota(estId, asigId, valor){
   const periodo = $('notas-periodo').value;
-  if(periodoCerrado(periodo) && !esOwner()){ avisoBloqueoNotas(periodo); renderNotas(); return; }
+  if(periodoCerrado(periodo, cursoIdDeEst(estId)) && !esOwner()){ avisoBloqueoNotas(periodo); renderNotas(); return; }
   const antes = notaDe(estId, periodo, asigId);
   if(!DB.notas[estId]) DB.notas[estId] = {};
   if(!DB.notas[estId][periodo]) DB.notas[estId][periodo] = {};
@@ -4152,7 +4193,7 @@ function renderExtra(){
     </div>`).join('');
 }
 function guardarExtra(){
-  if(periodoCerrado($('notas-periodo').value) && !esOwner()) return;
+  if(periodoCerrado($('notas-periodo').value, cursoIdDeEst($('extra-estudiante').value)) && !esOwner()) return;
   const estId = $('extra-estudiante').value; if(!estId) return;
   const x = asegurarExtra(estId, $('notas-periodo').value);
   x.comp = $('extra-comp').value; x.caligrafia = $('extra-calig').value;
@@ -4160,7 +4201,7 @@ function guardarExtra(){
   guardar();
 }
 function guardarDisciplina(idx, valor){
-  if(periodoCerrado($('notas-periodo').value) && !esOwner()) return;
+  if(periodoCerrado($('notas-periodo').value, cursoIdDeEst($('extra-estudiante').value)) && !esOwner()) return;
   const estId = $('extra-estudiante').value; if(!estId) return;
   const x = asegurarExtra(estId, $('notas-periodo').value);
   x.disciplina[String(idx)] = valor;
@@ -4198,7 +4239,7 @@ function marcaX(valor, col){ return valor===col ? 'X' : ''; }
 function inasistenciasPeriodoDias(e, periodo){
   // Dias de inasistencia del periodo, contados del registro diario de asistencia.
   // El rango del periodo va del cierre del periodo anterior (exclusivo) al cierre de este periodo (inclusive).
-  const fCierre = p => { const c = (DB.cierres || {})[String(p)]; return (c && c.fecha) ? String(c.fecha) : null; };
+  const fCierre = p => { const c = cierreDe(p, e.cursoId); return (c && c.fecha) ? String(c.fecha) : null; };
   const desde = periodo > 1 ? fCierre(periodo - 1) : null;
   const hasta = fCierre(periodo);
   let j = 0, n = 0, hay = false;
@@ -4250,9 +4291,9 @@ function renderBoletines(){
   refrescarSelectsEstudiantes();
   const cursoId = $('bol-curso').value, periodo = $('bol-periodo').value, sel = $('bol-estudiante').value;
   const pBol = perfilActual();
-  if(pBol && pBol.rol === 'docente' && periodoCerrado(periodo)){ $('boletines-out').innerHTML = '<p style="text-align:center;color:#666">🔒 Los boletines de los periodos cerrados solo los consultan la dirección y la administración: el boletín oficial lo emite la secretaría.</p>'; return; }
+  if(pBol && pBol.rol === 'docente' && periodoCerrado(periodo, cursoId)){ $('boletines-out').innerHTML = '<p style="text-align:center;color:#666">🔒 Los boletines de los periodos cerrados solo los consultan la dirección y la administración: el boletín oficial lo emite la secretaría.</p>'; return; }
   const lista = estudiantesDe(cursoId).filter(e=>!estaRetirado(e));
-  if(!periodoCerrado(periodo) && !(pBol && pBol.rol === 'docente') && !(typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO)){ $('boletines-out').innerHTML = '<p style="text-align:center;color:#666">🔒 El periodo ' + periodo + ' aún está <strong>abierto</strong>: los boletines se generan cuando el periodo se cierra. Ve a «Registro de notas», selecciona el periodo ' + periodo + ' y pulsa «Cerrar periodo».</p>'; return; }
+  if(!periodoCerrado(periodo, cursoId) && !(pBol && pBol.rol === 'docente') && !(typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO)){ $('boletines-out').innerHTML = '<p style="text-align:center;color:#666">🔒 El periodo ' + periodo + ' aún está <strong>abierto</strong> para este curso: los boletines se generan cuando el periodo se cierra. Ve a «Registro de notas», selecciona el curso y el periodo ' + periodo + ' y pulsa «Cerrar periodo».</p>'; return; }
   if(sel && sel!=='all'){
     const e = DB.estudiantes.find(s=>s.id===sel);
     $('boletines-out').innerHTML = e ? (estaRetirado(e) ? '<p style="text-align:center;color:#666">Este estudiante está retirado desde el ' + esc((e.retiro||{}).fecha || '') + ': ya no se le genera boletín.</p>' : hojaBoletin(e, periodo)) : '';
