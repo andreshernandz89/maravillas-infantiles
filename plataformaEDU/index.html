@@ -2565,6 +2565,11 @@ async function sincronizarConsulta2027(forzar){
       itemsAct.forEach(x => { const u = mapaU[x.id]; if (!u) return; acceso[u] = x.clave; const est = (DB.estudiantes || []).find(y => y.id === x.id); if (est && est.datos && est.datos.usuarioPadres !== u) { est.datos.usuarioPadres = u; cambioU = true; } });
       itemsArch.forEach(x => { const u = mapaU[x.id]; if (u) acceso[u] = x.clave; });
       itemsAsp.forEach(x => { const u = mapaU[x.id]; if (!u) return; acceso[u] = x.clave; const mm = MATRI[x.matriId]; if (mm && mm.usuarioPadres !== u) { mm.usuarioPadres = u; cambioU = true; try{ FB_DB.ref('matriculas2027/' + x.matriId).update({ usuarioPadres: u }); }catch(e){} } });
+      try{
+        const prevAcc = (await FB_DB.ref('accesoPadres').once('value')).val() || {};
+        const procVig = (await FB_DB.ref('proceso2027').once('value')).val() || {};
+        Object.keys(prevAcc).forEach(u => { if(!acceso[u] && prevAcc[u] && procVig[prevAcc[u]]) acceso[u] = prevAcc[u]; });
+      }catch(ePres){}
       await FB_DB.ref('accesoPadres').set(acceso);
       if (cambioU) guardar();
     } catch (eAcc) {}
