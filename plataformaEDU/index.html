@@ -846,8 +846,8 @@ button.btn:hover{ background:var(--azul-osc); }
           <div><label>Estudiante</label><select id="extra-estudiante" onchange="renderExtra()"></select></div>
           <div><label>Comprensión lectora</label>
             <select id="extra-comp" onchange="guardarExtra()"><option value="">—</option><option value="DS">DS (Superior)</option><option value="DA">DA (Alto)</option><option value="DB">DB (Básico)</option></select></div>
-          <div><label>¿Reforzar caligrafía?</label>
-            <select id="extra-calig" onchange="guardarExtra()"><option value="">—</option><option value="SI">SÍ</option><option value="NO">NO</option></select></div>
+          <div><label>Caligrafía</label>
+            <select id="extra-calig" onchange="guardarExtra()"><option value="">—</option><option value="DS">DS (Superior)</option><option value="DA">DA (Alto)</option><option value="DB">DB (Básico)</option></select></div>
           <div style="width:130px"><label>Inasist. justificadas (días)</label><input type="number" id="extra-inasj" min="0" onchange="guardarExtra()"></div>
           <div style="width:140px"><label>Inasist. NO justificadas (días)</label><input type="number" id="extra-inasn" min="0" onchange="guardarExtra()"></div>
         </div>
@@ -4196,7 +4196,7 @@ function guardarExtra(){
   if(periodoCerrado($('notas-periodo').value, cursoIdDeEst($('extra-estudiante').value)) && !esOwner()) return;
   const estId = $('extra-estudiante').value; if(!estId) return;
   const x = asegurarExtra(estId, $('notas-periodo').value);
-  x.comp = $('extra-comp').value; x.caligrafia = $('extra-calig').value;
+  x.comp = $('extra-comp').value; const calSel = $('extra-calig').value; if(calSel || !/^(SI|NO)$/.test(x.caligrafia || '')) x.caligrafia = calSel;
   x.inasJ = $('extra-inasj').value; x.inasN = $('extra-inasn').value; x.obs = $('extra-obs').value;
   guardar();
 }
@@ -4276,7 +4276,7 @@ function hojaBoletin(e, periodo){
     <table><thead><tr><th style="text-align:left;width:190px;vertical-align:middle">ASIGNATURA</th><th class="c" style="width:44px;vertical-align:middle">IH</th><th class="c" style="width:132px;white-space:nowrap;vertical-align:middle">DESEMPEÑO</th><th style="text-align:left;vertical-align:middle">FORTALEZA / DEBILIDADES / ESTRATEGIAS</th></tr></thead><tbody>${filas}</tbody></table>
     ${esParvulo ? '' : `<table style="margin-top:10px"><thead><tr><th style="text-align:left">COMPRENSIÓN LECTORA</th><th class="c" style="width:44px">DS</th><th class="c" style="width:44px">DA</th><th class="c" style="width:44px">DB</th></tr></thead>
     <tbody><tr><td class="logros">${esc(tb.comp)}</td><td class="x">${marcaX(x.comp,'DS')}</td><td class="x">${marcaX(x.comp,'DA')}</td><td class="x">${marcaX(x.comp,'DB')}</td></tr>
-    <tr><td>${esc(tb.calig)}<br>Reforzar Caligrafía: &nbsp;SI ${x.caligrafia==='SI'?'✗':''} &nbsp;&nbsp; NO ${x.caligrafia==='NO'?'✗':''}</td><td></td><td></td><td></td></tr></tbody></table>`}
+    <tr><td>${esc(tb.calig)}${(x.caligrafia==='SI'||x.caligrafia==='NO') ? '<br>Reforzar Caligrafía: &nbsp;SI ' + (x.caligrafia==='SI'?'✗':'') + ' &nbsp;&nbsp; NO ' + (x.caligrafia==='NO'?'✗':'') : ''}</td><td class="x">${marcaX(x.caligrafia,'DS')}</td><td class="x">${marcaX(x.caligrafia,'DA')}</td><td class="x">${marcaX(x.caligrafia,'DB')}</td></tr></tbody></table>`}
     ${pre ? '' : tablaEscala()}
     <table style="margin-top:10px"><thead><tr><th style="text-align:left">DISCIPLINA Y ACTITUDES</th><th class="c" style="width:44px">DS</th><th class="c" style="width:44px">DA</th><th class="c" style="width:44px">DB</th></tr></thead><tbody>${disc}</tbody></table>
     <p class="inasis">INASISTENCIAS: &nbsp; JUSTIFICADAS: ${esc(ina.j)} DÍAS &nbsp;&nbsp;&nbsp; NO JUSTIFICADAS: ${esc(ina.n)} DÍAS</p>
@@ -5079,6 +5079,7 @@ function _datosBoletinDocx(e, periodo){
     titulo: 'INFORME DEL ' + (ROMANOS[String(periodo)]||'') + ' PERIODO',
     filas, disc,
     compDs: x.comp==='DS' ? 'X' : '', compDa: x.comp==='DA' ? 'X' : '', compDb: x.comp==='DB' ? 'X' : '',
+    caligDs: x.caligrafia==='DS' ? 'X' : '', caligDa: x.caligrafia==='DA' ? 'X' : '', caligDb: x.caligrafia==='DB' ? 'X' : '',
     compTxt: textosBolDe(curso, periodo).comp, caligTxt: textosBolDe(curso, periodo).calig,
     calig: x.caligrafia||'', inasJ: ina.j, inasN: ina.n, obs: x.obs||''
   };
@@ -5129,8 +5130,8 @@ function _bloqueBoletinDocx(m, esPrimero){
               _tcDocx(567, _pBol([{ t:m.compDs, b:true, sz:20 }], { jc:'center' })) +
               _tcDocx(567, _pBol([{ t:m.compDa, b:true, sz:20 }], { jc:'center' })) +
               _tcDocx(567, _pBol([{ t:m.compDb, b:true, sz:20 }], { jc:'center' })), true) +
-      _trDocx(_tcDocx(5670, _pBol([{ t:(m.caligTxt || TEXTO_CALIGRAFIA), sz:20 }]) + _pBol([{ t:'Reforzar Caligrafía:   SI ' + (m.calig==='SI' ? '✗' : '') + '    NO ' + (m.calig==='NO' ? '✗' : ''), sz:20 }])) +
-              _tcDocx(567, _pBol([])) + _tcDocx(567, _pBol([])) + _tcDocx(567, _pBol([])), true)
+      _trDocx(_tcDocx(5670, _pBol([{ t:(m.caligTxt || TEXTO_CALIGRAFIA), sz:20 }]) + ((m.calig==='SI' || m.calig==='NO') ? _pBol([{ t:'Reforzar Caligrafía:   SI ' + (m.calig==='SI' ? '✗' : '') + '    NO ' + (m.calig==='NO' ? '✗' : ''), sz:20 }]) : '')) +
+              _tcDocx(567, _pBol([{ t:m.caligDs, b:true, sz:20 }], { jc:'center' })) + _tcDocx(567, _pBol([{ t:m.caligDa, b:true, sz:20 }], { jc:'center' })) + _tcDocx(567, _pBol([{ t:m.caligDb, b:true, sz:20 }], { jc:'center' })), true)
     );
   }
   let escala = '';
