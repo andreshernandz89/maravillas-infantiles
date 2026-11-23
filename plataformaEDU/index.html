@@ -3220,7 +3220,7 @@ async function olvideClave(e){
     $('gate-error').textContent = 'Te enviamos un enlace para restablecer tu contraseña al correo registrado. Revisa tu bandeja de entrada y sigue el enlace.';
   }catch(err){ console.error(err); $('gate-error').textContent = 'No se pudo enviar el restablecimiento. Inténtalo de nuevo en un momento.'; }
 }
-function salir(){ try{ if(FB_AUTH) FB_AUTH.signOut(); }catch(e){} try{ localStorage.removeItem(LS_KEY); idbBorrar(IDB_CLAVE); Object.keys(localStorage).filter(k=>/^(cemi|edu)_(menu_grupos|pulso)$/.test(k)).forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); }catch(e){} sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perfil'); sessionStorage.removeItem('bol_perfil_real'); location.reload(); }
+function salir(){ try{ if(FB_AUTH) FB_AUTH.signOut(); }catch(e){} try{ localStorage.removeItem(LS_KEY); idbBorrar(IDB_CLAVE); Object.keys(localStorage).filter(k=>/^(cemi|edu)_(menu_grupos|pulso)$/.test(k)).forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); }catch(e){} sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perfil'); sessionStorage.removeItem('bol_perfil_real'); sessionStorage.removeItem('bol_login_ts'); location.reload(); }
 function aplicarPermisos(){
   const p = perfilActual(); if(!p) return;
   $('user-chip').textContent = '👤 ' + p.nombre + ' · ' + (p.rolTxt||p.rol) + ((p.rol==='docente' && gradosDelDocente(p).length) ? ' · ' + gradosDelDocente(p).join(', ') : (p.cursoNombre ? ' · ' + p.cursoNombre : ''));
@@ -7022,7 +7022,7 @@ function eliminarPerfil(id){ if((typeof MODO_ARCHIVO !== 'undefined' && MODO_ARC
 /* ================= INICIO ================= */
 if(FB_AUTH){
   FB_AUTH.onAuthStateChanged(async user=>{
-    if(!user){ sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perfil'); if(window.__ocultarSplash) window.__ocultarSplash(); return; }
+    if(!user){ sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perfil'); sessionStorage.removeItem('bol_login_ts'); if(window.__ocultarSplash) window.__ocultarSplash(); return; }
     try{
       const snap = await FB_DB.ref('cemiDB').once('value');
       const hayNube = !!snap.val();
@@ -7039,6 +7039,7 @@ if(FB_AUTH){
       const simValida = p.rol === 'owner' && simReal === p.id && !!simId && simId !== p.id && perfiles().some(x=>x.id===simId);
       if(simReal && !simValida) sessionStorage.removeItem('bol_perfil_real');
       sessionStorage.setItem('bol_auth','1'); sessionStorage.setItem('bol_perfil', simValida ? simId : p.id);
+      if(!sessionStorage.getItem('bol_login_ts')) sessionStorage.setItem('bol_login_ts', String(Date.now()));
       NUBE_LISTA = true;
       try{ await FB_DB.ref('uidPorPerfil/' + p.id).set(user.uid); }catch(e){}
       try{ await FB_DB.ref('usuarioPorUid/' + user.uid).set(p.usuario || ''); }catch(e){}
@@ -7064,6 +7065,23 @@ if(FB_AUTH){
 }
 else if(sessionStorage.getItem('bol_auth')==='1' && perfilActual()){ mostrarApp(); }
 else{ sessionStorage.removeItem('bol_auth'); sessionStorage.removeItem('bol_perfil'); }
+
+/* ============ TEMPORIZADOR DE SESIÓN (10 HORAS) ============
+   Ninguna sesión de la plataforma dura más de 10 horas: al cumplirse se cierra
+   y la persona debe ingresar de nuevo. Así ninguna pestaña vieja sigue abierta
+   sincronizando con código o datos desactualizados (causa del borrado de
+   usuarios de padres del 2026-11-23). */
+const SESION_MAX_MS = 10 * 60 * 60 * 1000;
+function sesionVencida(){
+  if(sessionStorage.getItem('bol_auth') !== '1') return;
+  const ts = parseInt(sessionStorage.getItem('bol_login_ts') || '0', 10);
+  if(!ts){ sessionStorage.setItem('bol_login_ts', String(Date.now())); return; }
+  if(Date.now() - ts > SESION_MAX_MS){
+    try{ alert('Tu sesión cumplió 10 horas y se cerró. Ingresa de nuevo para continuar.'); }catch(e){}
+    salir();
+  }
+}
+setInterval(sesionVencida, 60000);
 </script>
 
 <script>
