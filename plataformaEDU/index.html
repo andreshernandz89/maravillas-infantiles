@@ -1669,7 +1669,7 @@ function matriTarjetaHTML(m){
       '<span class="ayuda">' + matriFecha(m.ts) + '</span>' +
     '</div>' +
     '<div class="ayuda" style="margin:4px 0 8px">Acudiente: <strong>' + esc(a.nombre || '—') + '</strong> · CC ' + esc(a.cc || '—') + '<br>Tel. ' + esc(a.telefono || '—') + '</div>' +
-    (accesoU ? '<div style="margin:-2px 0 8px;font-size:.92rem">🔑 Usuario de padres: <strong>' + esc(accesoU) + '</strong> <span class="ayuda">· Contraseña: el documento del estudiante</span></div>' : '') +
+    (accesoU ? '<div style="margin:-2px 0 8px;font-size:.92rem">👤 <strong>' + esc(accesoU) + '</strong></div>' : '') +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
       (tel ? '<a class="btn btn-sec mini" style="text-decoration:none" target="_blank" rel="noopener" href="' + waHref + '">💬 WhatsApp</a>' : '') +
       (correoHref && !avisoEtapaOk ? (correoConectado() ? '<button class="btn btn-sec mini" onclick="matriAvisarCorreo(\'' + m.id + '\')">📧 Avisar por correo</button>' : '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>') : '') +
