@@ -1671,7 +1671,7 @@ function matriTarjetaHTML(m){
       '<span class="ayuda">' + matriFecha(m.ts) + '</span>' +
     '</div>' +
     '<div class="ayuda" style="margin:4px 0 8px">Acudiente: <strong>' + esc(a.nombre || '—') + '</strong></div>' +
-    ((accesoU || reqD.length) ? '<div style="display:flex;align-items:center;gap:8px;margin:-2px 0 8px;font-size:.92rem">' + (accesoU ? '<span>👤 <strong>' + esc(accesoU) + '</strong></span>' : '<span></span>') + (reqD.length ? '<span style="margin-left:auto;white-space:nowrap" title="Documentos montados de los requeridos">📄 <strong>' + nMont + '/' + reqD.length + '</strong></span>' : '') + '</div>' : '') +
+    ((accesoU || reqD.length) ? '<div style="display:flex;align-items:center;gap:8px;margin:-2px 0 8px;font-size:.92rem">' + (accesoU ? '<span>👤 <strong>' + esc(accesoU) + '</strong></span>' : '<span></span>') + (reqD.length ? '<button type="button" onclick="matriDocsModal(\'' + m.id + '\')" style="margin-left:auto;white-space:nowrap;background:none;border:none;cursor:pointer;font:inherit;color:inherit;padding:2px 4px" title="Ver los documentos montados y los que faltan">📄 <strong>' + nMont + '/' + reqD.length + '</strong></button>' : '') + '</div>' : '') +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
       (tel ? '<a class="btn btn-sec mini" style="text-decoration:none" target="_blank" rel="noopener" href="' + waHref + '">💬 WhatsApp</a>' : '') +
       (correoHref && !avisoEtapaOk ? (correoConectado() ? '<button class="btn btn-sec mini" onclick="matriAvisarCorreo(\'' + m.id + '\')">📧 Avisar por correo</button>' : '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>') : '') +
@@ -2698,6 +2698,38 @@ function matriDocsChecklistHTML(m){
         return '<div style="margin-top:5px">⬜ ' + esc(r.nombre) + ' — <strong>Pendiente</strong> (la familia aún no lo envía)</div>';
       }).join('')
     + '</div>';
+}
+function matriCerrarDocsModal(){ const ov = document.getElementById('matri-docs-modal'); if(ov) ov.remove(); }
+function matriDocsModal(mid){
+  const m = MATRI[mid]; if(!m) return;
+  matriCerrarDocsModal();
+  const e = m.estudiante || {};
+  const nombre = (((e.apellidos || '') + ' ' + (e.nombres || '')).trim()) || '—';
+  const req = matriDocsRequeridosDe(m);
+  const docs = Array.isArray(m.documentos) ? m.documentos : [];
+  const porRev = {};
+  matriDocsPadresDe(m).forEach(sv => { porRev[sv.categoria || ''] = sv; });
+  let nMont = 0;
+  const filas = req.map(r => {
+    const gi = docs.findIndex(d => (d.categoria || '') === r.nombre);
+    if(gi >= 0){ nMont++; return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eef2f9"><span>✔</span><div style="flex:1;min-width:0"><strong>' + esc(r.nombre) + '</strong><div class="ayuda">Guardado · ' + esc(docs[gi].nombre || '') + '</div></div><button class="btn btn-sec mini" onclick="matriVerDocGuardado(\'' + mid + '\',' + gi + ')">Ver</button></div>'; }
+    const env = porRev[r.nombre];
+    if(env){ nMont++; const arch = (env.adjuntos || []).map(a => a.nombre || 'archivo').join(', '); return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eef2f9"><span>🕐</span><div style="flex:1;min-width:0"><strong>' + esc(r.nombre) + '</strong><div class="ayuda">Enviado, por revisar' + (arch ? ' · ' + esc(arch) : '') + '</div></div></div>'; }
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eef2f9"><span>⬜</span><div style="flex:1;min-width:0"><strong>' + esc(r.nombre) + '</strong><div class="ayuda">Pendiente: la familia aún no lo envía</div></div></div>';
+  }).join('');
+  const pct = req.length ? Math.round(nMont / req.length * 100) : 0;
+  const ov = document.createElement('div');
+  ov.id = 'matri-docs-modal';
+  ov.setAttribute('style', 'position:fixed;inset:0;background:rgba(10,18,32,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px');
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:86vh;overflow:auto;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.35)">'
+    + '<div style="display:flex;align-items:flex-start;gap:10px"><h3 style="margin:0;flex:1">📄 Documentos de ' + esc(nombre) + '</h3><button class="btn btn-sec mini" onclick="matriCerrarDocsModal()">✕</button></div>'
+    + '<p class="ayuda" style="margin:4px 0 10px">' + esc(m.grado || '') + ' · Ha montado <strong>' + nMont + ' de ' + req.length + '</strong> documentos requeridos</p>'
+    + '<div style="height:9px;background:#E3EDFB;border-radius:99px;overflow:hidden;margin-bottom:6px"><i style="display:block;height:100%;width:' + pct + '%;background:linear-gradient(90deg,#0792FE,#22b358)"></i></div>'
+    + (filas || '<p class="ayuda">Este grado no tiene documentos requeridos.</p>')
+    + '<button class="btn btn-sec" style="width:100%;margin-top:14px" onclick="matriCerrarDocsModal()">Cerrar</button>'
+    + '</div>';
+  ov.addEventListener('click', ev => { if(ev.target === ov) matriCerrarDocsModal(); });
+  document.body.appendChild(ov);
 }
 function matriDocsGuardadosHTML(m){
   const docs = Array.isArray(m.documentos) ? m.documentos : [];
