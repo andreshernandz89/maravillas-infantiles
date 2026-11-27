@@ -1182,5 +1182,85 @@ body{ padding-top:103px; }
       document.addEventListener("focusout", function(){ barra.classList.remove("oculta"); });
     })();
   </script>
+  <!-- MODAL CONSULTA PADRES: en computador/tablet el ingreso se abre en ventana sobre la misma página (como el fax de Prointermodal); si el ingreso es correcto, pasa a la ventana completa de Padres -->
+  <style>
+    .modal-padres{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(19,33,63,.55);backdrop-filter:blur(3px)}
+    .modal-padres.abierto{display:flex}
+    .modal-padres .mp-card{background:#fff;border-radius:26px;box-shadow:0 24px 60px rgba(19,33,63,.35);max-width:430px;width:100%;padding:28px 24px 24px;position:relative;max-height:92vh;overflow:auto}
+    .modal-padres .mp-cerrar{position:absolute;top:12px;right:12px;background:#EEF4FE;border:0;width:36px;height:36px;border-radius:50%;font-size:1.02rem;cursor:pointer;color:#13213F;font-weight:900;line-height:1}
+    .modal-padres .mp-medallon{width:104px;height:104px;margin:0 auto 12px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px rgba(7,146,254,.16),0 0 0 12px rgba(7,146,254,.06),0 12px 26px rgba(19,33,63,.15)}
+    .modal-padres .mp-medallon img{height:84px;width:auto}
+    .modal-padres h2{margin:0 0 4px;text-align:center;color:#13213F;font-size:1.32rem;font-weight:900}
+    .modal-padres h2 span{color:#0792FE}
+    .modal-padres .mp-sub{margin:0 0 6px;text-align:center;color:#5A6B84;font-weight:700;font-size:.92rem;line-height:1.45}
+    .modal-padres label{font-weight:800;display:block;margin:12px 0 6px;color:#13213F;font-size:.95rem}
+    .modal-padres input{width:100%;box-sizing:border-box;padding:13px 14px;border:1.5px solid #D7E5FA;border-radius:16px;font-size:1rem;font-family:inherit;background:#F2F7FF;color:#13213F}
+    .modal-padres input:focus{outline:none;border-color:#0792FE;background:#fff;box-shadow:0 0 0 4px rgba(7,146,254,.15)}
+    .modal-padres .mp-btn{width:100%;margin-top:16px;min-height:54px;border:0;border-radius:999px;background:linear-gradient(135deg,#0792FE,#54B6FF);color:#fff;font-size:1.05rem;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(7,146,254,.35);font-family:inherit}
+    .modal-padres .mp-btn:disabled{opacity:.65;cursor:wait}
+    .modal-padres .mp-ayuda{font-size:12.5px;color:#5A6B84;margin:12px 2px 0;line-height:1.45;text-align:center}
+    .modal-padres form{background:none;border:0;box-shadow:none;padding:0;margin:0;border-radius:0}
+    .modal-padres .mp-error{display:none;background:#FDECEC;color:#8F1D1D;border:1px solid #F3C0BB;border-radius:14px;padding:11px 12px;margin-top:12px;font-size:.93rem;font-weight:700}
+  </style>
+  <div class="modal-padres" id="modalPadres" role="dialog" aria-modal="true" aria-labelledby="mp-titulo">
+    <div class="mp-card">
+      <button type="button" class="mp-cerrar" id="mpCerrar" aria-label="Cerrar">✕</button>
+      <div class="mp-medallon"><img src="/escudo.png" alt="Escudo del colegio"></div>
+      <h2 id="mp-titulo">Consulta para <span>Padres</span></h2>
+      <p class="mp-sub">Ingresa con el usuario y la contraseña del estudiante.</p>
+      <form id="mpForm">
+        <label for="mp-usuario">Usuario del estudiante</label>
+        <input id="mp-usuario" autocomplete="username" autocapitalize="none" placeholder="Ej.: lhernandez">
+        <label for="mp-clave">Contraseña</label>
+        <input id="mp-clave" type="password" autocomplete="current-password" placeholder="El número de documento del estudiante">
+        <div class="mp-error" id="mpError"></div>
+        <button type="submit" class="mp-btn" id="mpBtn">Ingresar</button>
+      </form>
+      <p class="mp-ayuda">El usuario te lo entrega el colegio: es la inicial del nombre y el apellido del estudiante, todo junto. La contraseña es su número de documento.</p>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var RTDB = 'https://plataforma-cemi-default-rtdb.firebaseio.com';
+      var modal = document.getElementById('modalPadres');
+      if(!modal) return;
+      var errBox = document.getElementById('mpError');
+      var btn = document.getElementById('mpBtn');
+      function normUsuario(v){ return String(v||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }
+      function normDoc(v){ return String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+      async function sha256Hex(t){ var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join(''); }
+      function abrir(){ modal.classList.add('abierto'); errBox.style.display = 'none'; setTimeout(function(){ var u = document.getElementById('mp-usuario'); if(u) u.focus(); }, 60); }
+      function cerrar(){ modal.classList.remove('abierto'); }
+      function error(msg){ errBox.textContent = msg; errBox.style.display = 'block'; }
+      document.addEventListener('click', function(e){
+        var a = (e.target && e.target.closest) ? e.target.closest('a[href="/padres/"]') : null;
+        if(!a) return;
+        if(!window.matchMedia('(min-width: 768px)').matches) return;
+        e.preventDefault();
+        abrir();
+      });
+      document.getElementById('mpCerrar').addEventListener('click', cerrar);
+      modal.addEventListener('click', function(e){ if(e.target === modal) cerrar(); });
+      document.addEventListener('keydown', function(e){ if(e.key === 'Escape') cerrar(); });
+      document.getElementById('mpForm').addEventListener('submit', async function(ev){
+        ev.preventDefault();
+        errBox.style.display = 'none';
+        var usuario = normUsuario(document.getElementById('mp-usuario').value);
+        var claveTxt = normDoc(document.getElementById('mp-clave').value);
+        if(!usuario || !claveTxt){ error('Escribe el usuario y la contraseña (el documento del estudiante).'); return; }
+        btn.disabled = true; btn.textContent = 'Ingresando…';
+        try{
+          var r = await fetch(RTDB + '/accesoPadres/' + encodeURIComponent(usuario) + '.json');
+          var guardada = r.ok ? await r.json() : null;
+          var clave = await sha256Hex(claveTxt);
+          if(!guardada || guardada !== clave){ error('Usuario o contraseña incorrectos. Revisa los datos e inténtalo de nuevo.'); return; }
+          try{ localStorage.setItem('padres_sesion', 'usuario'); localStorage.setItem('padres_doc', claveTxt); }catch(e){}
+          window.location.href = '/padres/';
+        }catch(e){
+          error('No se pudo ingresar. Revisa tu conexión e inténtalo de nuevo.');
+        }finally{ btn.disabled = false; btn.textContent = 'Ingresar'; }
+      });
+    })();
+  </script>
   </body>
 </html>
