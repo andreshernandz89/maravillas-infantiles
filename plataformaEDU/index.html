@@ -63,7 +63,7 @@
   .card h2{ font-size:17px; color:var(--azul-osc); margin-bottom:6px; }
   .card p.ayuda{ font-size:13px; color:#5a6a7d; margin-bottom:12px; }
   label{ font-size:13px; font-weight:600; display:block; margin-bottom:4px; }
-  input[type=text], input[type=number], input[type=email], select, textarea{ padding:9px 11px; border:1.5px solid var(--borde); border-radius:8px; font-size:14px; background:#fff; }
+  input[type=text], input[type=number], input[type=email], input:not([type]), select, textarea{ padding:9px 11px; border:1.5px solid var(--borde); border-radius:8px; font-size:14px; background:#fff; }
   textarea{ width:100%; min-height:56px; }
   .fila{ display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:12px; }
   .fila > div{ display:flex; flex-direction:column; }
@@ -6027,7 +6027,7 @@ async function renderPanelPush(){
     '<div style="border:1.5px solid #C9DBFA;background:linear-gradient(160deg,#fff 60%,#EAF4FF);border-radius:18px;padding:14px 16px;margin:14px 0">' +
     '<h3 style="margin:0 0 4px">\uD83D\uDCE3 Notificación a los padres (celular)</h3>' +
     '<p class="ayuda" style="margin:0 0 8px">Llega como notificación al celular de los padres que la activaron en la Consulta de Padres. <span id="push-conteo">Contando dispositivos\u2026</span></p>' +
-    '<label>Título</label><input id="push-titulo" maxlength="60" placeholder="Ej.: Aviso importante del colegio">' +
+    '<label>Título</label><input type="text" id="push-titulo" style="width:100%" maxlength="60" placeholder="Ej.: Aviso importante del colegio">' +
     '<label>Mensaje</label><textarea id="push-cuerpo" rows="2" maxlength="240" placeholder="Ej.: Mañana viernes los estudiantes salen a las 10:30 a.m."></textarea>' +
     '<label>¿A qué grados va?</label><div id="push-grados" style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 4px">' +
     '<label style="display:inline-flex;align-items:center;gap:5px;background:#EAF4FF;border:1px solid #C9DBFA;border-radius:999px;padding:4px 10px;font-size:13px;cursor:pointer;margin:0"><input type="checkbox" id="push-grado-todos" checked onchange="pushGradosTodos(this)"> Todos los grados</label>' +
