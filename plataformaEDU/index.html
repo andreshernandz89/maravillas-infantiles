@@ -1657,19 +1657,17 @@ function matriTarjetaHTML(m){
         '<div style="font-size:1.08rem;font-weight:800;color:var(--tinta,#16283f);line-height:1.25">' + esc(nombreCompleto) + '</div>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:5px">' +
           '<span class="pipe-grado">' + esc(m.grado || 'Sin grado') + '</span>' +
-          '<span class="pipe-doc">🪪 ' + esc(docTxt) + '</span>' +
         '</div>' +
       '</div>' +
     '</div>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">' +
-      '<span class="sem">' + (esAct ? '🔄 Actualización' : '🆕 Matrícula nueva') + '</span>' +
+      (esAct ? '<span class="sem">🔄 Actualización</span>' : '') +
       (etapa === 'IMPORTADA' ? '<span class="sem v">' + (esAct ? 'Ficha actualizada' : 'Estudiante creado' + (m.anioCreado ? ' · ' + m.anioCreado : '')) + '</span>' : '') +
       (avisoEtapaOk ? '<span class="sem v">📧 Aviso de etapa enviado</span>' : '') +
       ((typeof matriDocsPanelVisible === 'function' && matriDocsPanelVisible(m) && matriDocsPadresDe(m).length) ? '<span class="sem b">📥 ' + matriDocsPadresDe(m).length + ' envío(s) de documentos por revisar</span>' : '') +
       '<span class="ayuda">' + matriFecha(m.ts) + '</span>' +
     '</div>' +
-    '<div class="ayuda" style="margin:4px 0 8px">Acudiente: <strong>' + esc(a.nombre || '—') + '</strong> · CC ' + esc(a.cc || '—') + '<br>Tel. ' + esc(a.telefono || '—') + '</div>' +
-    (accesoU ? '<div style="margin:-2px 0 8px;font-size:.92rem">👤 <strong>' + esc(accesoU) + '</strong></div>' : '') +
+    '<div class="ayuda" style="margin:4px 0 8px">Acudiente: <strong>' + esc(a.nombre || '—') + '</strong></div>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
       (tel ? '<a class="btn btn-sec mini" style="text-decoration:none" target="_blank" rel="noopener" href="' + waHref + '">💬 WhatsApp</a>' : '') +
       (correoHref && !avisoEtapaOk ? (correoConectado() ? '<button class="btn btn-sec mini" onclick="matriAvisarCorreo(\'' + m.id + '\')">📧 Avisar por correo</button>' : '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>') : '') +
@@ -1703,6 +1701,7 @@ function matriTarjetaHTML(m){
         matriFilaHTML('Padre', p.nombre) + matriFilaHTML('Tel. padre', p.telefono) + matriFilaHTML('Ocupación padre', p.ocupacion) + matriFilaHTML('¿Vive con el estudiante? (padre)', p.viveCon) +
         matriFilaHTML('Madre', md.nombre) + matriFilaHTML('Tel. madre', md.telefono) + matriFilaHTML('Ocupación madre', md.ocupacion) + matriFilaHTML('¿Vive con el estudiante? (madre)', md.viveCon) +
         matriFilaHTML('Parentesco del acudiente', a.parentesco) +
+        matriFilaHTML('Acudiente', a.nombre) + matriFilaHTML('CC del acudiente', a.cc) + matriFilaHTML('Tel. del acudiente', a.telefono) + (accesoU ? matriFilaHTML('Usuario de padres', accesoU) : '') +
         matriFilaHTML('EPS', s.eps) + matriFilaHTML('RH', s.rh) + matriFilaHTML('Alergias / enfermedades', s.alergias) +
         matriFilaHTML('Dificultad para ejercicio', s.dificultadEjercicio) + matriFilaHTML('Terapias', s.terapias) + matriFilaHTML('Explique terapias', s.expliqueTerapias) +
         matriFilaHTML('Personas autorizadas para recogerlo', m.autorizados) +
