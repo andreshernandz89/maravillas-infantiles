@@ -1259,7 +1259,7 @@ body{ padding-top:103px; }
       });
     })();
   </script>
-  <!-- PUBLICIDAD MATRICULAS 2027: ventana grande animada al abrir la pagina (se muestra una vez por dia) -->
+  <!-- PUBLICIDAD MATRICULAS 2027: ventana grande animada al abrir la pagina (se muestra una vez por visita) -->
   <style>
     .publi-mat{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(11,22,43,.62);backdrop-filter:blur(3px)}
     .publi-mat.abierto{display:flex;animation:pmFade .3s ease both}
@@ -1316,13 +1316,12 @@ body{ padding-top:103px; }
   <script>
     (function(){
       var CLAVE = 'publiMat2027';
-      var hoy = new Date().toDateString();
       var ya = '';
-      try{ ya = localStorage.getItem(CLAVE) || ''; }catch(e){}
-      if(ya === hoy) return;
+      try{ ya = sessionStorage.getItem(CLAVE) || ''; }catch(e){}
+      if(ya) return;
       var modal = document.getElementById('publiMat');
       if(!modal) return;
-      function marcar(){ try{ localStorage.setItem(CLAVE, hoy); }catch(e){} }
+      function marcar(){ try{ sessionStorage.setItem(CLAVE, '1'); }catch(e){} }
       function cerrar(){ modal.classList.remove('abierto'); marcar(); }
       function confeti(){
         var caja = document.getElementById('pmConfeti');
