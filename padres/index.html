@@ -154,6 +154,25 @@
 .credito-edu{ display:block; margin-top:16px; font-size:10px; font-weight:700; letter-spacing:.18em; color:#8494AB; text-transform:uppercase; }
 .logo-edu-pie{ width:168px; height:auto; margin-top:5px; }
 .copy-edu{ display:block; margin-top:6px; font-size:11px; color:#8494AB; }
+
+  /* ===== Mejoras de diseno 2026-11-26 (paquete completo) ===== */
+  #barra-sesion{background:linear-gradient(120deg,#13213F,#0B4FA8 55%,#0792FE);color:#fff;border:none;box-shadow:0 14px 30px rgba(11,79,168,.28)}
+  #barra-sesion .sesion-avatar{background:#fff;color:#0B4FA8}
+  #barra-sesion #sesion-quien span{color:#C9D9F2 !important}
+  #barra-sesion .btn-salir{background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.65);color:#fff}
+  .btn-salir{background:#F2F6FC;border:1.5px solid #C7D3E4;color:#5A6B84;font-weight:800;cursor:pointer;padding:9px 18px;border-radius:999px;font-size:.95rem}
+  .btn-salir:active{background:#E3EDFB}
+  #accesos{display:none;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 16px}
+  #accesos .tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 6px 11px;background:#fff;border:1.5px solid #DCE8F8;border-radius:18px;box-shadow:0 8px 20px rgba(18,86,196,.08);font-family:inherit;font-size:.86rem;font-weight:800;color:#13213F;cursor:pointer}
+  #accesos .tile .t-ico{font-size:1.45rem;line-height:1}
+  #accesos .tile:active{transform:scale(.97)}
+  #accesos .tile-aviso{position:absolute;top:9px;right:11px;width:11px;height:11px;border-radius:50%;background:#E5484D;box-shadow:0 0 0 3px #FDECEA}
+  .proc-barra{height:9px;background:#E3EDFB;border-radius:99px;margin:14px 0 2px;overflow:hidden}
+  .proc-barra i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#0792FE,#22b358)}
+  @media (min-width:900px){ .fila-doble{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start} }
+  @media (min-width:1024px){ body:not(.vista-acceso) main{max-width:920px} .doodles{opacity:.18} }
+  @media (max-width:480px){ #accesos{grid-template-columns:repeat(2,1fr)} }
+  @media print{ #accesos{display:none !important} }
 </style>
 <style>
 .login-tabs{display:flex;gap:8px;margin:0 0 14px}
@@ -228,6 +247,13 @@
       <button type="button" class="btn-salir" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
   </div>
+  <div id="accesos" aria-label="Accesos rápidos">
+    <button type="button" class="tile" data-ir="sec-notas"><span class="t-ico">📚</span>Notas</button>
+    <button type="button" class="tile" data-ir="sec-pagos"><span class="t-ico">💰</span>Pagos<i class="tile-aviso" id="tile-aviso-pagos" style="display:none"></i></button>
+    <button type="button" class="tile" data-ir="sec-novedades"><span class="t-ico">📣</span>Novedades</button>
+    <button type="button" class="tile" data-ir="sec-proceso"><span class="t-ico">📋</span>Proceso 2027</button>
+  </div>
+  <div class="fila-doble">
     <div class="card compacta" id="push-card">
     <h2><span class="ico">🔔</span> Notificaciones</h2>
     <p class="intro">Avisos, boletines y recordatorios del colegio, al instante en tu celular.</p>
@@ -240,6 +266,7 @@
     <button class="btn-pri" id="btn-instalar" onclick="instalarApp()" style="display:none">📲 Instalar la consulta</button>
     <p class="ayuda-login" id="instalar-ios" style="display:none">En iPhone: toca el botón <strong>Compartir</strong> (el cuadrado con la flecha hacia arriba) y luego <strong>«Agregar a pantalla de inicio»</strong>.</p>
     <div style="margin-top:10px"><button type="button" class="btn-salir" onclick="ocultarInstalar()">Ahora no</button></div>
+  </div>
   </div>
   <div id="resultado"></div>
   <div class="card" id="doc-cal-card" style="display:none">
@@ -262,6 +289,7 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 function $(id){ return document.getElementById(id); }
 let CLAVE_ACTUAL = '', DATOS_ACTUAL = null;
 const TIPOS_CERT = { estudio: 'Certificado de estudio', matricula: 'Constancia de matrícula', convivencia: 'Certificado de convivencia', pazysalvo: 'Paz y salvo' };
+const fmtP = v => '$' + Number(v || 0).toLocaleString('es-CO');
 const fmtFecha = iso => { try{ return new Date(String(iso)+'T12:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long' }); }catch(e){ return String(iso||''); } };
 const hoyISO = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 const ETAPAS_PROC = [
@@ -275,7 +303,7 @@ function esConsultaValida(d){ return !!d && typeof d === 'object' && !Array.isAr
 function procesoHTML(p){
   const etapa = p.etapa || 'NUEVA';
   let idx = ETAPAS_PROC.findIndex(x => x.k === etapa); if(idx < 0) idx = 0;
-  let h = '<div class="card"><h2><span class="ico">📋</span> Tu proceso de matrícula 2027</h2>'
+  let h = '<div class="card" id="sec-proceso"><h2><span class="ico">📋</span> Tu proceso de matrícula 2027</h2>'
     + '<p style="margin:0"><strong>' + esc(p.nombre || '') + '</strong>' + (p.grado ? ' · Grado solicitado: <strong>' + esc(p.grado) + '</strong>' : '') + '</p>';
   if(p.tramite === 'ACTUALIZACION'){
     if(etapa === 'IMPORTADA'){
@@ -286,7 +314,8 @@ function procesoHTML(p){
       h += '<p style="margin:10px 0 0">📥 <strong>Recibida:</strong> recibimos tu formulario de actualización de datos; está en la fila de revisión.</p>';
     }
   } else {
-    h += '<div class="proc-pasos">' + ETAPAS_PROC.map((s, i) => {
+    h += '<div class="proc-barra"><i style="width:' + Math.round(idx / (ETAPAS_PROC.length - 1) * 100) + '%"></i></div>'
+      + '<div class="proc-pasos">' + ETAPAS_PROC.map((s, i) => {
         const cls = i < idx ? 'proc-ok' : (i === idx ? 'proc-actual' : 'proc-pend');
         return (i ? '<div class="proc-flecha">➜</div>' : '') + '<div class="proc-paso ' + cls + '"><div class="proc-ico">' + (i < idx ? '✅' : s.ico) + '</div><div class="proc-nom">' + s.nombre + '</div></div>';
       }).join('') + '</div>'
@@ -374,7 +403,7 @@ async function consultar(){
   }
   if(!bloqueado && datos.notas && datos.notas.filas && datos.notas.filas.length){
     const n = datos.notas;
-    h += '<div class="card"><h2><span class="ico">📚</span> Notas · Periodo ' + n.periodo + '</h2>';
+    h += '<div class="card" id="sec-notas"><h2><span class="ico">📚</span> Notas · Periodo ' + n.periodo + '</h2>';
     h += '<div class="tabla-scroll"><table class="doc-tabla"><tr><th>Asignatura</th><th>' + (n.preescolar ? 'Valoración' : 'Nota') + '</th></tr>' + n.filas.map(f => '<tr><td>' + esc(f.asignatura) + '</td><td>' + (n.preescolar ? esc((f.letra || '') + (f.texto ? ' · ' + f.texto : '')) : Number(f.nota).toFixed(1).replace('.', ',')) + '</td></tr>').join('') + '</table></div>';
     if(!n.preescolar){ if(n.promedio != null) h += '<p style="margin:8px 0 0"><strong>Promedio del periodo:</strong> ' + Number(n.promedio).toFixed(2).replace('.', ',') + '</p>'; if(n.puesto) h += '<p style="margin:4px 0 0"><strong>Puesto en el curso:</strong> ' + n.puesto + '</p>'; }
     h += '<p class="nota">Notas del periodo más reciente registrado en la plataforma.</p></div>';
@@ -704,12 +733,13 @@ function pintarSesion(){
   if(!nombre) return;
   const ini = nombre.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
   const av = $('sesion-avatar'); if(av && ini) av.textContent = ini;
-  q.innerHTML = '<strong>Familia de ' + esc(nombre) + '</strong>' + (d.gradoActual ? '<br><span style="font-size:12.5px;color:#5A6B84">' + esc(d.gradoActual) + '</span>' : '');
+  q.innerHTML = '<strong>¡Hola! 👋 Familia de ' + esc(nombre) + '</strong>' + (d.gradoActual ? '<br><span style="font-size:12.5px;color:#5A6B84">' + esc(d.gradoActual) + '</span>' : '');
 }
 function sesionIniciada(){
   document.body.classList.remove('vista-acceso');
   const c = $('card-login'); if(c) c.style.display = 'none';
   const b = $('barra-sesion'); if(b) b.style.display = '';
+   const ac = $('accesos'); if(ac) ac.style.display = 'grid';
   pintarSesion();
 }
 function cerrarSesion(){
@@ -719,6 +749,7 @@ function cerrarSesion(){
   const cl = $('login-clave'); if(cl) cl.value = '';
   $('resultado').innerHTML = ''; $('error').innerHTML = '';
   const b = $('barra-sesion'); if(b) b.style.display = 'none';
+   const ac2 = $('accesos'); if(ac2) ac2.style.display = 'none';
   const c = $('card-login'); if(c) c.style.display = '';
   document.body.classList.add('vista-acceso');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1498,6 +1529,23 @@ window.__vincularPush = async function(clave){
   } catch (e) {}
 };
 document.addEventListener('DOMContentLoaded', estadoPush);
+</script>
+
+<script>
+  function irASeccion(id){
+    const el = document.getElementById(id); if(!el) return;
+    if(el.classList.contains('card') && el.querySelector('.desp-cuerpo') && !el.classList.contains('abierta')) el.classList.add('abierta');
+    el.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function ajustarAccesos(){
+    document.querySelectorAll('#accesos .tile').forEach(function(t){
+      t.style.display = document.getElementById(t.getAttribute('data-ir')) ? '' : 'none';
+    });
+    const av = document.getElementById('tile-aviso-pagos');
+    if(av){ const d = (typeof DATOS_ACTUAL !== 'undefined') ? DATOS_ACTUAL : null; const deuda = !!(d && (d.bloqueado || (d.pagos && d.pagos.deuda > 0))); av.style.display = deuda ? '' : 'none'; }
+  }
+  document.querySelectorAll('#accesos .tile').forEach(function(t){ t.addEventListener('click', function(){ irASeccion(t.getAttribute('data-ir')); }); });
+  (function(){ const r = document.getElementById('resultado'); if(r && window.MutationObserver){ let tm = null; new MutationObserver(function(){ clearTimeout(tm); tm = setTimeout(ajustarAccesos, 60); }).observe(r, {childList:true}); } })();
 </script>
 </body>
 </html>
