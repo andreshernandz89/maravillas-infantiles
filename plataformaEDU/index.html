@@ -6240,8 +6240,8 @@ function renderPanelNotificaciones(){
         texto: '<strong>Solicitud de certificado</strong> · ' + esc(x.estudiante || '') + (x.grado ? ' (' + esc(x.grado) + ')' : '') + (x.tipo ? ' · ' + esc(x.tipo) : '') });
     }
   });
-  Object.keys(MATRI || {}).forEach(id => {
-    const m = MATRI[id]; if(!m || etapaDe(m) !== 'NUEVA') return;
+  matriLista().forEach(m => {
+    if(!m || etapaDe(m) !== 'NUEVA') return;
     if(m.avisoCorreoInicial) return; // el aviso de esta etapa ya salió (vigía automático)
     if(m.avisoCorreoEtapa && m.avisoCorreoEtapa.etapa === 'NUEVA') return; // o se envió desde la plataforma
     const e = m.estudiante || {};
