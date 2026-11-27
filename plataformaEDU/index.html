@@ -1650,6 +1650,9 @@ function matriTarjetaHTML(m){
   const iniciales = ((((e.nombres || ' ').trim().charAt(0)) + ((e.apellidos || ' ').trim().charAt(0))).toUpperCase()) || '•';
   const docTxt = (((e.docTipo || '') + ' ' + (e.docNumero || '')).trim()) || 'Sin documento';
   const avisoEtapaOk = !!((m.avisoCorreoEtapa && m.avisoCorreoEtapa.etapa === etapa) || (etapa === 'NUEVA' && m.avisoCorreoInicial));
+  const reqD = (typeof matriDocsPanelVisible === 'function' && matriDocsPanelVisible(m)) ? matriDocsRequeridosDe(m) : [];
+  let nMont = 0;
+  if(reqD.length){ const porRev = {}; matriDocsPadresDe(m).forEach(sv => { porRev[sv.categoria || ''] = true; }); nMont = reqD.filter(r => r.ok || porRev[r.nombre]).length; }
   let h = '<div class="pipe-card" id="matri-card-' + m.id + '">' +
     '<div style="display:flex;gap:10px;align-items:flex-start">' +
       '<div class="pipe-avatar">' + esc(iniciales) + '</div>' +
@@ -1668,7 +1671,7 @@ function matriTarjetaHTML(m){
       '<span class="ayuda">' + matriFecha(m.ts) + '</span>' +
     '</div>' +
     '<div class="ayuda" style="margin:4px 0 8px">Acudiente: <strong>' + esc(a.nombre || '—') + '</strong></div>' +
-    (accesoU ? '<div style="margin:-2px 0 8px;font-size:.92rem">👤 <strong>' + esc(accesoU) + '</strong></div>' : '') +
+    ((accesoU || reqD.length) ? '<div style="display:flex;align-items:center;gap:8px;margin:-2px 0 8px;font-size:.92rem">' + (accesoU ? '<span>👤 <strong>' + esc(accesoU) + '</strong></span>' : '<span></span>') + (reqD.length ? '<span style="margin-left:auto;white-space:nowrap" title="Documentos montados de los requeridos">📄 <strong>' + nMont + '/' + reqD.length + '</strong></span>' : '') + '</div>' : '') +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
       (tel ? '<a class="btn btn-sec mini" style="text-decoration:none" target="_blank" rel="noopener" href="' + waHref + '">💬 WhatsApp</a>' : '') +
       (correoHref && !avisoEtapaOk ? (correoConectado() ? '<button class="btn btn-sec mini" onclick="matriAvisarCorreo(\'' + m.id + '\')">📧 Avisar por correo</button>' : '<a class="btn btn-sec mini" style="text-decoration:none" href="' + correoHref + '">📧 Avisar por correo</a>') : '') +
