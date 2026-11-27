@@ -1447,7 +1447,27 @@ function iniciarMatriculas(){
   });
 }
 function matriLista(){
-  return Object.entries(MATRI).map(([id, m]) => Object.assign({ id }, m)).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const ordenada = Object.entries(MATRI).map(([id, m]) => Object.assign({ id }, m)).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  /* Un solo registro visible por estudiante (por documento): si un acudiente envió el formulario
+     más de una vez, se muestra el envío más reciente y se le heredan los datos de gestión que
+     solo tenga el duplicado oculto (aviso enviado, usuario de padres, documentos). Nada se borra. */
+  const vistos = {};
+  const unicos = [];
+  ordenada.forEach(m => {
+    const doc = (m.estudiante && m.estudiante.docNumero) ? normDocMatricula(m.estudiante.docNumero) : '';
+    if(!doc){ unicos.push(m); return; }
+    const vis = vistos[doc];
+    if(vis){
+      if(!vis.avisoCorreoEtapa && m.avisoCorreoEtapa) vis.avisoCorreoEtapa = m.avisoCorreoEtapa;
+      if((!vis.avisosCorreo || !vis.avisosCorreo.length) && m.avisosCorreo) vis.avisosCorreo = m.avisosCorreo;
+      if(!vis.usuarioPadres && m.usuarioPadres) vis.usuarioPadres = m.usuarioPadres;
+      if((!vis.documentos || !Object.keys(vis.documentos).length) && m.documentos) vis.documentos = m.documentos;
+      if((!vis.docsEnvios || !vis.docsEnvios.length) && m.docsEnvios) vis.docsEnvios = m.docsEnvios;
+      return;
+    }
+    vistos[doc] = m; unicos.push(m);
+  });
+  return unicos;
 }
 function matriFecha(ts){ try{ return new Date(ts).toLocaleString('es-CO', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }); }catch(e){ return ''; } }
 function matriFilaHTML(k, v){

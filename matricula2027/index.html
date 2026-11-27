@@ -314,6 +314,11 @@
       if(!r.ok){ msg.textContent = 'No se pudo hacer la consulta (el servicio no respondió). Inténtalo de nuevo en un momento.'; return; }
       const d = await r.json();
       if(!esConsultaValida(d)){ msg.innerHTML = '❌ No encontramos un estudiante con ese número de documento. Verifica el número; si es un estudiante nuevo, cambia el tipo de trámite a «Matrícula nueva».'; return; }
+      try{
+        const rP = await fetch('https://plataforma-cemi-default-rtdb.firebaseio.com/proceso2027/' + clave + '.json');
+        const proc = rP.ok ? await rP.json() : null;
+        if(proc){ msg.innerHTML = '📩 <strong>Ya recibimos el formulario de actualización</strong> de ' + esc(d.apellidos || '') + ' ' + esc(d.nombres || '') + '. No es necesario enviarlo de nuevo. Si necesitas corregir algún dato, escríbenos al WhatsApp 302 285 2745.'; return; }
+      }catch(e){ /* Si la verificación no responde, la búsqueda continúa normal. */ }
       $('est-nombres').value = d.nombres || ''; $('est-apellidos').value = d.apellidos || '';
       $('est-fecha-nac').value = d.fechaNacimiento || '';
       if(d.docTipo) $('est-doctipo').value = d.docTipo;
@@ -501,6 +506,17 @@
     };
     const btn = $('btn-enviar');
     btn.disabled = true; btn.textContent = 'Enviando…';
+    /* Si este estudiante ya tiene un formulario recibido, no se crea otro: se avisa y se detiene. */
+    try {
+      const claveYa = await sha256Hex(normDoc(datos.estudiante.docNumero));
+      const rYa = await fetch('https://plataforma-cemi-default-rtdb.firebaseio.com/proceso2027/' + claveYa + '.json');
+      const yaRecibido = rYa.ok ? await rYa.json() : null;
+      if (yaRecibido) {
+        mostrarError('📩 Ya recibimos el formulario de ' + datos.estudiante.nombres + ' ' + datos.estudiante.apellidos + '. No es necesario enviarlo de nuevo. Si necesitas corregir algún dato, escríbenos al WhatsApp 302 285 2745.');
+        btn.disabled = false; btn.textContent = '📨 Enviar formulario';
+        return;
+      }
+    } catch (e) { /* Si la verificación no responde, el envío continúa normal. */ }
     try {
       await firebase.database().ref('matriculas2027').push(datos);
       $('form-matricula').style.display = 'none';
