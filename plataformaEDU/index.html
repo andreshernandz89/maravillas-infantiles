@@ -205,7 +205,6 @@
   .sop-msg .mh{ display:block; font-size:10px; opacity:.6; margin-top:3px; text-align:right; }
   .sop-msg.propio{ background:#0792FE; color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
   .sop-msg.equipo{ background:#fff; border:1.5px solid #DCE4F0; align-self:flex-start; border-bottom-left-radius:4px; }
-  .sop-fin{ margin:0 13px 10px; background:#E9F9F0; border:1.5px solid #7BD7A8; color:#0B6B3A; border-radius:11px; padding:9px 11px; font-size:13px; }
   .sop-bienv{ background:#fff; border:1.5px dashed #B9C6E4; color:#40506E; border-radius:11px; padding:9px 11px; font-size:13px; }
   .sop-envio{ display:flex; gap:8px; padding:10px; border-top:1px solid #E4EAF3; background:#fff; }
   .sop-envio input{ flex:1; padding:10px 11px; border:1.5px solid #DCE4F0; border-radius:10px; font-family:inherit; }
@@ -7235,7 +7234,6 @@ setInterval(sesionVencida, 60000);
   <div class="sop-msgs" id="sop-msgs">
     <div class="sop-bienv">👋 Este es el canal directo con el equipo de <strong>PlataformaEDU</strong>. Cuéntanos qué necesitas con tu plataforma y te respondemos por aquí mismo.</div>
   </div>
-  <div class="sop-fin" id="sop-fin" style="display:none">✅ Conversación finalizada por PlataformaEDU. Si necesitas algo más, escribe un mensaje y se reactivará automáticamente.</div>
   <form class="sop-envio" id="sop-form">
     <input id="sop-input" placeholder="Escribe tu mensaje…" autocomplete="off">
     <button type="submit">Enviar</button>
@@ -7309,7 +7307,6 @@ setInterval(sesionVencida, 60000);
          Crear el nodo al iniciar llenaba la consola de chats vacíos. */
       chatRef.child("mensajes").off();
       chatRef.child("mensajes").on("child_added", function(snap){ pintar(snap.val()); });
-      chatRef.child("finalizada").on("value", function(snap){ $("sop-fin").style.display = snap.val() === true ? "block" : "none"; });
       latido();
     });
   }
