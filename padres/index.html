@@ -251,7 +251,6 @@
     <button type="button" class="tile" data-ir="sec-notas"><span class="t-ico">📚</span>Notas</button>
     <button type="button" class="tile" data-ir="sec-pagos"><span class="t-ico">💰</span>Pagos<i class="tile-aviso" id="tile-aviso-pagos" style="display:none"></i></button>
     <button type="button" class="tile" data-ir="sec-novedades"><span class="t-ico">📣</span>Novedades</button>
-    <button type="button" class="tile" data-ir="sec-proceso"><span class="t-ico">📋</span>Proceso 2027</button>
   </div>
   <div class="fila-doble">
     <div class="card compacta" id="push-card">
@@ -1541,6 +1540,8 @@ document.addEventListener('DOMContentLoaded', estadoPush);
     document.querySelectorAll('#accesos .tile').forEach(function(t){
       t.style.display = document.getElementById(t.getAttribute('data-ir')) ? '' : 'none';
     });
+    const ac = document.getElementById('accesos');
+    if(ac){ const alguno = [...document.querySelectorAll('#accesos .tile')].some(function(t){ return t.style.display !== 'none'; }); ac.style.display = alguno ? 'grid' : 'none'; }
     const av = document.getElementById('tile-aviso-pagos');
     if(av){ const d = (typeof DATOS_ACTUAL !== 'undefined') ? DATOS_ACTUAL : null; const deuda = !!(d && (d.bloqueado || (d.pagos && d.pagos.deuda > 0))); av.style.display = deuda ? '' : 'none'; }
   }
