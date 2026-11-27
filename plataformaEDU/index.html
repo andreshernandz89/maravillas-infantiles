@@ -7324,7 +7324,8 @@ setInterval(sesionVencida, 60000);
     latido();
   }, 1500);
   $("sop-btn").addEventListener("click", function(){
-    if ($("sop-panel").classList.contains("abierto")) $("sop-panel").classList.remove("abierto"); else abrir();
+    var msg = "Hola PlataformaEDU \uD83D\uDC4B Soy de " + institucion() + ", necesito ayuda con mi plataforma.";
+    window.open("https://wa.me/573001363681?text=" + encodeURIComponent(msg), "_blank");
   });
   $("sop-cerrar").addEventListener("click", function(){ $("sop-panel").classList.remove("abierto"); });
   $("sop-form").addEventListener("submit", function(e){
