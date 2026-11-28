@@ -2727,7 +2727,7 @@ function matriDocsPadresDe(m){
     .filter(s => s.tipoSolicitud === 'DOCUMENTO' && s.estado === 'PENDIENTE' && normDocMatricula(s.docNumero || '') === docN)
     .sort((a, b) => (a.ts || 0) - (b.ts || 0));
 }
-function matriDocsPanelVisible(m){ return !!m && m.tramite !== 'ACTUALIZACION' && etapaDe(m) !== 'IMPORTADA'; }
+function matriDocsPanelVisible(m){ return !!m && etapaDe(m) !== 'IMPORTADA'; }
 function matriDocsChecklistHTML(m){
   if(typeof matriDocsPanelVisible === 'function' && !matriDocsPanelVisible(m)) return '';
   const req = matriDocsRequeridosDe(m);
