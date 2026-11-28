@@ -1440,6 +1440,26 @@ function iniciarMatriculas(){
   FB_DB.ref('matriculas2027').on('value', snap => {
     MATRI = snap.val() || {};
     Object.values(MATRI).forEach(m => { if(!m) return; const ee = m.estudiante || {}, aa = m.acudiente || {}; if(typeof ee.nombres === 'string') ee.nombres = ee.nombres.toUpperCase(); if(typeof ee.apellidos === 'string') ee.apellidos = ee.apellidos.toUpperCase(); if(typeof aa.nombre === 'string') aa.nombre = aa.nombre.toUpperCase(); });
+    /* Reparación puntual (2026-11-27, orden de Andres): el formulario de actualización del estudiante
+       con documento 1048097391 llegó con el nombre de la acudiente (MARIA VILLAMIL) en los campos del
+       estudiante; su nombre correcto en el colegio es ENOC JOSE RICO VILLAMIL. Se corrige el registro
+       guardado una sola vez (cuando ya no coincida el dato errado, no vuelve a actuar). */
+    try{
+      if(!window.__reparoNombreEnoc && !(typeof MODO_ARCHIVO !== 'undefined' && MODO_ARCHIVO) && !(typeof SIMULANDO !== 'undefined' && SIMULANDO)){
+        const p = (typeof perfilActual === 'function') ? perfilActual() : null;
+        if(p && (p.rol === 'owner' || p.rol === 'coord' || p.rol === 'admin')){
+          Object.entries(MATRI).forEach(([id, m]) => {
+            const ee = (m && m.estudiante) || {};
+            if(normDocMatricula(ee.docNumero || '') === '1048097391' && ee.nombres === 'MARIA' && ee.apellidos === 'VILLAMIL'){
+              window.__reparoNombreEnoc = true;
+              FB_DB.ref('matriculas2027/' + id).update({ 'estudiante/nombres': 'ENOC JOSE', 'estudiante/apellidos': 'RICO VILLAMIL' })
+                .then(() => { ee.nombres = 'ENOC JOSE'; ee.apellidos = 'RICO VILLAMIL'; if(typeof sincronizarProceso2027 === 'function') sincronizarProceso2027(); })
+                .catch(err => console.error('Reparación de nombre (doc 1048097391):', err));
+            }
+          });
+        }
+      }
+    }catch(e){ console.error('Reparación de nombre (doc 1048097391):', e); }
     const sec = $('tab-matriculas');
     if(sec && !sec.classList.contains('hidden')) renderMatriculas();
     const secP = $('tab-panel');
